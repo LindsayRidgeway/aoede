@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { fetchBookTextFromChatGPT, translateText } from './api';
+import { fetchBookTextFromChatGPT, translateText } from './api'; // ✅ Ensure `translateText` is correctly imported
 import { MainUI } from './UI';
 import * as Speech from 'expo-speech';
 
 export default function App() {
   const [uiText, setUiText] = useState({});
-  const [userQuery, setUserQuery] = useState("");
+  const [userQuery, setUserQuery] = useState("");  
   const [sentence, setSentence] = useState("");
   const [translatedSentence, setTranslatedSentence] = useState("");
   const [detectedLanguage, setDetectedLanguage] = useState("en");
   const [showText, setShowText] = useState(false);
   const [showTranslation, setShowTranslation] = useState(false);
   const [speechRate, setSpeechRate] = useState(1.0);
+  const [studyLanguage, setStudyLanguage] = useState("ru"); // ✅ Still hardcoded for now
 
   useEffect(() => {
     const userLang = navigator.language.split('-')[0] || "en";
@@ -43,46 +44,55 @@ export default function App() {
     setSentence(text);
     setDetectedLanguage(language || "en");
 
-    if (language !== "ru") {
-      translateText(text, language || "en", "ru").then(setTranslatedSentence);
-    } else {
-      setTranslatedSentence(text);
+    // ✅ Ensure detected language is always valid (fallback to "en" if incorrect)
+    let validSourceLang = language ? language.toLowerCase().trim() : "en";
+    validSourceLang = validSourceLang.replace(/[^a-z]/g, ""); // ✅ Removes invalid characters
+
+    if (!/^[a-z]{2}$/i.test(validSourceLang)) {
+      console.warn(`⚠ AI returned invalid language code: "${validSourceLang}". Defaulting to "en".`);
+      validSourceLang = "en";
     }
-  };
 
-  const speakSentence = () => {
-    Speech.stop();
-    Speech.getAvailableVoicesAsync().then(voices => {
-      const russianVoice = voices.find(voice => voice.language.startsWith('ru'));
-      Speech.speak(sentence || "", {
-        rate: speechRate,
-        language: "ru",
-        voice: russianVoice ? russianVoice.identifier : undefined
+    console.log(`🔍 Translating from ${validSourceLang} to ${studyLanguage}:`, text);
+
+    // ✅ **Ensure translation function exists before calling**
+    if (typeof translateText !== "function") {
+      console.error("❌ translateText is not a function. Check import in App.js.");
+      return;
+    }
+
+    // ✅ **Prevent self-translation errors**
+    if (validSourceLang === studyLanguage) {
+      console.log(`⚠ Skipping translation: Source and target languages are both '${studyLanguage}'.`);
+      setTranslatedSentence(text);
+      return;
+    }
+
+    // ✅ **Ensure translation is always forced**
+    translateText(text, validSourceLang, studyLanguage)
+      .then((translated) => {
+        console.log(`✅ Translation successful:`, translated);
+        setTranslatedSentence(translated.replace(/^"|"$/g, "")); // ✅ Remove surrounding quotes
+      })
+      .catch(error => {
+        console.error("❌ Translation error:", error);
+        setTranslatedSentence("⚠ Translation failed");
       });
-    });
-  };
-
-  const nextSentence = () => {
-    setSentence("");  
-    setTranslatedSentence(""); 
   };
 
   return (
     <MainUI
       uiText={uiText}
-      userQuery={userQuery}
+      userQuery={userQuery}  
       setUserQuery={setUserQuery}
       loadBook={loadBook}
-      sentence={sentence}
-      translatedSentence={translatedSentence}
+      sentence={translatedSentence}  // ✅ Always display in study language
       showText={showText}
       showTranslation={showTranslation}
       setShowText={setShowText}
       setShowTranslation={setShowTranslation}
       speechRate={speechRate}
       setSpeechRate={setSpeechRate}
-      speakSentence={speakSentence}   // ✅ Restored Listen function
-      nextSentence={nextSentence}     // ✅ Restored Next Sentence function
     />
   );
 }
