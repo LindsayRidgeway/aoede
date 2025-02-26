@@ -36,11 +36,11 @@ export const fetchBookTextFromChatGPT = async (query) => {
       detectedLanguage = "en";
     }
 
-    // ✅ Fix: Trim text to avoid "QUERY LENGTH LIMIT EXCEEDED"
-    const maxLength = 450; // Safe limit below 500 chars
+    // ✅ Fix: Trim text to avoid exceeding API limits
+    const maxLength = 450;
     if (text.length > maxLength) {
       console.warn(`⚠ Trimming text: Exceeds ${maxLength} chars`);
-      text = text.slice(0, maxLength) + "..."; // Truncate with ellipsis
+      text = text.slice(0, maxLength) + "...";
     }
 
     console.log(`🔍 AI Response Parsed: Detected language = ${detectedLanguage}, Extracted text =`, text);
@@ -52,7 +52,7 @@ export const fetchBookTextFromChatGPT = async (query) => {
   }
 };
 
-// ✅ Ensure `translateText()` is properly exported
+// ✅ Google Translate API Integration
 export const translateText = async (text, sourceLang, targetLang) => {
   if (!text || sourceLang === targetLang) return text;
 
@@ -60,11 +60,23 @@ export const translateText = async (text, sourceLang, targetLang) => {
     console.log(`🔄 Translating from ${sourceLang} to ${targetLang}:`, text);
 
     const response = await fetch(
-      `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${sourceLang}|${targetLang}`
+      `https://translation.googleapis.com/language/translate/v2?key=AIzaSyBSJdW5ugoeRhGzTQuRmLzqH2qGRoIcVfM`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          q: text,
+          source: sourceLang,
+          target: targetLang,
+          format: "text"
+        })
+      }
     );
 
     const data = await response.json();
-    const translatedText = data.responseData.translatedText || text;
+    const translatedText = data.data?.translations[0]?.translatedText || text;
 
     console.log(`✅ Translation successful:`, translatedText);
     return translatedText;
