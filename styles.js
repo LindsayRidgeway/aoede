@@ -15,7 +15,7 @@ export const styles = StyleSheet.create({
     color: '#333'
   },
   input: {
-    width: '80%',
+    width: '40%',  // ✅ Reduced width to about half
     height: 40,
     borderColor: '#ccc',
     borderWidth: 1,
@@ -28,7 +28,8 @@ export const styles = StyleSheet.create({
     backgroundColor: '#4a90e2',
     padding: 10,
     borderRadius: 5,
-    alignItems: 'center'
+    alignItems: 'center',
+    marginBottom: 10  // ✅ Added spacing between buttons
   },
   buttonText: {
     color: '#fff',
