@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { fetchBookTextFromChatGPT, translateText } from './api'; // ✅ Ensure `translateText` is correctly imported
+import { fetchBookTextFromChatGPT, translateText } from './api';
 import { MainUI } from './UI';
 import * as Speech from 'expo-speech';
 
@@ -12,7 +12,7 @@ export default function App() {
   const [showText, setShowText] = useState(false);
   const [showTranslation, setShowTranslation] = useState(false);
   const [speechRate, setSpeechRate] = useState(1.0);
-  const [studyLanguage, setStudyLanguage] = useState("ru"); // ✅ Still hardcoded for now
+  const [studyLanguage, setStudyLanguage] = useState("ru");
 
   useEffect(() => {
     const userLang = navigator.language.split('-')[0] || "en";
@@ -44,9 +44,8 @@ export default function App() {
     setSentence(text);
     setDetectedLanguage(language || "en");
 
-    // ✅ Ensure detected language is always valid (fallback to "en" if incorrect)
     let validSourceLang = language ? language.toLowerCase().trim() : "en";
-    validSourceLang = validSourceLang.replace(/[^a-z]/g, ""); // ✅ Removes invalid characters
+    validSourceLang = validSourceLang.replace(/[^a-z]/g, "");
 
     if (!/^[a-z]{2}$/i.test(validSourceLang)) {
       console.warn(`⚠ AI returned invalid language code: "${validSourceLang}". Defaulting to "en".`);
@@ -55,29 +54,39 @@ export default function App() {
 
     console.log(`🔍 Translating from ${validSourceLang} to ${studyLanguage}:`, text);
 
-    // ✅ **Ensure translation function exists before calling**
     if (typeof translateText !== "function") {
       console.error("❌ translateText is not a function. Check import in App.js.");
       return;
     }
 
-    // ✅ **Prevent self-translation errors**
     if (validSourceLang === studyLanguage) {
       console.log(`⚠ Skipping translation: Source and target languages are both '${studyLanguage}'.`);
       setTranslatedSentence(text);
       return;
     }
 
-    // ✅ **Ensure translation is always forced**
     translateText(text, validSourceLang, studyLanguage)
       .then((translated) => {
         console.log(`✅ Translation successful:`, translated);
-        setTranslatedSentence(translated.replace(/^"|"$/g, "")); // ✅ Remove surrounding quotes
+        setTranslatedSentence(translated.replace(/^"|"$/g, ""));
       })
       .catch(error => {
         console.error("❌ Translation error:", error);
         setTranslatedSentence("⚠ Translation failed");
       });
+  };
+
+  // ✅ **New Function: Speak the Translated Sentence**
+  const speakSentence = () => {
+    if (!translatedSentence) return;
+    
+    console.log("🔊 Speaking:", translatedSentence);
+    Speech.stop();
+    
+    Speech.speak(translatedSentence, {
+      rate: speechRate,
+      language: studyLanguage,
+    });
   };
 
   return (
@@ -86,13 +95,14 @@ export default function App() {
       userQuery={userQuery}  
       setUserQuery={setUserQuery}
       loadBook={loadBook}
-      sentence={translatedSentence}  // ✅ Always display in study language
+      sentence={translatedSentence}
       showText={showText}
       showTranslation={showTranslation}
       setShowText={setShowText}
       setShowTranslation={setShowTranslation}
       speechRate={speechRate}
       setSpeechRate={setSpeechRate}
+      speakSentence={speakSentence}  // ✅ Pass `speakSentence` to `UI.js`
     />
   );
 }
