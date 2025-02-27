@@ -1,5 +1,14 @@
+import Constants from "expo-constants"; // ✅ Correct way to access Expo config
+
+const openaiKey = Constants.expoConfig?.extra?.EXPO_PUBLIC_OPENAI_API_KEY;
+const googleKey = Constants.expoConfig?.extra?.EXPO_PUBLIC_GOOGLE_API_KEY;
+
 export const fetchBookTextFromChatGPT = async (query) => {
   try {
+    if (!openaiKey) {
+      return { text: "⚠ OpenAI API Key Missing", language: "en" };
+    }
+
     const requestBody = {
       model: "gpt-4",
       messages: [
@@ -11,43 +20,40 @@ export const fetchBookTextFromChatGPT = async (query) => {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer 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`,
+        "Authorization": `Bearer ${openaiKey}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify(requestBody)
     });
 
     const data = await response.json();
+
+    if (!data.choices || data.choices.length === 0) {
+      return { text: "⚠ Book fetch failed", language: "en" };
+    }
+
     const fullResponse = data.choices[0].message.content.trim();
     const parts = fullResponse.split("\n");
 
     if (parts.length < 2) {
-      console.error("❌ API Response Missing Expected Formatting:", fullResponse);
       return { text: "⚠ Book fetch failed", language: "en" };
     }
 
     let text = parts.slice(0, -1).join("\n").trim();
     let detectedLanguage = parts[parts.length - 1].trim().toLowerCase();
 
-    // ✅ Fix: Sanitize language code
-    detectedLanguage = detectedLanguage.replace(/[^a-z]/g, ""); // Removes invalid characters
+    detectedLanguage = detectedLanguage.replace(/[^a-z]/g, "");
     if (!/^[a-z]{2}$/i.test(detectedLanguage)) {
-      console.warn(`⚠ AI returned invalid language code: "${detectedLanguage}". Defaulting to "en".`);
       detectedLanguage = "en";
     }
 
-    // ✅ Fix: Trim text to avoid exceeding API limits
     const maxLength = 450;
     if (text.length > maxLength) {
-      console.warn(`⚠ Trimming text: Exceeds ${maxLength} chars`);
       text = text.slice(0, maxLength) + "...";
     }
 
-    console.log(`🔍 AI Response Parsed: Detected language = ${detectedLanguage}, Extracted text =`, text);
-
     return { text, language: detectedLanguage };
   } catch (error) {
-    console.error("❌ Error fetching book text:", error);
     return { text: "⚠ Book fetch failed", language: "en" };
   }
 };
@@ -57,10 +63,12 @@ export const translateText = async (text, sourceLang, targetLang) => {
   if (!text || sourceLang === targetLang) return text;
 
   try {
-    console.log(`🔄 Translating from ${sourceLang} to ${targetLang}:`, text);
+    if (!googleKey) {
+      return "⚠ Google API Key Missing";
+    }
 
     const response = await fetch(
-      `https://translation.googleapis.com/language/translate/v2?key=AIzaSyBSJdW5ugoeRhGzTQuRmLzqH2qGRoIcVfM`,
+      `https://translation.googleapis.com/language/translate/v2?key=${googleKey}`,
       {
         method: "POST",
         headers: {
@@ -76,12 +84,13 @@ export const translateText = async (text, sourceLang, targetLang) => {
     );
 
     const data = await response.json();
-    const translatedText = data.data?.translations[0]?.translatedText || text;
 
-    console.log(`✅ Translation successful:`, translatedText);
-    return translatedText;
+    if (!data.data?.translations || data.data.translations.length === 0) {
+      return "⚠ Translation failed";
+    }
+
+    return data.data.translations[0].translatedText;
   } catch (error) {
-    console.error("❌ Translation error:", error);
     return "⚠ Translation failed";
   }
 };
