@@ -3,6 +3,7 @@ import { fetchBookTextFromChatGPT, translateText } from './api';
 import { loadBook } from './loadBook';
 import { loadStoredSettings } from './loadStoredSettings';
 import { translateLabels } from './translateLabels';
+import { updateSpeechRate } from './listeningSpeed';
 import { updateUserQuery } from './updateUserQuery';
 import { MainUI } from './UI';
 import * as Speech from 'expo-speech';
@@ -30,17 +31,6 @@ export default function App() {
       loadStoredSettings(setUserQuery, setSpeechRate);
   }, []);
 
-  // ✅ Save speechRate to storage when changed
-  const updateSpeechRate = async (rate) => {
-    setSpeechRate(rate);
-    try {
-      await AsyncStorage.setItem("speechRate", rate.toString());
-      console.log(`✅ Saved speechRate to storage: "${rate}"`);
-    } catch (error) {
-      console.error("❌ ERROR: Saving speechRate failed:", error);
-    }
-  };
-
   return (
     <MainUI
         uiText={uiText}
@@ -53,8 +43,8 @@ export default function App() {
 	showTranslation={showTranslation}
 	setShowText={setShowText}
 	setShowTranslation={setShowTranslation}
-	speechRate={speechRate}
-	setSpeechRate={updateSpeechRate}  // ✅ Ensure updates persist
+        speechRate={speechRate}
+        setSpeechRate={(rate) => updateSpeechRate(rate, setSpeechRate)}  // ✅ Correctly passing parameters     
 	speakSentence={() => {
 	  if (!translatedSentence) return;
 	  Speech.stop();

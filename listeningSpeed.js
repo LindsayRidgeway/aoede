@@ -17,3 +17,13 @@ export const saveListeningSpeed = async (speed) => {
     console.error("❌ ERROR: Saving listening speed failed:", error);
   }
 };
+
+export const updateSpeechRate = async (rate, setSpeechRate) => {
+  setSpeechRate(rate);
+  try {
+    await AsyncStorage.setItem("speechRate", rate.toString());
+    console.log(`✅ Saved speechRate to storage: "${rate}"`);
+  } catch (error) {
+    console.error("❌ ERROR: Saving speechRate failed:", error);
+  }
+};
