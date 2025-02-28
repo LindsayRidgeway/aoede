@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { fetchBookTextFromChatGPT, translateText } from './api';
+import { translateLabels } from './translateLabels';
 import { MainUI } from './UI';
 import * as Speech from 'expo-speech';
 import AsyncStorage from '@react-native-async-storage/async-storage'; // ✅ Re-added missing import
@@ -23,26 +24,8 @@ export default function App() {
       "Load Book", "Show Foreign Sentence", "Show Translation", "Reading Speed"
     ];
 
-    const translateLabels = async () => {
-      try {
-        const translatedLabels = await Promise.all(labels.map(label => translateText(label, "en", userLang)));
-        setUiText({
-          appName: translatedLabels[0],
-          sourceMaterial: translatedLabels[1],
-          enterBook: translatedLabels[2],
-          listen: translatedLabels[3],
-          next: translatedLabels[4],
-          loadBook: translatedLabels[5],
-          showText: translatedLabels[6],
-          showTranslation: translatedLabels[7],
-          readingSpeed: translatedLabels[8]
-        });
-      } catch (error) {
-        console.error("❌ ERROR: Failed to translate UI labels:", error);
-      }
-    };
+      translateLabels(setUiText);  // ✅ Now passes setUiText correctly
 
-    translateLabels();
 
     // ✅ Load stored values on startup
     const loadStoredSettings = async () => {
