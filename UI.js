@@ -1,7 +1,7 @@
 import React from 'react';
 import { Text, View, TouchableOpacity, TextInput, Switch } from 'react-native';
 import Slider from '@react-native-community/slider';
-import { styles } from './styles';  // ✅ Importing styles
+import { styles } from './styles';  
 
 export function MainUI({
   uiText,
@@ -16,8 +16,9 @@ export function MainUI({
   setShowTranslation,
   speechRate,
   setSpeechRate,
-  speakSentence,  // ✅ Restored function for Listen button
-  nextSentence   // ✅ Restored function for Next Sentence button
+  speakSentence,
+  nextSentence,
+  loadingBook  // ✅ Tracks book loading state
 }) {
   return (
     <View style={styles.container}>
@@ -29,7 +30,7 @@ export function MainUI({
         value={userQuery}
         onChangeText={setUserQuery}
       />
-      <TouchableOpacity style={styles.button} onPress={loadBook}>
+      <TouchableOpacity style={[styles.button, loadingBook ? styles.disabledButton : null]} onPress={loadBook} disabled={loadingBook}>
         <Text style={styles.buttonText}>{uiText.loadBook || "Load Book"}</Text>
       </TouchableOpacity>
 
@@ -41,10 +42,10 @@ export function MainUI({
       )}
 
       <View style={styles.controls}>
-        <TouchableOpacity style={styles.button} onPress={speakSentence}>
+        <TouchableOpacity style={[styles.button, loadingBook ? styles.disabledButton : null]} onPress={speakSentence} disabled={loadingBook}>
           <Text style={styles.buttonText}>{uiText.play || "Play"}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.button} onPress={nextSentence}>
+        <TouchableOpacity style={[styles.button, loadingBook ? styles.disabledButton : null]} onPress={nextSentence} disabled={loadingBook}>
           <Text style={styles.buttonText}>{uiText.next || "Next Sentence"}</Text>
         </TouchableOpacity>
       </View>

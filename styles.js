@@ -15,7 +15,7 @@ export const styles = StyleSheet.create({
     color: '#333'
   },
   input: {
-    width: '40%',  // ✅ Reduced width to about half
+    width: '40%',
     height: 40,
     borderColor: '#ccc',
     borderWidth: 1,
@@ -29,11 +29,15 @@ export const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 5,
     alignItems: 'center',
-    marginBottom: 10  // ✅ Added spacing between buttons
+    marginBottom: 10
   },
   buttonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: 'bold'
+  },
+  disabledButton: {  // ✅ New style for disabled buttons
+    backgroundColor: '#A9A9A9',  // Dimmed gray
+    opacity: 0.6
   }
 });
