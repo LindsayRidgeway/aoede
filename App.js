@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { fetchBookTextFromChatGPT, translateText } from './api';
+import { loadStoredSettings } from './loadStoredSettings';
 import { translateLabels } from './translateLabels';
 import { MainUI } from './UI';
 import * as Speech from 'expo-speech';
@@ -18,36 +19,13 @@ export default function App() {
   const [loadingBook, setLoadingBook] = useState(false);
 
   useEffect(() => {
-    const userLang = navigator.language.split('-')[0] || "en";
-    const labels = [
-      "Calliope", "Source Material", "Enter a book title or genre", "Listen", "Next Sentence",
-      "Load Book", "Show Foreign Sentence", "Show Translation", "Reading Speed"
-    ];
-
+      const userLang = navigator.language.split('-')[0] || "en";
+      const labels = [
+	"Calliope", "Source Material", "Enter a book title or genre", "Listen", "Next Sentence",
+	"Load Book", "Show Foreign Sentence", "Show Translation", "Reading Speed"
+      ];
       translateLabels(setUiText);  // ✅ Now passes setUiText correctly
-
-
-    // ✅ Load stored values on startup
-    const loadStoredSettings = async () => {
-      try {
-        const storedUserQuery = await AsyncStorage.getItem("userQuery");
-        const storedSpeechRate = await AsyncStorage.getItem("speechRate");
-
-        if (storedUserQuery !== null) {
-          console.log(`📢 Loaded userQuery from storage: "${storedUserQuery}"`);
-          setUserQuery(storedUserQuery);
-        }
-
-        if (storedSpeechRate !== null) {
-          console.log(`📢 Loaded speechRate from storage: "${storedSpeechRate}"`);
-          setSpeechRate(parseFloat(storedSpeechRate));
-        }
-      } catch (error) {
-        console.error("❌ ERROR: Loading stored settings failed:", error);
-      }
-    };
-
-    loadStoredSettings();
+      loadStoredSettings(setUserQuery, setSpeechRate);
   }, []);
 
   // ✅ Save userQuery to storage when changed
