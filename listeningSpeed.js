@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Speech from 'expo-speech';
 
 export const getStoredListeningSpeed = async () => {
   try {
@@ -26,4 +27,28 @@ export const updateSpeechRate = async (rate, setSpeechRate) => {
   } catch (error) {
     console.error("❌ ERROR: Saving speechRate failed:", error);
   }
+};
+
+export const speakSentenceWithPauses = (sentence, listeningSpeed) => {
+  if (!sentence) return;
+  Speech.stop();
+
+  const words = sentence.split(" ");
+  const pauseDuration = (1 - listeningSpeed) * 500; // ✅ Dead air between words (0ms to 500ms)
+
+  let index = 0;
+
+  const playNextWord = () => {
+    if (index >= words.length) return;
+
+    Speech.speak(words[index], {
+      language: "ru", // Assuming Russian study language
+      onDone: () => {
+        index++;
+        setTimeout(playNextWord, pauseDuration); // ✅ Now ensures a real pause between words
+      },
+    });
+  };
+
+  playNextWord();
 };
