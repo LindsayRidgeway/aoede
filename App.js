@@ -26,10 +26,7 @@ export default function App() {
     
   useEffect(() => {
       const userLang = navigator.language.split('-')[0] || "en";
-      const labels = [
-	"Calliope", "Source Material", "Enter a book title or genre", "Listen", "Next Sentence",
-	"Load Book", "Show Foreign Sentence", "Show Translation", "Reading Speed"
-      ];
+      
       translateLabels(setUiText);  // ✅ Now passes setUiText correctly
       loadStoredSettings(setUserQuery, setSpeechRate);
   }, []);
