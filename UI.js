@@ -5,6 +5,8 @@ import { styles } from './styles';
 import { getStoredListeningSpeed, saveListeningSpeed } from './listeningSpeed'; // ✅ Now using extracted file
 
 export function MainUI({
+  studyLanguage,  // ✅ Accepts study language input
+  setStudyLanguage,  // ✅ Updates study language state
   uiText,
   userQuery,
   setUserQuery,
@@ -33,8 +35,18 @@ export function MainUI({
   };
 
   return (
-    <View style={styles.container}>
+      <View style={styles.container}>
+	  
       <Text style={styles.header}>{uiText.appName || "Calliope"}</Text>
+
+      <Text style={styles.label}>{uiText.studyLanguage || "Study Language"}</Text>
+
+      <TextInput
+	style={styles.input}
+	placeholder={uiText.enterLanguage || "Enter study language"}
+	value={studyLanguage}
+	onChangeText={setStudyLanguage}
+      />
 
       <Text style={styles.label}>{uiText.sourceMaterial || "Source Material"}</Text>
 
