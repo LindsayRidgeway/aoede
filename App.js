@@ -18,7 +18,7 @@ export default function App() {
   useEffect(() => {
     const userLang = navigator.language.split('-')[0] || "en";
     const labels = [
-      "Calliope", "Enter a book title or genre", "Listen", "Next Sentence",
+      "Calliope", "Source Material", "Enter a book title or genre", "Listen", "Next Sentence",
       "Load Book", "Show Foreign Sentence", "Show Translation", "Reading Speed"
     ];
 
@@ -26,13 +26,14 @@ export default function App() {
       const translatedLabels = await Promise.all(labels.map(label => translateText(label, "en", userLang)));
       setUiText({
         appName: translatedLabels[0],
-        enterBook: translatedLabels[1],
-        listen: translatedLabels[2],  // ✅ Updated from "Play" to "Listen"
-        next: translatedLabels[3],
-        loadBook: translatedLabels[4],
-        showText: translatedLabels[5],
-        showTranslation: translatedLabels[6],
-        readingSpeed: translatedLabels[7]
+        sourceMaterial: translatedLabels[1],  // ✅ New label for the title
+        enterBook: translatedLabels[2],
+        listen: translatedLabels[3],
+        next: translatedLabels[4],
+        loadBook: translatedLabels[5],
+        showText: translatedLabels[6],
+        showTranslation: translatedLabels[7],
+        readingSpeed: translatedLabels[8]
       });
     };
 

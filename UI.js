@@ -24,6 +24,9 @@ export function MainUI({
     <View style={styles.container}>
       <Text style={styles.header}>{uiText.appName || "Calliope"}</Text>
 
+      {/* ✅ Added Source Material Title */}
+      <Text style={styles.label}>{uiText.sourceMaterial || "Source Material"}</Text>
+
       <TextInput
         style={styles.input}
         placeholder={uiText.enterBook || "Enter a book title or genre"}
@@ -43,7 +46,7 @@ export function MainUI({
 
       <View style={styles.controls}>
         <TouchableOpacity style={[styles.button, loadingBook ? styles.disabledButton : null]} onPress={speakSentence} disabled={loadingBook}>
-          <Text style={styles.buttonText}>{uiText.listen || "Listen"}</Text>  {/* ✅ Updated from Play to Listen */}
+          <Text style={styles.buttonText}>{uiText.listen || "Listen"}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.button, loadingBook ? styles.disabledButton : null]} onPress={nextSentence} disabled={loadingBook}>
           <Text style={styles.buttonText}>{uiText.next || "Next Sentence"}</Text>
