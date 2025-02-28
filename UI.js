@@ -28,10 +28,8 @@ export function MainUI({
   useEffect(() => {
       getStoredListeningSpeed().then(setListeningSpeed);
       getStoredStudyLanguage().then((storedLang) => {
-	  console.log(`📢 DEBUG: Retrieved stored Study Language = "${storedLang}"`);  // ✅ Log retrieved value
 	  if (storedLang) {
 		  setStudyLanguage(storedLang);
-		  console.log(`✅ DEBUG: Study Language set to "${storedLang}"`);  // ✅ Confirm update
 	 } else {
 		  console.warn("⚠ Study Language was empty or not found.");
 	 }
@@ -39,7 +37,6 @@ export function MainUI({
   }, []);    
 
   const updateListeningSpeed = async (speed) => {
-    console.log(`🎯 SLIDER UPDATED: New listeningSpeed = ${speed}`);  // ✅ Debug log
     setListeningSpeed(speed);  // ✅ Now updates App.js
     await saveListeningSpeed(speed);
   };

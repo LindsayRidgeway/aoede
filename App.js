@@ -45,7 +45,6 @@ export default function App() {
 	    speechRate={speechRate}
 	    setSpeechRate={(rate) => updateSpeechRate(rate, setSpeechRate)}
 	    speakSentence={() => {
-	      console.log(`🎯 DEBUG: Passing listeningSpeed: ${listeningSpeed}`);  // ✅ Log what’s passed
 	      speakSentenceWithPauses(translatedSentence, listeningSpeed);
 	    }}
 	    loadingBook={loadingBook}

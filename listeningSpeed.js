@@ -26,7 +26,6 @@ export const getStoredStudyLanguage = async () => {
 export const saveStudyLanguage = async (language) => {
   try {
     await AsyncStorage.setItem("studyLanguage", language);
-    console.log(`✅ DEBUG: Study Language saved as "${language}"`);  // ✅ Log save
   } catch (error) {
     console.error("❌ ERROR: Saving study language failed:", error);
   }
