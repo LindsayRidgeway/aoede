@@ -4,7 +4,6 @@ import { Audio } from 'expo-av';
 
 const GOOGLE_TTS_API_KEY = Constants.expoConfig.extra.EXPO_PUBLIC_GOOGLE_API_KEY;
 
-
 export const getStoredListeningSpeed = async () => {
   try {
     const storedListeningSpeed = await AsyncStorage.getItem("listeningSpeed");
@@ -27,18 +26,15 @@ export const updateSpeechRate = async (rate, setSpeechRate) => {
   setSpeechRate(rate);
   try {
     await AsyncStorage.setItem("speechRate", rate.toString());
-    console.log(`✅ Saved speechRate to storage: "${rate}"`);
   } catch (error) {
     console.error("❌ ERROR: Saving speechRate failed:", error);
   }
 };
 
 export const speakSentenceWithPauses = async (sentence, listeningSpeed) => {
-    console.log(`🎯 FINAL DEBUG: Received listeningSpeed: ${listeningSpeed}`);  // ✅ Confirm value
     if (!sentence) return;
 
     const speakingRate = Math.max(0.5, Math.min(1.5, (listeningSpeed - 0.5) * 1));
-    console.log(`🎧 FINAL DEBUG: Adjusted speakingRate: ${speakingRate}`);
 
     try {
         const response = await fetch(
@@ -61,7 +57,6 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed) => {
         const sound = new Audio.Sound();
         const audioUri = `data:audio/mp3;base64,${data.audioContent}`;
         await sound.loadAsync({ uri: audioUri });
-        console.log(`🎧 Playing audio at speed: ${speakingRate}`);  // ✅ Log actual rate
         await sound.playAsync();
     } catch (error) {
         console.error("❌ ERROR: Google TTS request failed:", error);
