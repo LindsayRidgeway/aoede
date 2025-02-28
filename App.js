@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { fetchBookTextFromChatGPT, translateText } from './api';
 import { MainUI } from './UI';
 import * as Speech from 'expo-speech';
+import AsyncStorage from '@react-native-async-storage/async-storage'; // ✅ Re-added missing import
 
 export default function App() {
   const [uiText, setUiText] = useState({});
@@ -23,22 +24,70 @@ export default function App() {
     ];
 
     const translateLabels = async () => {
-      const translatedLabels = await Promise.all(labels.map(label => translateText(label, "en", userLang)));
-      setUiText({
-        appName: translatedLabels[0],
-        sourceMaterial: translatedLabels[1],  // ✅ New label for the title
-        enterBook: translatedLabels[2],
-        listen: translatedLabels[3],
-        next: translatedLabels[4],
-        loadBook: translatedLabels[5],
-        showText: translatedLabels[6],
-        showTranslation: translatedLabels[7],
-        readingSpeed: translatedLabels[8]
-      });
+      try {
+        const translatedLabels = await Promise.all(labels.map(label => translateText(label, "en", userLang)));
+        setUiText({
+          appName: translatedLabels[0],
+          sourceMaterial: translatedLabels[1],
+          enterBook: translatedLabels[2],
+          listen: translatedLabels[3],
+          next: translatedLabels[4],
+          loadBook: translatedLabels[5],
+          showText: translatedLabels[6],
+          showTranslation: translatedLabels[7],
+          readingSpeed: translatedLabels[8]
+        });
+      } catch (error) {
+        console.error("❌ ERROR: Failed to translate UI labels:", error);
+      }
     };
 
     translateLabels();
+
+    // ✅ Load stored values on startup
+    const loadStoredSettings = async () => {
+      try {
+        const storedUserQuery = await AsyncStorage.getItem("userQuery");
+        const storedSpeechRate = await AsyncStorage.getItem("speechRate");
+
+        if (storedUserQuery !== null) {
+          console.log(`📢 Loaded userQuery from storage: "${storedUserQuery}"`);
+          setUserQuery(storedUserQuery);
+        }
+
+        if (storedSpeechRate !== null) {
+          console.log(`📢 Loaded speechRate from storage: "${storedSpeechRate}"`);
+          setSpeechRate(parseFloat(storedSpeechRate));
+        }
+      } catch (error) {
+        console.error("❌ ERROR: Loading stored settings failed:", error);
+      }
+    };
+
+    loadStoredSettings();
   }, []);
+
+  // ✅ Save userQuery to storage when changed
+  const updateUserQuery = async (query) => {
+    setUserQuery(query);
+    try {
+      await AsyncStorage.setItem("userQuery", query);
+      console.log(`✅ Saved userQuery to storage: "${query}"`);
+    } catch (error) {
+      console.error("❌ ERROR: Saving userQuery failed:", error);
+    }
+  };
+
+  // ✅ Save speechRate to storage when changed
+  const updateSpeechRate = async (rate) => {
+    setSpeechRate(rate);
+    try {
+      await AsyncStorage.setItem("speechRate", rate.toString());
+      console.log(`✅ Saved speechRate to storage: "${rate}"`);
+    } catch (error) {
+      console.error("❌ ERROR: Saving speechRate failed:", error);
+    }
+  };
 
   const loadBook = async () => {
     if (!userQuery) return;
@@ -66,11 +115,9 @@ export default function App() {
       }
 
       if (validSourceLang === studyLanguage) {
-        console.log(`⚠ Skipping translation: Source and target languages are both '${studyLanguage}'.`);
         setTranslatedSentence(text);
       } else {
         const translated = await translateText(text, validSourceLang, studyLanguage);
-        console.log(`✅ Translation successful:`, translated);
         setTranslatedSentence(translated.replace(/^"|"$/g, ""));
       }
     } catch (error) {
@@ -80,23 +127,11 @@ export default function App() {
     }
   };
 
-  const speakSentence = () => {
-    if (!translatedSentence) return;
-    
-    console.log("🔊 Speaking:", translatedSentence);
-    Speech.stop();
-    
-    Speech.speak(translatedSentence, {
-      rate: speechRate,
-      language: studyLanguage,
-    });
-  };
-
   return (
     <MainUI
       uiText={uiText}
       userQuery={userQuery}  
-      setUserQuery={setUserQuery}
+      setUserQuery={updateUserQuery}  // ✅ Ensure updates persist
       loadBook={loadBook}
       sentence={translatedSentence}
       showText={showText}
@@ -104,8 +139,12 @@ export default function App() {
       setShowText={setShowText}
       setShowTranslation={setShowTranslation}
       speechRate={speechRate}
-      setSpeechRate={setSpeechRate}
-      speakSentence={speakSentence}
+      setSpeechRate={updateSpeechRate}  // ✅ Ensure updates persist
+      speakSentence={() => {
+        if (!translatedSentence) return;
+        Speech.stop();
+        Speech.speak(translatedSentence, { rate: speechRate, language: studyLanguage });
+      }}
       loadingBook={loadingBook}
     />
   );
