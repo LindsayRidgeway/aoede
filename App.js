@@ -49,8 +49,10 @@ export default function App() {
 	      speakSentenceWithPauses(translatedSentence, listeningSpeed);
 	    }}
 	    loadingBook={loadingBook}
-	    listeningSpeed={listeningSpeed}  // ✅ Add this line to pass listeningSpeed into UI
-	    setListeningSpeed={setListeningSpeed}  // ✅ Ensure the slider updates listeningSpeed
+	    listeningSpeed={listeningSpeed}
+            setListeningSpeed={setListeningSpeed}
+            studyLanguage={studyLanguage}
+            setStudyLanguage={setStudyLanguage}
 	  />
   );
 }

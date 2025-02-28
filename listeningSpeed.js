@@ -13,6 +13,24 @@ export const getStoredListeningSpeed = async () => {
     return 1.0;
   }
 };
+export const getStoredStudyLanguage = async () => {
+  try {
+    const storedStudyLanguage = await AsyncStorage.getItem("studyLanguage");
+    return storedStudyLanguage ? storedStudyLanguage : "";
+  } catch (error) {
+    console.error("❌ ERROR: Loading stored study language failed:", error);
+    return "";
+  }
+};
+
+export const saveStudyLanguage = async (language) => {
+  try {
+    await AsyncStorage.setItem("studyLanguage", language);
+    console.log(`✅ DEBUG: Study Language saved as "${language}"`);  // ✅ Log save
+  } catch (error) {
+    console.error("❌ ERROR: Saving study language failed:", error);
+  }
+};
 
 export const saveListeningSpeed = async (speed) => {
   try {

@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Text, View, TouchableOpacity, TextInput, Switch } from 'react-native';
 import Slider from '@react-native-community/slider';
 import { styles } from './styles';  
-import { getStoredListeningSpeed, saveListeningSpeed } from './listeningSpeed'; // ✅ Now using extracted file
+import { getStoredListeningSpeed, saveListeningSpeed } from './listeningSpeed';
+import { getStoredStudyLanguage, saveStudyLanguage } from './listeningSpeed';
 
 export function MainUI({
   studyLanguage,  // ✅ Accepts study language input
@@ -25,8 +26,17 @@ export function MainUI({
 }) {
 
   useEffect(() => {
-    getStoredListeningSpeed().then(setListeningSpeed);
-  }, []);
+      getStoredListeningSpeed().then(setListeningSpeed);
+      getStoredStudyLanguage().then((storedLang) => {
+	  console.log(`📢 DEBUG: Retrieved stored Study Language = "${storedLang}"`);  // ✅ Log retrieved value
+	  if (storedLang) {
+		  setStudyLanguage(storedLang);
+		  console.log(`✅ DEBUG: Study Language set to "${storedLang}"`);  // ✅ Confirm update
+	 } else {
+		  console.warn("⚠ Study Language was empty or not found.");
+	 }
+      });
+  }, []);    
 
   const updateListeningSpeed = async (speed) => {
     console.log(`🎯 SLIDER UPDATED: New listeningSpeed = ${speed}`);  // ✅ Debug log
@@ -45,7 +55,10 @@ export function MainUI({
 	style={styles.input}
 	placeholder={uiText.enterLanguage || "Enter study language"}
 	value={studyLanguage}
-	onChangeText={setStudyLanguage}
+	onChangeText={(text) => {
+	  setStudyLanguage(text);
+	  saveStudyLanguage(text);  // ✅ Save to AsyncStorage when changed
+	}}
       />
 
       <Text style={styles.label}>{uiText.sourceMaterial || "Source Material"}</Text>
