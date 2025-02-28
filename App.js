@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { fetchBookTextFromChatGPT, translateText } from './api';
 import { loadStoredSettings } from './loadStoredSettings';
 import { translateLabels } from './translateLabels';
+import { updateUserQuery } from './updateUserQuery';
 import { MainUI } from './UI';
 import * as Speech from 'expo-speech';
 import AsyncStorage from '@react-native-async-storage/async-storage'; // ✅ Re-added missing import
@@ -27,17 +28,6 @@ export default function App() {
       translateLabels(setUiText);  // ✅ Now passes setUiText correctly
       loadStoredSettings(setUserQuery, setSpeechRate);
   }, []);
-
-  // ✅ Save userQuery to storage when changed
-  const updateUserQuery = async (query) => {
-    setUserQuery(query);
-    try {
-      await AsyncStorage.setItem("userQuery", query);
-      console.log(`✅ Saved userQuery to storage: "${query}"`);
-    } catch (error) {
-      console.error("❌ ERROR: Saving userQuery failed:", error);
-    }
-  };
 
   // ✅ Save speechRate to storage when changed
   const updateSpeechRate = async (rate) => {
@@ -90,23 +80,23 @@ export default function App() {
 
   return (
     <MainUI
-      uiText={uiText}
-      userQuery={userQuery}  
-      setUserQuery={updateUserQuery}  // ✅ Ensure updates persist
-      loadBook={loadBook}
-      sentence={translatedSentence}
-      showText={showText}
-      showTranslation={showTranslation}
-      setShowText={setShowText}
-      setShowTranslation={setShowTranslation}
-      speechRate={speechRate}
-      setSpeechRate={updateSpeechRate}  // ✅ Ensure updates persist
-      speakSentence={() => {
-        if (!translatedSentence) return;
-        Speech.stop();
-        Speech.speak(translatedSentence, { rate: speechRate, language: studyLanguage });
-      }}
-      loadingBook={loadingBook}
+        uiText={uiText}
+        userQuery={userQuery}  
+        setUserQuery={(query) => updateUserQuery(query, setUserQuery)}  // ✅ Ensure correct function call
+	loadBook={loadBook}
+	sentence={translatedSentence}
+	showText={showText}
+	showTranslation={showTranslation}
+	setShowText={setShowText}
+	setShowTranslation={setShowTranslation}
+	speechRate={speechRate}
+	setSpeechRate={updateSpeechRate}  // ✅ Ensure updates persist
+	speakSentence={() => {
+	  if (!translatedSentence) return;
+	  Speech.stop();
+	  Speech.speak(translatedSentence, { rate: speechRate, language: studyLanguage });
+	}}
+	loadingBook={loadingBook}
     />
   );
 }
