@@ -17,16 +17,18 @@ export function MainUI({
   setShowTranslation,
   speakSentence,
   nextSentence,
-  loadingBook
+  loadingBook,
+  listeningSpeed,  // ✅ Accept listeningSpeed from App.js
+  setListeningSpeed  // ✅ Accept setListeningSpeed from App.js
 }) {
-  const [listeningSpeed, setListeningSpeed] = useState(1.0);
 
   useEffect(() => {
     getStoredListeningSpeed().then(setListeningSpeed);
   }, []);
 
   const updateListeningSpeed = async (speed) => {
-    setListeningSpeed(speed);
+    console.log(`🎯 SLIDER UPDATED: New listeningSpeed = ${speed}`);  // ✅ Debug log
+    setListeningSpeed(speed);  // ✅ Now updates App.js
     await saveListeningSpeed(speed);
   };
 

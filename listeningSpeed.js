@@ -1,5 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import * as Speech from 'expo-speech';
+import Constants from 'expo-constants';
+import { Audio } from 'expo-av';
+
+const GOOGLE_TTS_API_KEY = Constants.expoConfig.extra.EXPO_PUBLIC_GOOGLE_API_KEY;
+
 
 export const getStoredListeningSpeed = async () => {
   try {
@@ -29,26 +33,37 @@ export const updateSpeechRate = async (rate, setSpeechRate) => {
   }
 };
 
-export const speakSentenceWithPauses = (sentence, listeningSpeed) => {
-  if (!sentence) return;
-  Speech.stop();
+export const speakSentenceWithPauses = async (sentence, listeningSpeed) => {
+    console.log(`🎯 FINAL DEBUG: Received listeningSpeed: ${listeningSpeed}`);  // ✅ Confirm value
+    if (!sentence) return;
 
-  const words = sentence.split(" ");
-  const pauseDuration = (1 - listeningSpeed) * 500; // ✅ Dead air between words (0ms to 500ms)
+    const speakingRate = Math.max(0.5, Math.min(1.5, (listeningSpeed - 0.5) * 1));
+    console.log(`🎧 FINAL DEBUG: Adjusted speakingRate: ${speakingRate}`);
 
-  let index = 0;
+    try {
+        const response = await fetch(
+            `https://texttospeech.googleapis.com/v1/text:synthesize?key=${GOOGLE_TTS_API_KEY}`,
+            {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    input: { text: sentence },
+                    voice: { languageCode: "ru-RU", ssmlGender: "FEMALE" },
+                    audioConfig: { audioEncoding: "MP3", speakingRate: speakingRate }
+                }),
+            }
+        );
 
-  const playNextWord = () => {
-    if (index >= words.length) return;
+        const data = await response.json();
+        if (!data.audioContent) throw new Error("❌ Failed to generate speech.");
 
-    Speech.speak(words[index], {
-      language: "ru", // Assuming Russian study language
-      onDone: () => {
-        index++;
-        setTimeout(playNextWord, pauseDuration); // ✅ Now ensures a real pause between words
-      },
-    });
-  };
-
-  playNextWord();
+        // ✅ Decode Base64 and play MP3
+        const sound = new Audio.Sound();
+        const audioUri = `data:audio/mp3;base64,${data.audioContent}`;
+        await sound.loadAsync({ uri: audioUri });
+        console.log(`🎧 Playing audio at speed: ${speakingRate}`);  // ✅ Log actual rate
+        await sound.playAsync();
+    } catch (error) {
+        console.error("❌ ERROR: Google TTS request failed:", error);
+    }
 };
