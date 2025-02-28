@@ -18,7 +18,7 @@ export function MainUI({
   setSpeechRate,
   speakSentence,
   nextSentence,
-  loadingBook  // ✅ Tracks book loading state
+  loadingBook
 }) {
   return (
     <View style={styles.container}>
@@ -43,7 +43,7 @@ export function MainUI({
 
       <View style={styles.controls}>
         <TouchableOpacity style={[styles.button, loadingBook ? styles.disabledButton : null]} onPress={speakSentence} disabled={loadingBook}>
-          <Text style={styles.buttonText}>{uiText.play || "Play"}</Text>
+          <Text style={styles.buttonText}>{uiText.listen || "Listen"}</Text>  {/* ✅ Updated from Play to Listen */}
         </TouchableOpacity>
         <TouchableOpacity style={[styles.button, loadingBook ? styles.disabledButton : null]} onPress={nextSentence} disabled={loadingBook}>
           <Text style={styles.buttonText}>{uiText.next || "Next Sentence"}</Text>

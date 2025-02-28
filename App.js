@@ -13,11 +13,12 @@ export default function App() {
   const [showTranslation, setShowTranslation] = useState(false);
   const [speechRate, setSpeechRate] = useState(1.0);
   const [studyLanguage, setStudyLanguage] = useState("ru");
+  const [loadingBook, setLoadingBook] = useState(false);
 
   useEffect(() => {
     const userLang = navigator.language.split('-')[0] || "en";
     const labels = [
-      "Calliope", "Enter a book title or genre", "Play", "Next Sentence",
+      "Calliope", "Enter a book title or genre", "Listen", "Next Sentence",
       "Load Book", "Show Foreign Sentence", "Show Translation", "Reading Speed"
     ];
 
@@ -26,7 +27,7 @@ export default function App() {
       setUiText({
         appName: translatedLabels[0],
         enterBook: translatedLabels[1],
-        play: translatedLabels[2],
+        listen: translatedLabels[2],  // ✅ Updated from "Play" to "Listen"
         next: translatedLabels[3],
         loadBook: translatedLabels[4],
         showText: translatedLabels[5],
@@ -40,43 +41,44 @@ export default function App() {
 
   const loadBook = async () => {
     if (!userQuery) return;
-    const { text, language } = await fetchBookTextFromChatGPT(userQuery);
-    setSentence(text);
-    setDetectedLanguage(language || "en");
 
-    let validSourceLang = language ? language.toLowerCase().trim() : "en";
-    validSourceLang = validSourceLang.replace(/[^a-z]/g, "");
+    setLoadingBook(true);
 
-    if (!/^[a-z]{2}$/i.test(validSourceLang)) {
-      console.warn(`⚠ AI returned invalid language code: "${validSourceLang}". Defaulting to "en".`);
-      validSourceLang = "en";
-    }
+    try {
+      const { text, language } = await fetchBookTextFromChatGPT(userQuery);
+      setSentence(text);
+      setDetectedLanguage(language || "en");
 
-    console.log(`🔍 Translating from ${validSourceLang} to ${studyLanguage}:`, text);
+      let validSourceLang = language ? language.toLowerCase().trim() : "en";
+      validSourceLang = validSourceLang.replace(/[^a-z]/g, "");
 
-    if (typeof translateText !== "function") {
-      console.error("❌ translateText is not a function. Check import in App.js.");
-      return;
-    }
+      if (!/^[a-z]{2}$/i.test(validSourceLang)) {
+        console.warn(`⚠ AI returned invalid language code: "${validSourceLang}". Defaulting to "en".`);
+        validSourceLang = "en";
+      }
 
-    if (validSourceLang === studyLanguage) {
-      console.log(`⚠ Skipping translation: Source and target languages are both '${studyLanguage}'.`);
-      setTranslatedSentence(text);
-      return;
-    }
+      console.log(`🔍 Translating from ${validSourceLang} to ${studyLanguage}:`, text);
 
-    translateText(text, validSourceLang, studyLanguage)
-      .then((translated) => {
+      if (typeof translateText !== "function") {
+        console.error("❌ translateText is not a function. Check import in App.js.");
+        return;
+      }
+
+      if (validSourceLang === studyLanguage) {
+        console.log(`⚠ Skipping translation: Source and target languages are both '${studyLanguage}'.`);
+        setTranslatedSentence(text);
+      } else {
+        const translated = await translateText(text, validSourceLang, studyLanguage);
         console.log(`✅ Translation successful:`, translated);
         setTranslatedSentence(translated.replace(/^"|"$/g, ""));
-      })
-      .catch(error => {
-        console.error("❌ Translation error:", error);
-        setTranslatedSentence("⚠ Translation failed");
-      });
+      }
+    } catch (error) {
+      console.error("❌ Book loading failed:", error);
+    } finally {
+      setLoadingBook(false);
+    }
   };
 
-  // ✅ **New Function: Speak the Translated Sentence**
   const speakSentence = () => {
     if (!translatedSentence) return;
     
@@ -102,7 +104,8 @@ export default function App() {
       setShowTranslation={setShowTranslation}
       speechRate={speechRate}
       setSpeechRate={setSpeechRate}
-      speakSentence={speakSentence}  // ✅ Pass `speakSentence` to `UI.js`
+      speakSentence={speakSentence}
+      loadingBook={loadingBook}
     />
   );
 }
