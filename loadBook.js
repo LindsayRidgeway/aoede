@@ -1,35 +1,39 @@
 import { fetchBookTextFromChatGPT, translateText } from './api';
 
-export const loadBook = async (userQuery, studyLanguageCode) => {
-  if (!userQuery) {
-    console.warn("⚠ No source material entered.");
-    return;
+export const loadBook = async (userQuery, setLoadingBook, setSentence, setDetectedLanguage, studyLanguage, setTranslatedSentence) => {
+  if (!userQuery) return;
+
+  setLoadingBook(true);
+
+  try {
+    const { text, language } = await fetchBookTextFromChatGPT(userQuery);
+    setSentence(text);
+    setDetectedLanguage(language || "en");
+
+    let validSourceLang = language ? language.toLowerCase().trim() : "en";
+    validSourceLang = validSourceLang.replace(/[^a-z]/g, "");
+
+    if (!/^[a-z]{2}$/i.test(validSourceLang)) {
+      console.warn(`⚠ AI returned invalid language code: "${validSourceLang}". Defaulting to "en".`);
+      validSourceLang = "en";
+    }
+
+    console.log(`🔍 Translating from ${validSourceLang} to ${studyLanguage}:`, text);
+
+    if (typeof translateText !== "function") {
+      console.error("❌ translateText is not a function. Check import in loadBook.js.");
+      return;
+    }
+
+    if (validSourceLang === studyLanguage) {
+      setTranslatedSentence(text);
+    } else {
+      const translated = await translateText(text, validSourceLang, studyLanguage);
+      setTranslatedSentence(translated.replace(/^"|"$/g, ""));
+    }
+  } catch (error) {
+    console.error("❌ Book loading failed:", error);
+  } finally {
+    setLoadingBook(false);
   }
-
-  console.log(`📡 DEBUG: Fetching book for query: "${userQuery}"`);
-  const { text, language } = await fetchBookTextFromChatGPT(userQuery);
-
-  if (!text || text.trim() === "") {
-    console.error("❌ ERROR: No book text received!");
-    return;
-  }
-
-  console.log(`📢 DEBUG: Raw fetched text: "${text}"`);
-  console.log(`📢 DEBUG: Detected language: "${language}"`);
-  console.log(`📢 DEBUG: Study Language Code = "${studyLanguageCode}"`);
-
-  if (typeof translateText !== "function") {
-    console.error("❌ ERROR: translateText is not a function. Check import in loadBook.js.");
-    return;
-  }
-
-  console.log(`🔄 Translating from ${language} to ${studyLanguageCode}: ${text}`);
-
-  translateText(text, language, studyLanguageCode)
-    .then((translated) => {
-      console.log(`✅ DEBUG: Translation successful: "${translated}"`);
-    })
-    .catch(error => {
-      console.error("❌ ERROR: Translation failed:", error);
-    });
 };
