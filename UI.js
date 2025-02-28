@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Text, View, TouchableOpacity, TextInput, Switch } from 'react-native';
 import Slider from '@react-native-community/slider';
 import { styles } from './styles';  
+import { getStoredListeningSpeed, saveListeningSpeed } from './listeningSpeed'; // ✅ Now using extracted file
 
 export function MainUI({
   uiText,
@@ -14,17 +15,25 @@ export function MainUI({
   showTranslation,
   setShowText,
   setShowTranslation,
-  speechRate,
-  setSpeechRate,
   speakSentence,
   nextSentence,
   loadingBook
 }) {
+  const [listeningSpeed, setListeningSpeed] = useState(1.0);
+
+  useEffect(() => {
+    getStoredListeningSpeed().then(setListeningSpeed);
+  }, []);
+
+  const updateListeningSpeed = async (speed) => {
+    setListeningSpeed(speed);
+    await saveListeningSpeed(speed);
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.header}>{uiText.appName || "Calliope"}</Text>
 
-      {/* ✅ Added Source Material Title */}
       <Text style={styles.label}>{uiText.sourceMaterial || "Source Material"}</Text>
 
       <TextInput
@@ -65,13 +74,13 @@ export function MainUI({
       </View>
 
       <View style={styles.sliderContainer}>
-        <Text style={styles.sliderLabel}>{uiText.readingSpeed || "Reading Speed"}: {speechRate.toFixed(1)}</Text>
+        <Text style={styles.sliderLabel}>{uiText.readingSpeed || "Listening Speed"}: {listeningSpeed.toFixed(1)}</Text>
         <Slider 
           style={{width: 200, height: 40}} 
           minimumValue={0.5}
           maximumValue={2.0}
-          value={speechRate}
-          onValueChange={setSpeechRate}
+          value={listeningSpeed}
+          onValueChange={updateListeningSpeed}
           minimumTrackTintColor="#1fb28a"
           maximumTrackTintColor="#d3d3d3"
           thumbTintColor="#b9e4c9"
