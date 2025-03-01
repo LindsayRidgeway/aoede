@@ -19,8 +19,6 @@ export const loadBook = async (userQuery, setLoadingBook, setSentence, setDetect
       validSourceLang = "en";
     }
 
-    console.log(`🔍 Translating from ${validSourceLang} to ${detectedLanguageCode}:`, text);
-
     if (typeof translateText !== "function") {
       console.error("❌ translateText is not a function. Check import in loadBook.js.");
       return;

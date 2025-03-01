@@ -2,11 +2,12 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { Audio } from 'expo-av';
 
+export let detectedLanguageCode;
+detectedLanguageCode = null;
+
 let lastDetectedLanguage = "";
 
 const GOOGLE_TRANSLATE_API_KEY = Constants.expoConfig.extra.EXPO_PUBLIC_GOOGLE_API_KEY;
-let detectedLanguageCode = null;
-
 const GOOGLE_TTS_API_KEY = Constants.expoConfig.extra.EXPO_PUBLIC_GOOGLE_API_KEY;
 
 export const getStoredListeningSpeed = async () => {
@@ -26,7 +27,6 @@ export const getStoredStudyLanguage = async () => {
 
     if (storedLanguageCode) {
       detectedLanguageCode = storedLanguageCode; // ✅ Cache the stored code
-      console.log(`📢 Loaded stored language code: ${storedLanguageCode}`);
     }
 
     return storedStudyLanguage ? storedStudyLanguage : "";
@@ -39,13 +39,11 @@ export const getStoredStudyLanguage = async () => {
 export const saveStudyLanguage = async (language) => {
   try {
     await AsyncStorage.setItem("studyLanguage", language);
-    console.log(`✅ DEBUG: Study Language saved as "${language}"`);
 
     // Detect language code and store it
     const languageCode = await detectLanguageCode(language);
     if (languageCode) {
       await AsyncStorage.setItem("studyLanguageCode", languageCode);
-      console.log(`✅ DEBUG: Study Language Code saved as "${languageCode}"`);
     }
   } catch (error) {
     console.error("❌ ERROR: Saving study language failed:", error);
@@ -104,7 +102,6 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed) => {
 export const detectLanguageCode = async (languageName) => {
   if (!languageName) return "";
   if (detectedLanguageCode && languageName === lastDetectedLanguage) {
-    console.log(`📢 Using cached language code: ${detectedLanguageCode}`);
     return detectedLanguageCode;
   }
   lastDetectedLanguage = languageName;
@@ -132,10 +129,8 @@ export const detectLanguageCode = async (languageName) => {
     // Match the user’s input to a language code
     const userInput = languageName.toLowerCase();
     detectedLanguageCode = languageMap[userInput.toLowerCase()] || "";
-    console.log(`🔍 DEBUG: Matching "${userInput}" to language code: "${detectedLanguageCode}"`);
 
     if (detectedLanguageCode) {
-      console.log(`✅ Found Study Language Code: ${detectedLanguageCode}`);
       return detectedLanguageCode;
     } else {
       console.warn(`⚠ Could not find language code for "${languageName}".`);
