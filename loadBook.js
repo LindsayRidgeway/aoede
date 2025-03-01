@@ -1,3 +1,4 @@
+import { detectedLanguageCode } from './listeningSpeed';
 import { fetchBookTextFromChatGPT, translateText } from './api';
 
 export const loadBook = async (userQuery, setLoadingBook, setSentence, setDetectedLanguage, studyLanguage, setTranslatedSentence) => {
@@ -18,7 +19,7 @@ export const loadBook = async (userQuery, setLoadingBook, setSentence, setDetect
       validSourceLang = "en";
     }
 
-    console.log(`🔍 Translating from ${validSourceLang} to ${studyLanguage}:`, text);
+    console.log(`🔍 Translating from ${validSourceLang} to ${detectedLanguageCode}:`, text);
 
     if (typeof translateText !== "function") {
       console.error("❌ translateText is not a function. Check import in loadBook.js.");
@@ -28,7 +29,7 @@ export const loadBook = async (userQuery, setLoadingBook, setSentence, setDetect
     if (validSourceLang === studyLanguage) {
       setTranslatedSentence(text);
     } else {
-      const translated = await translateText(text, validSourceLang, studyLanguage);
+      const translated = await translateText(text, validSourceLang, detectedLanguageCode);	
       setTranslatedSentence(translated.replace(/^"|"$/g, ""));
     }
   } catch (error) {
