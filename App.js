@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+
 import { MainUI } from './UI';
 import { fetchBookTextFromChatGPT } from './api';
+import { getStoredStudyLanguage } from './listeningSpeed'; 
 import { loadBook } from './loadBook';
 import { loadStoredSettings } from './loadStoredSettings';
 import { speakSentenceWithPauses } from './listeningSpeed';
@@ -8,6 +10,7 @@ import { translateLabels } from './translateLabels';
 import { translateText } from './api';
 import { updateSpeechRate } from './listeningSpeed';
 import { updateUserQuery } from './updateUserQuery';
+
 import * as Speech from 'expo-speech';
 import AsyncStorage from '@react-native-async-storage/async-storage'; // ✅ Re-added missing import
 
@@ -23,14 +26,14 @@ export default function App() {
   const [studyLanguage, setStudyLanguage] = useState("ru");
   const [listeningSpeed, setListeningSpeed] = useState(1.0);
   const [loadingBook, setLoadingBook] = useState(false);
-    
-  useEffect(() => {
-      const userLang = navigator.language.split('-')[0] || "en";
-      
-      translateLabels(setUiText);  // ✅ Now passes setUiText correctly
-      loadStoredSettings(setUserQuery, setSpeechRate);
-  }, []);
 
+    useEffect(() => {
+      translateLabels(setUiText);
+      loadStoredSettings(setUserQuery, setSpeechRate);
+
+      getStoredStudyLanguage().then(setStudyLanguage);
+    }, []);
+    
     return (
 	<MainUI
 	    uiText={uiText}
