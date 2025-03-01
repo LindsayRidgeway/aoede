@@ -31,7 +31,10 @@ export default function App() {
       translateLabels(setUiText);
       loadStoredSettings(setUserQuery, setSpeechRate);
 
-      getStoredStudyLanguage().then(setStudyLanguage);
+      getStoredStudyLanguage().then(async (language) => {
+	setStudyLanguage(language);
+	detectedLanguageCode = await detectLanguageCode(language);  // ✅ Ensure language code loads on startup
+      });
     }, []);
     
     return (

@@ -67,10 +67,16 @@ export const updateSpeechRate = async (rate, setSpeechRate) => {
   }
 };
 
+const supportedTTSLanguages = {
+  "en": "en-US", "fr": "fr-FR", "de": "de-DE", "es": "es-ES", "it": "it-IT",
+  "ru": "ru-RU", "zh": "zh-CN", "ja": "ja-JP", "ko": "ko-KR", "ar": "ar-XA"
+};
+
 export const speakSentenceWithPauses = async (sentence, listeningSpeed) => {
     if (!sentence) return;
 
     const speakingRate = Math.max(0.5, Math.min(1.5, (listeningSpeed - 0.5) * 1));
+    const ttsLanguageCode = supportedTTSLanguages[detectedLanguageCode] || detectedLanguageCode;
 
     try {
         const response = await fetch(
@@ -80,7 +86,7 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed) => {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     input: { text: sentence },
-                    voice: { languageCode: "ru-RU", ssmlGender: "FEMALE" },
+                    voice: { languageCode: ttsLanguageCode, ssmlGender: "FEMALE" },
                     audioConfig: { audioEncoding: "MP3", speakingRate: speakingRate }
                 }),
             }
