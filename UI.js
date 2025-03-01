@@ -44,7 +44,7 @@ export function MainUI({
   return (
       <View style={styles.container}>
 	  
-      <Text style={styles.header}>{uiText.appName || "Calliope"}</Text>
+      <Text style={styles.header}>{uiText.appName || "Aoede"}</Text>
 
       <Text style={styles.label}>{uiText.studyLanguage || "Study Language"}</Text>
 
