@@ -36,9 +36,10 @@ export default function App() {
       translateLabels(setUiText);
       loadStoredSettings(setUserQuery, setSpeechRate);
       
-      // Load study language
+      // Load study language first - critical for initial translations
       const language = await getStoredStudyLanguage();
       setStudyLanguage(language);
+      await detectLanguageCode(language);
       
       // Load known words
       try {
@@ -48,10 +49,13 @@ export default function App() {
           setKnownWordsList(Array.from(knownWords));
         }
         
-        // Load source text if available
+        // Load source text and language if available
         const savedSourceText = await AsyncStorage.getItem('sourceText');
-        if (savedSourceText) {
+        const savedSourceLang = await AsyncStorage.getItem('sourceLanguage');
+        
+        if (savedSourceText && savedSourceLang) {
           sourceText = savedSourceText;
+          setSourceLanguage(savedSourceLang);
           sentences = splitIntoSentences(sourceText);
           
           // Load current position
@@ -60,9 +64,19 @@ export default function App() {
             currentSentenceIndex = parseInt(savedIndex, 10);
           }
           
-          // Generate current sentence
+          // Generate current sentence - with proper translations
           if (sentences.length > 0) {
-            await handleNextSentence();
+            // Get the current sentence
+            let sentence = "";
+            if (currentSentenceIndex < sentences.length) {
+              sentence = sentences[currentSentenceIndex];
+            } else {
+              currentSentenceIndex = 0;
+              sentence = sentences[0];
+            }
+            
+            // Now explicitly translate to both languages
+            await translateAndSetSentences(sentence, savedSourceLang);
           }
         }
       } catch (error) {
@@ -72,6 +86,32 @@ export default function App() {
     
     initialize();
   }, []);
+  
+  // Helper function to translate and set sentences in both languages
+  const translateAndSetSentences = async (sentence, sourceLang) => {
+    try {
+      // Translate to study language
+      const studyLangCode = detectedLanguageCode || "en";
+      if (sourceLang !== studyLangCode) {
+        const translatedToStudy = await translateText(sentence, sourceLang, studyLangCode);
+        setStudyLangSentence(translatedToStudy.replace(/^"|"$/g, ""));
+      } else {
+        setStudyLangSentence(sentence);
+      }
+      
+      // Translate to user's native language
+      const nativeLang = navigator.language.split('-')[0] || "en";
+      if (sourceLang !== nativeLang) {
+        const translatedToNative = await translateText(sentence, sourceLang, nativeLang);
+        setNativeLangSentence(translatedToNative.replace(/^"|"$/g, ""));
+      } else {
+        setNativeLangSentence(sentence);
+      }
+    } catch (error) {
+      setStudyLangSentence("Error translating sentence.");
+      setNativeLangSentence("Error translating sentence.");
+    }
+  };
   
   // Split text into sentences
   const splitIntoSentences = (text) => {
@@ -113,7 +153,8 @@ export default function App() {
       
       // Set source text and language
       sourceText = text;
-      setSourceLanguage(language || "en");
+      const sourceLang = language || "en";
+      setSourceLanguage(sourceLang);
       
       // Split into sentences
       sentences = splitIntoSentences(sourceText);
@@ -124,7 +165,8 @@ export default function App() {
       
       // Generate first sentence
       if (sentences.length > 0) {
-        await handleNextSentence();
+        const sentence = sentences[0];
+        await translateAndSetSentences(sentence, sourceLang);
       } else {
         setStudyLangSentence("No content available.");
         setNativeLangSentence("No content available.");
@@ -161,23 +203,8 @@ export default function App() {
       // Save current position
       await saveCurrentState();
       
-      // Translate to study language
-      const studyLangCode = detectedLanguageCode || "en";
-      if (sourceLanguage !== studyLangCode) {
-        const translatedToStudy = await translateText(sentence, sourceLanguage, studyLangCode);
-        setStudyLangSentence(translatedToStudy.replace(/^"|"$/g, ""));
-      } else {
-        setStudyLangSentence(sentence);
-      }
-      
-      // Translate to user's native language
-      const nativeLang = navigator.language.split('-')[0] || "en";
-      if (sourceLanguage !== nativeLang) {
-        const translatedToNative = await translateText(sentence, sourceLanguage, nativeLang);
-        setNativeLangSentence(translatedToNative.replace(/^"|"$/g, ""));
-      } else {
-        setNativeLangSentence(sentence);
-      }
+      // Translate to both languages
+      await translateAndSetSentences(sentence, sourceLanguage);
     } catch (error) {
       setStudyLangSentence("Error generating sentence.");
       setNativeLangSentence("Error generating sentence.");
