@@ -72,13 +72,6 @@ export function MainUI({
         </TouchableOpacity>
       </View>
 
-      {sentence && (
-        <View style={styles.sentenceContainer}>
-          {showText && <Text style={styles.sentence}>{sentence}</Text>}
-          {showTranslation && <Text style={styles.translation}>{translatedSentence}</Text>}
-        </View>
-      )}
-
       <View style={styles.controlsContainer}>
         <View style={styles.controls}>
           <TouchableOpacity 
@@ -122,6 +115,13 @@ export function MainUI({
           <Switch value={showTranslation} onValueChange={setShowTranslation} />
         </View>
       </View>
+
+      {sentence && (
+        <View style={styles.contentContainer}>
+          {showText && <Text style={styles.sentence}>{sentence}</Text>}
+          {showTranslation && <Text style={styles.translation}>{translatedSentence}</Text>}
+        </View>
+      )}
     </View>
   );
 }

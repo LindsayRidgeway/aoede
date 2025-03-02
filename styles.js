@@ -11,7 +11,7 @@ export const styles = StyleSheet.create({
   header: {
     fontSize: 36,
     fontWeight: 'bold',
-    marginBottom: 20,
+    marginBottom: 15,
     color: '#333'
   },
   inputContainer: {
@@ -21,7 +21,7 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#4a90e2',
     padding: 15,
-    marginBottom: 20,
+    marginBottom: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -64,19 +64,17 @@ export const styles = StyleSheet.create({
   activeButton: {
     backgroundColor: '#e24a4a'
   },
-  sentenceContainer: {
+  contentContainer: {
     width: '80%',
-    marginTop: 10,
-    padding: 10
+    marginTop: 5
   },
   sentence: {
-    fontSize: 18,
-    marginBottom: 10
-  },
-  translation: {
     fontSize: 16,
     fontStyle: 'italic',
-    marginBottom: 10
+    marginBottom: 5
+  },
+  translation: {
+    fontSize: 16
   },
   controlsContainer: {
     width: '80%',
@@ -87,7 +85,7 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '100%',
-    marginTop: 10
+    marginTop: 5
   },
   controlButton: {
     backgroundColor: '#4a90e2',
@@ -100,7 +98,7 @@ export const styles = StyleSheet.create({
     width: '80%',
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: 5,
     marginTop: 2
   },
   speedLabel: {
@@ -113,16 +111,16 @@ export const styles = StyleSheet.create({
     height: 30
   },
   toggleContainer: {
-    marginTop: 10,
-    width: '80%'
+    width: '80%',
+    marginTop: 0
   },
   toggleItem: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10
+    marginBottom: 3
   },
   toggleLabel: {
-    fontSize: 16
+    fontSize: 14,
+    marginRight: 10
   }
 });
