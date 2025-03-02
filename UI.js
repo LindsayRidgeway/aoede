@@ -46,29 +46,30 @@ export function MainUI({
 	  
       <Text style={styles.header}>{uiText.appName || "Aoede"}</Text>
 
-      <Text style={styles.label}>{uiText.studyLanguage || "Study Language"}</Text>
+      <View style={styles.inputContainer}>
+        <Text style={styles.label}>{uiText.studyLanguage || "Study Language"}</Text>
+        <TextInput
+          style={styles.input}
+          placeholder={uiText.enterLanguage || "Enter study language"}
+          value={studyLanguage}
+          onChangeText={(text) => {
+            setStudyLanguage(text);
+            saveStudyLanguage(text);  // ✅ Save to AsyncStorage when changed
+          }}
+        />
 
-      <TextInput
-	style={styles.input}
-	placeholder={uiText.enterLanguage || "Enter study language"}
-	value={studyLanguage}
-	onChangeText={(text) => {
-	  setStudyLanguage(text);
-	  saveStudyLanguage(text);  // ✅ Save to AsyncStorage when changed
-	}}
-      />
-
-      <Text style={styles.label}>{uiText.sourceMaterial || "Source Material"}</Text>
-
-      <TextInput
-        style={styles.input}
-        placeholder={uiText.enterBook || "Enter a book title or genre"}
-        value={userQuery}
-        onChangeText={setUserQuery}
-      />
-      <TouchableOpacity style={[styles.button, loadingBook ? styles.disabledButton : null]} onPress={loadBook} disabled={loadingBook}>
-        <Text style={styles.buttonText}>{uiText.loadBook || "Load Book"}</Text>
-      </TouchableOpacity>
+        <Text style={styles.label}>{uiText.sourceMaterial || "Source Material"}</Text>
+        <TextInput
+          style={styles.input}
+          placeholder={uiText.enterBook || "Enter a book title or genre"}
+          value={userQuery}
+          onChangeText={setUserQuery}
+        />
+        
+        <TouchableOpacity style={[styles.button, loadingBook ? styles.disabledButton : null]} onPress={loadBook} disabled={loadingBook}>
+          <Text style={styles.buttonText}>{uiText.loadBook || "Load Book"}</Text>
+        </TouchableOpacity>
+      </View>
 
       {sentence && (
         <View style={styles.sentenceContainer}>
