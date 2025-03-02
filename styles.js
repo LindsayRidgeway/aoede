@@ -119,6 +119,9 @@ export const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#eee'
   },
+  soloTranslationWrapper: {
+    // No top border when translation is alone
+  },
   foreignSentence: {
     fontSize: 16,
     fontStyle: 'italic',
@@ -182,8 +185,9 @@ export const styles = StyleSheet.create({
   feedbackInstruction: {
     fontSize: 12,
     color: '#666',
-    textAlign: 'center',
-    marginBottom: 3
+    textAlign: 'left',
+    marginBottom: 3,
+    paddingLeft: 2
   },
   feedbackContainer: {
     width: '100%',

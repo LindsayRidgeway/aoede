@@ -5,6 +5,7 @@ import { styles } from './styles';
 import { getStoredListeningSpeed, saveListeningSpeed } from './listeningSpeed';
 import { getStoredStudyLanguage, saveStudyLanguage } from './listeningSpeed';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { translateText } from './api';
 
 export function MainUI({
   studyLanguage,
@@ -29,8 +30,14 @@ export function MainUI({
   const [showFeedback, setShowFeedback] = useState(false);
   const [newWords, setNewWords] = useState([]);
   const [historyWords, setHistoryWords] = useState([]);
+  const [feedbackLabels, setFeedbackLabels] = useState({
+    showFeedback: "Show Feedback Panel",
+    instruction: "Click the words that are too hard for you:",
+    newWords: "New Words",
+    history: "History"
+  });
 
-  // Load saved words on start
+  // Load saved words and translate UI labels
   useEffect(() => {
     const loadSavedWords = async () => {
       try {
@@ -43,7 +50,32 @@ export function MainUI({
       }
     };
     
+    const translateFeedbackLabels = async () => {
+      try {
+        const userLang = navigator.language.split('-')[0] || "en";
+        if (userLang === 'en') return; // Skip translation for English
+        
+        const labels = feedbackLabels;
+        const translations = await Promise.all([
+          translateText(labels.showFeedback, "en", userLang),
+          translateText(labels.instruction, "en", userLang),
+          translateText(labels.newWords, "en", userLang),
+          translateText(labels.history, "en", userLang)
+        ]);
+        
+        setFeedbackLabels({
+          showFeedback: translations[0],
+          instruction: translations[1],
+          newWords: translations[2],
+          history: translations[3]
+        });
+      } catch (error) {
+        console.error("Failed to translate feedback labels:", error);
+      }
+    };
+    
     loadSavedWords();
+    translateFeedbackLabels();
     getStoredListeningSpeed().then(setListeningSpeed);
     getStoredStudyLanguage().then((storedLang) => {
       if (storedLang) {
@@ -73,24 +105,41 @@ export function MainUI({
   useEffect(() => {
     if (sentence) {
       // Remove punctuation and split into words
-      const words = sentence
+      const rawWords = sentence
         .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "")
         .split(/\s+/)
         .filter(word => word.length > 0);
       
-      setNewWords(words);
+      // Remove duplicates case-insensitively
+      const uniqueWords = [];
+      const lowerCaseWords = new Set();
+      
+      for (const word of rawWords) {
+        const lowerWord = word.toLowerCase();
+        if (!lowerCaseWords.has(lowerWord)) {
+          lowerCaseWords.add(lowerWord);
+          uniqueWords.push(word);
+        }
+      }
+      
+      setNewWords(uniqueWords);
       
       // Add new words to history if they're not already there
-      const lowerNewWords = words.map(w => w.toLowerCase());
-      const lowerHistoryWords = historyWords.map(w => w.toLowerCase());
-      
-      const wordsToAdd = lowerNewWords.filter(word => 
-        !lowerHistoryWords.includes(word)
+      const lowerHistoryWords = new Set(historyWords.map(w => w.toLowerCase()));
+      const wordsToAdd = uniqueWords.filter(word => 
+        !lowerHistoryWords.has(word.toLowerCase())
       );
       
       if (wordsToAdd.length > 0) {
-        const updatedHistory = [...historyWords, ...wordsToAdd].sort();
-        setHistoryWords(updatedHistory);
+        // Ensure no duplicates in the history list
+        const uniqueHistory = [...historyWords];
+        for (const word of wordsToAdd) {
+          if (!lowerHistoryWords.has(word.toLowerCase())) {
+            uniqueHistory.push(word);
+            lowerHistoryWords.add(word.toLowerCase());
+          }
+        }
+        setHistoryWords(uniqueHistory.sort());
       }
     }
   }, [sentence]);
@@ -195,7 +244,7 @@ export function MainUI({
               <Switch value={showTranslation} onValueChange={setShowTranslation} />
             </View>
             <View style={styles.toggleItem}>
-              <Text style={styles.toggleLabel}>Show Feedback Panel</Text>
+              <Text style={styles.toggleLabel}>{feedbackLabels.showFeedback}</Text>
               <Switch value={showFeedback} onValueChange={setShowFeedback} />
             </View>
           </View>
@@ -207,7 +256,7 @@ export function MainUI({
               </View>
             )}
             {showTranslation && translatedSentence && (
-              <View style={styles.translationWrapper}>
+              <View style={showText ? styles.translationWrapper : styles.soloTranslationWrapper}>
                 <Text style={styles.translation}>{translatedSentence}</Text>
               </View>
             )}
@@ -215,10 +264,10 @@ export function MainUI({
 
           {showFeedback && (
             <View style={styles.feedbackWrapper}>
-              <Text style={styles.feedbackInstruction}>Click the words that are too hard for you</Text>
+              <Text style={styles.feedbackInstruction}>{feedbackLabels.instruction}</Text>
               <View style={styles.feedbackContainer}>
                 <View style={styles.feedbackColumn}>
-                  <Text style={styles.feedbackHeader}>New Words</Text>
+                  <Text style={styles.feedbackHeader}>{feedbackLabels.newWords}</Text>
                   <ScrollView style={styles.wordList}>
                     {newWords.map((word, index) => (
                       <TouchableOpacity 
@@ -233,7 +282,7 @@ export function MainUI({
                 </View>
                 
                 <View style={styles.feedbackColumn}>
-                  <Text style={styles.feedbackHeader}>History</Text>
+                  <Text style={styles.feedbackHeader}>{feedbackLabels.history}</Text>
                   <ScrollView style={styles.wordList}>
                     {historyWords.map((word, index) => (
                       <TouchableOpacity 
