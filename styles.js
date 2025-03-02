@@ -28,10 +28,31 @@ export const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3
   },
+  studyLangRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10
+  },
+  sourceRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between'
+  },
+  sourceInputWrapper: {
+    flex: 1,
+    marginRight: 10
+  },
   label: {
     fontSize: 16,
     fontWeight: '500',
     marginBottom: 5,
+    color: '#555'
+  },
+  smallLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 5,
+    marginRight: 10,
     color: '#555'
   },
   input: {
@@ -41,8 +62,16 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 5,
     paddingHorizontal: 10,
-    backgroundColor: '#fff',
-    marginBottom: 15
+    backgroundColor: '#fff'
+  },
+  studyLangInput: {
+    width: 120,
+    height: 40,
+    borderColor: '#ddd',
+    borderWidth: 1,
+    borderRadius: 5,
+    paddingHorizontal: 10,
+    backgroundColor: '#fff'
   },
   button: {
     backgroundColor: '#4a90e2',
@@ -51,6 +80,14 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 5,
     width: '100%'
+  },
+  loadButton: {
+    backgroundColor: '#4a90e2',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+    width: 80,
+    height: 40
   },
   buttonText: {
     color: '#fff',
@@ -74,25 +111,13 @@ export const styles = StyleSheet.create({
     borderColor: '#ddd'
   },
   sentenceWrapper: {
-    marginBottom: 10
+    marginBottom: 8
   },
   translationWrapper: {
     marginTop: 5,
     paddingTop: 5,
     borderTopWidth: 1,
     borderTopColor: '#eee'
-  },
-  studyLanguageLabel: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#1fb28a',
-    marginBottom: 2
-  },
-  translationLabel: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#4a90e2',
-    marginBottom: 2
   },
   foreignSentence: {
     fontSize: 16,

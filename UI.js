@@ -48,28 +48,37 @@ export function MainUI({
       <Text style={styles.header}>{uiText.appName || "Aoede"}</Text>
 
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>{uiText.studyLanguage || "Study Language"}</Text>
-        <TextInput
-          style={styles.input}
-          placeholder={uiText.enterLanguage || "Enter study language"}
-          value={studyLanguage}
-          onChangeText={(text) => {
-            setStudyLanguage(text);
-            saveStudyLanguage(text);
-          }}
-        />
+        <View style={styles.studyLangRow}>
+          <Text style={styles.smallLabel}>{uiText.studyLanguage || "Study Language"}:</Text>
+          <TextInput
+            style={styles.studyLangInput}
+            placeholder={uiText.enterLanguage || "Enter study language"}
+            value={studyLanguage}
+            onChangeText={(text) => {
+              setStudyLanguage(text);
+              saveStudyLanguage(text);
+            }}
+          />
+        </View>
 
-        <Text style={styles.label}>{uiText.sourceMaterial || "Source Material"}</Text>
-        <TextInput
-          style={styles.input}
-          placeholder={uiText.enterBook || "Enter a book title or genre"}
-          value={userQuery}
-          onChangeText={setUserQuery}
-        />
-        
-        <TouchableOpacity style={[styles.button, loadingBook ? styles.disabledButton : null]} onPress={loadBook} disabled={loadingBook}>
-          <Text style={styles.buttonText}>{uiText.loadBook || "Load Book"}</Text>
-        </TouchableOpacity>
+        <View style={styles.sourceRow}>
+          <View style={styles.sourceInputWrapper}>
+            <Text style={styles.smallLabel}>{uiText.sourceMaterial || "Source Material"}:</Text>
+            <TextInput
+              style={styles.input}
+              placeholder={uiText.enterBook || "Enter a book title or genre"}
+              value={userQuery}
+              onChangeText={setUserQuery}
+            />
+          </View>
+          <TouchableOpacity 
+            style={[styles.loadButton, loadingBook ? styles.disabledButton : null]} 
+            onPress={loadBook} 
+            disabled={loadingBook}
+          >
+            <Text style={styles.buttonText}>Load</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.controlsContainer}>
@@ -120,13 +129,11 @@ export function MainUI({
         <View style={styles.contentContainer}>
           {showText && (
             <View style={styles.sentenceWrapper}>
-              <Text style={styles.studyLanguageLabel}>Study Language:</Text>
               <Text style={styles.foreignSentence}>{sentence}</Text>
             </View>
           )}
           {showTranslation && translatedSentence && (
             <View style={styles.translationWrapper}>
-              <Text style={styles.translationLabel}>Your Language:</Text>
               <Text style={styles.translation}>{translatedSentence}</Text>
             </View>
           )}
