@@ -29,22 +29,22 @@ export function MainUI({
   useEffect(() => {
       getStoredListeningSpeed().then(setListeningSpeed);
       getStoredStudyLanguage().then((storedLang) => {
-	  if (storedLang) {
-		  setStudyLanguage(storedLang);
-	 } else {
-		  console.warn("⚠ Study Language was empty or not found.");
-	 }
+          if (storedLang) {
+              setStudyLanguage(storedLang);
+         } else {
+              console.warn("⚠ Study Language was empty or not found.");
+         }
       });
   }, []);    
 
   const updateListeningSpeed = async (speed) => {
-    setListeningSpeed(speed);  // ✅ Now updates App.js
+    setListeningSpeed(speed);
     await saveListeningSpeed(speed);
   };
 
   return (
       <View style={styles.container}>
-	  
+      
       <Text style={styles.header}>{uiText.appName || "Aoede"}</Text>
 
       <View style={styles.inputContainer}>
@@ -55,7 +55,7 @@ export function MainUI({
           value={studyLanguage}
           onChangeText={(text) => {
             setStudyLanguage(text);
-            saveStudyLanguage(text);  // ✅ Save to AsyncStorage when changed
+            saveStudyLanguage(text);
           }}
         />
 
@@ -79,21 +79,37 @@ export function MainUI({
         </View>
       )}
 
-      <View style={styles.controls}>
-        <TouchableOpacity 
-          style={[
-            styles.controlButton, 
-            isSpeaking ? styles.activeButton : null,
-            loadingBook ? styles.disabledButton : null
-          ]} 
-          onPress={speakSentence} 
-          disabled={loadingBook}
-        >
-          <Text style={styles.buttonText}>{isSpeaking ? (uiText.stop || "Stop") : (uiText.listen || "Listen")}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.controlButton, loadingBook ? styles.disabledButton : null]} onPress={nextSentence} disabled={loadingBook}>
-          <Text style={styles.buttonText}>{uiText.next || "Next Sentence"}</Text>
-        </TouchableOpacity>
+      <View style={styles.controlsContainer}>
+        <View style={styles.controls}>
+          <TouchableOpacity 
+            style={[
+              styles.controlButton, 
+              isSpeaking ? styles.activeButton : null,
+              loadingBook ? styles.disabledButton : null
+            ]} 
+            onPress={speakSentence} 
+            disabled={loadingBook}
+          >
+            <Text style={styles.buttonText}>{isSpeaking ? (uiText.stop || "Stop") : (uiText.listen || "Listen")}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.controlButton, loadingBook ? styles.disabledButton : null]} onPress={nextSentence} disabled={loadingBook}>
+            <Text style={styles.buttonText}>{uiText.next || "Next Sentence"}</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+      
+      <View style={styles.speedControlContainer}>
+        <Text style={styles.speedLabel}>{uiText.readingSpeed || "Listening Speed"}:</Text>
+        <Slider 
+          style={styles.speedSlider}
+          minimumValue={0.5}
+          maximumValue={2.0}
+          value={listeningSpeed}
+          onValueChange={updateListeningSpeed}
+          minimumTrackTintColor="#1fb28a"
+          maximumTrackTintColor="#d3d3d3"
+          thumbTintColor="#b9e4c9"
+        />
       </View>
 
       <View style={styles.toggleContainer}>
@@ -105,20 +121,6 @@ export function MainUI({
           <Text style={styles.toggleLabel}>{uiText.showTranslation || "Show Translation"}</Text>
           <Switch value={showTranslation} onValueChange={setShowTranslation} />
         </View>
-      </View>
-
-      <View style={styles.sliderContainer}>
-        <Text style={styles.sliderLabel}>{uiText.readingSpeed || "Listening Speed"}: {listeningSpeed.toFixed(1)}</Text>
-        <Slider 
-          style={{width: 200, height: 40}} 
-          minimumValue={0.5}
-          maximumValue={2.0}
-          value={listeningSpeed}
-          onValueChange={updateListeningSpeed}
-          minimumTrackTintColor="#1fb28a"
-          maximumTrackTintColor="#d3d3d3"
-          thumbTintColor="#b9e4c9"
-        />
       </View>
     </View>
   );

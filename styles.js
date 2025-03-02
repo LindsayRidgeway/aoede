@@ -52,16 +52,6 @@ export const styles = StyleSheet.create({
     marginTop: 5,
     width: '100%'
   },
-  controlButton: {
-    backgroundColor: '#4a90e2',
-    padding: 10,
-    borderRadius: 5,
-    alignItems: 'center',
-    width: '30%'
-  },
-  activeButton: {
-    backgroundColor: '#e24a4a'
-  },
   buttonText: {
     color: '#fff',
     fontSize: 16,
@@ -70,6 +60,9 @@ export const styles = StyleSheet.create({
   disabledButton: {
     backgroundColor: '#A9A9A9',
     opacity: 0.6
+  },
+  activeButton: {
+    backgroundColor: '#e24a4a'
   },
   sentenceContainer: {
     width: '80%',
@@ -85,14 +78,42 @@ export const styles = StyleSheet.create({
     fontStyle: 'italic',
     marginBottom: 10
   },
+  controlsContainer: {
+    width: '80%',
+    alignItems: 'flex-start',
+    marginBottom: 2
+  },
   controls: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    width: '80%',
+    width: '100%',
     marginTop: 10
   },
+  controlButton: {
+    backgroundColor: '#4a90e2',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+    width: '30%'
+  },
+  speedControlContainer: {
+    width: '80%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+    marginTop: 2
+  },
+  speedLabel: {
+    fontSize: 12,
+    marginRight: 10,
+    color: '#555'
+  },
+  speedSlider: {
+    width: 120,
+    height: 30
+  },
   toggleContainer: {
-    marginTop: 20,
+    marginTop: 10,
     width: '80%'
   },
   toggleItem: {
@@ -103,13 +124,5 @@ export const styles = StyleSheet.create({
   },
   toggleLabel: {
     fontSize: 16
-  },
-  sliderContainer: {
-    alignItems: 'center',
-    marginTop: 20
-  },
-  sliderLabel: {
-    fontSize: 16,
-    marginBottom: 10
   }
 });
