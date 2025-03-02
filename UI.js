@@ -6,8 +6,8 @@ import { getStoredListeningSpeed, saveListeningSpeed } from './listeningSpeed';
 import { getStoredStudyLanguage, saveStudyLanguage } from './listeningSpeed';
 
 export function MainUI({
-  studyLanguage,  // ✅ Accepts study language input
-  setStudyLanguage,  // ✅ Updates study language state
+  studyLanguage,
+  setStudyLanguage,
   uiText,
   userQuery,
   setUserQuery,
@@ -21,8 +21,9 @@ export function MainUI({
   speakSentence,
   nextSentence,
   loadingBook,
-  listeningSpeed,  // ✅ Accept listeningSpeed from App.js
-  setListeningSpeed  // ✅ Accept setListeningSpeed from App.js
+  listeningSpeed,
+  setListeningSpeed,
+  isSpeaking
 }) {
 
   useEffect(() => {
@@ -79,8 +80,16 @@ export function MainUI({
       )}
 
       <View style={styles.controls}>
-        <TouchableOpacity style={[styles.controlButton, loadingBook ? styles.disabledButton : null]} onPress={speakSentence} disabled={loadingBook}>
-          <Text style={styles.buttonText}>{uiText.listen || "Listen"}</Text>
+        <TouchableOpacity 
+          style={[
+            styles.controlButton, 
+            isSpeaking ? styles.activeButton : null,
+            loadingBook ? styles.disabledButton : null
+          ]} 
+          onPress={speakSentence} 
+          disabled={loadingBook}
+        >
+          <Text style={styles.buttonText}>{isSpeaking ? (uiText.stop || "Stop") : (uiText.listen || "Listen")}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.controlButton, loadingBook ? styles.disabledButton : null]} onPress={nextSentence} disabled={loadingBook}>
           <Text style={styles.buttonText}>{uiText.next || "Next Sentence"}</Text>

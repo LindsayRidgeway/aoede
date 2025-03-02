@@ -57,7 +57,10 @@ export const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 5,
     alignItems: 'center',
-    width: '48%'
+    width: '30%'
+  },
+  activeButton: {
+    backgroundColor: '#e24a4a'
   },
   buttonText: {
     color: '#fff',

@@ -5,14 +5,14 @@ import { fetchBookTextFromChatGPT } from './api';
 import { getStoredStudyLanguage } from './listeningSpeed'; 
 import { loadBook } from './loadBook';
 import { loadStoredSettings } from './loadStoredSettings';
-import { speakSentenceWithPauses } from './listeningSpeed';
+import { speakSentenceWithPauses, stopSpeaking } from './listeningSpeed'; // Updated import
 import { translateLabels } from './translateLabels';
 import { translateText } from './api';
 import { updateSpeechRate } from './listeningSpeed';
 import { updateUserQuery } from './updateUserQuery';
 
 import * as Speech from 'expo-speech';
-import AsyncStorage from '@react-native-async-storage/async-storage'; // ✅ Re-added missing import
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function App() {
   const [uiText, setUiText] = useState({});
@@ -26,38 +26,49 @@ export default function App() {
   const [studyLanguage, setStudyLanguage] = useState("ru");
   const [listeningSpeed, setListeningSpeed] = useState(1.0);
   const [loadingBook, setLoadingBook] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
-    useEffect(() => {
-      translateLabels(setUiText);
-      loadStoredSettings(setUserQuery, setSpeechRate);
+  useEffect(() => {
+    translateLabels(setUiText);
+    loadStoredSettings(setUserQuery, setSpeechRate);
 
-      getStoredStudyLanguage().then(async (language) => {
-	setStudyLanguage(language);
-	detectedLanguageCode = await detectLanguageCode(language);  // ✅ Ensure language code loads on startup
-      });
-    }, []);
+    getStoredStudyLanguage().then(async (language) => {
+      setStudyLanguage(language);
+      detectedLanguageCode = await detectLanguageCode(language);
+    });
+  }, []);
+  
+  // Toggle speak function
+  const toggleSpeak = () => {
+    if (isSpeaking) {
+      stopSpeaking();
+      setIsSpeaking(false);
+    } else {
+      speakSentenceWithPauses(translatedSentence, listeningSpeed, () => setIsSpeaking(false));
+      setIsSpeaking(true);
+    }
+  };
     
-    return (
-	<MainUI
-	    uiText={uiText}
-	    userQuery={userQuery}  
-	    setUserQuery={(query) => updateUserQuery(query, setUserQuery)}
-	    loadBook={() => loadBook(userQuery, setLoadingBook, setSentence, setDetectedLanguage, studyLanguage, setTranslatedSentence)}
-	    sentence={translatedSentence}
-	    showText={showText}
-	    showTranslation={showTranslation}
-	    setShowText={setShowText}
-	    setShowTranslation={setShowTranslation}
-	    speechRate={speechRate}
-	    setSpeechRate={(rate) => updateSpeechRate(rate, setSpeechRate)}
-	    speakSentence={() => {
-	      speakSentenceWithPauses(translatedSentence, listeningSpeed);
-	    }}
-	    loadingBook={loadingBook}
-	    listeningSpeed={listeningSpeed}
-            setListeningSpeed={setListeningSpeed}
-            studyLanguage={studyLanguage}
-            setStudyLanguage={setStudyLanguage}
-	  />
+  return (
+    <MainUI
+      uiText={uiText}
+      userQuery={userQuery}  
+      setUserQuery={(query) => updateUserQuery(query, setUserQuery)}
+      loadBook={() => loadBook(userQuery, setLoadingBook, setSentence, setDetectedLanguage, studyLanguage, setTranslatedSentence)}
+      sentence={translatedSentence}
+      showText={showText}
+      showTranslation={showTranslation}
+      setShowText={setShowText}
+      setShowTranslation={setShowTranslation}
+      speechRate={speechRate}
+      setSpeechRate={(rate) => updateSpeechRate(rate, setSpeechRate)}
+      speakSentence={toggleSpeak}
+      isSpeaking={isSpeaking}
+      loadingBook={loadingBook}
+      listeningSpeed={listeningSpeed}
+      setListeningSpeed={setListeningSpeed}
+      studyLanguage={studyLanguage}
+      setStudyLanguage={setStudyLanguage}
+    />
   );
 }

@@ -6,6 +6,7 @@ export let detectedLanguageCode;
 detectedLanguageCode = null;
 
 let lastDetectedLanguage = "";
+let currentSound = null; // Track the current sound object
 
 const GOOGLE_TRANSLATE_API_KEY = Constants.expoConfig.extra.EXPO_PUBLIC_GOOGLE_API_KEY;
 const GOOGLE_TTS_API_KEY = Constants.expoConfig.extra.EXPO_PUBLIC_GOOGLE_API_KEY;
@@ -67,13 +68,28 @@ export const updateSpeechRate = async (rate, setSpeechRate) => {
   }
 };
 
+// Add function to stop speaking
+export const stopSpeaking = async () => {
+  if (currentSound) {
+    try {
+      await currentSound.stopAsync();
+      currentSound = null;
+    } catch (error) {
+      console.error("❌ ERROR: Failed to stop audio:", error);
+    }
+  }
+};
+
 const supportedTTSLanguages = {
   "en": "en-US", "fr": "fr-FR", "de": "de-DE", "es": "es-ES", "it": "it-IT",
   "ru": "ru-RU", "zh": "zh-CN", "ja": "ja-JP", "ko": "ko-KR", "ar": "ar-XA"
 };
 
-export const speakSentenceWithPauses = async (sentence, listeningSpeed) => {
+export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish) => {
     if (!sentence) return;
+
+    // Stop any currently playing audio first
+    await stopSpeaking();
 
     const speakingRate = Math.max(0.5, Math.min(1.5, (listeningSpeed - 0.5) * 1));
     const ttsLanguageCode = supportedTTSLanguages[detectedLanguageCode] || detectedLanguageCode;
@@ -97,11 +113,22 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed) => {
 
         // ✅ Decode Base64 and play MP3
         const sound = new Audio.Sound();
+        currentSound = sound; // Store reference to current sound
         const audioUri = `data:audio/mp3;base64,${data.audioContent}`;
         await sound.loadAsync({ uri: audioUri });
+        
+        // Set up a listener for when playback finishes
+        sound.setOnPlaybackStatusUpdate(status => {
+            if (status.didJustFinish) {
+                currentSound = null;
+                if (onFinish) onFinish();
+            }
+        });
+        
         await sound.playAsync();
     } catch (error) {
         console.error("❌ ERROR: Google TTS request failed:", error);
+        if (onFinish) onFinish(); // Call onFinish even on error
     }
 };
 
@@ -132,7 +159,7 @@ export const detectLanguageCode = async (languageName) => {
       }
     }
 
-    // Match the user’s input to a language code
+    // Match the user's input to a language code
     const userInput = languageName.toLowerCase();
     detectedLanguageCode = languageMap[userInput.toLowerCase()] || "";
 
