@@ -52,6 +52,13 @@ export const styles = StyleSheet.create({
     marginTop: 5,
     width: '100%'
   },
+  controlButton: {
+    backgroundColor: '#4a90e2',
+    padding: 10,
+    borderRadius: 5,
+    alignItems: 'center',
+    width: '48%'
+  },
   buttonText: {
     color: '#fff',
     fontSize: 16,
@@ -77,7 +84,7 @@ export const styles = StyleSheet.create({
   },
   controls: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    justifyContent: 'space-between',
     width: '80%',
     marginTop: 10
   },

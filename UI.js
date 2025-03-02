@@ -79,10 +79,10 @@ export function MainUI({
       )}
 
       <View style={styles.controls}>
-        <TouchableOpacity style={[styles.button, loadingBook ? styles.disabledButton : null]} onPress={speakSentence} disabled={loadingBook}>
+        <TouchableOpacity style={[styles.controlButton, loadingBook ? styles.disabledButton : null]} onPress={speakSentence} disabled={loadingBook}>
           <Text style={styles.buttonText}>{uiText.listen || "Listen"}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.button, loadingBook ? styles.disabledButton : null]} onPress={nextSentence} disabled={loadingBook}>
+        <TouchableOpacity style={[styles.controlButton, loadingBook ? styles.disabledButton : null]} onPress={nextSentence} disabled={loadingBook}>
           <Text style={styles.buttonText}>{uiText.next || "Next Sentence"}</Text>
         </TouchableOpacity>
       </View>
