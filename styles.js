@@ -174,5 +174,61 @@ export const styles = StyleSheet.create({
   toggleLabel: {
     fontSize: 14,
     marginRight: 10
+  },
+  feedbackWrapper: {
+    width: '80%',
+    marginTop: 5
+  },
+  feedbackInstruction: {
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 3
+  },
+  feedbackContainer: {
+    width: '100%',
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    overflow: 'hidden'
+  },
+  feedbackColumn: {
+    flex: 1,
+    maxHeight: 150
+  },
+  feedbackHeader: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    paddingVertical: 5,
+    backgroundColor: '#f0f0f0',
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd'
+  },
+  wordList: {
+    maxHeight: 110
+  },
+  wordItem: {
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+    backgroundColor: '#fff'
+  },
+  wordText: {
+    fontSize: 14
+  },
+  historyWordItem: {
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+    backgroundColor: '#f9f9f9'
+  },
+  historyWordText: {
+    fontSize: 14,
+    color: '#888'
   }
 });
