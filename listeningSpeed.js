@@ -16,7 +16,6 @@ export const getStoredListeningSpeed = async () => {
     const storedListeningSpeed = await AsyncStorage.getItem("listeningSpeed");
     return storedListeningSpeed ? parseFloat(storedListeningSpeed) || 1.0 : 1.0;
   } catch (error) {
-    console.error("❌ ERROR: Loading stored listening speed failed:", error);
     return 1.0;
   }
 };
@@ -27,12 +26,11 @@ export const getStoredStudyLanguage = async () => {
     const storedLanguageCode = await AsyncStorage.getItem("studyLanguageCode");
 
     if (storedLanguageCode) {
-      detectedLanguageCode = storedLanguageCode; // ✅ Cache the stored code
+      detectedLanguageCode = storedLanguageCode; // Cache the stored code
     }
 
     return storedStudyLanguage ? storedStudyLanguage : "";
   } catch (error) {
-    console.error("❌ ERROR: Loading stored study language failed:", error);
     return "";
   }
 };
@@ -47,7 +45,7 @@ export const saveStudyLanguage = async (language) => {
       await AsyncStorage.setItem("studyLanguageCode", languageCode);
     }
   } catch (error) {
-    console.error("❌ ERROR: Saving study language failed:", error);
+    // Handle silently
   }
 };
 
@@ -55,7 +53,7 @@ export const saveListeningSpeed = async (speed) => {
   try {
     await AsyncStorage.setItem("listeningSpeed", speed.toString());
   } catch (error) {
-    console.error("❌ ERROR: Saving listening speed failed:", error);
+    // Handle silently
   }
 };
 
@@ -64,7 +62,7 @@ export const updateSpeechRate = async (rate, setSpeechRate) => {
   try {
     await AsyncStorage.setItem("speechRate", rate.toString());
   } catch (error) {
-    console.error("❌ ERROR: Saving speechRate failed:", error);
+    // Handle silently
   }
 };
 
@@ -75,7 +73,7 @@ export const stopSpeaking = async () => {
       await currentSound.stopAsync();
       currentSound = null;
     } catch (error) {
-      console.error("❌ ERROR: Failed to stop audio:", error);
+      // Handle silently
     }
   }
 };
@@ -109,9 +107,9 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
         );
 
         const data = await response.json();
-        if (!data.audioContent) throw new Error("❌ Failed to generate speech.");
+        if (!data.audioContent) throw new Error();
 
-        // ✅ Decode Base64 and play MP3
+        // Decode Base64 and play MP3
         const sound = new Audio.Sound();
         currentSound = sound; // Store reference to current sound
         const audioUri = `data:audio/mp3;base64,${data.audioContent}`;
@@ -127,7 +125,6 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
         
         await sound.playAsync();
     } catch (error) {
-        console.error("❌ ERROR: Google TTS request failed:", error);
         if (onFinish) onFinish(); // Call onFinish even on error
     }
 };
@@ -147,15 +144,14 @@ export const detectLanguageCode = async (languageName) => {
 
     const data = await response.json();
     if (!data || !data.data || !data.data.languages) {
-      console.warn("⚠ Google Translate API returned no language list.");
       return "";
     }
 
     // Convert API list to a mapping of "localized name" → "language code"
     const languageMap = {};
     for (const lang of data.data.languages) {
-      if (lang.name) {  // ✅ Ensure `name` exists
-	languageMap[lang.name.toLowerCase()] = lang.language;
+      if (lang.name) {
+        languageMap[lang.name.toLowerCase()] = lang.language;
       }
     }
 
@@ -166,11 +162,9 @@ export const detectLanguageCode = async (languageName) => {
     if (detectedLanguageCode) {
       return detectedLanguageCode;
     } else {
-      console.warn(`⚠ Could not find language code for "${languageName}".`);
       return "";
     }
   } catch (error) {
-    console.error("❌ ERROR: Google Translate API request failed:", error);
     return "";
   }
 };

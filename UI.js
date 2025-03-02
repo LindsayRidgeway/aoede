@@ -46,7 +46,7 @@ export function MainUI({
           setHistoryWords(JSON.parse(savedHistory).sort());
         }
       } catch (error) {
-        console.error("Failed to load saved words:", error);
+        // Handle silently
       }
     };
     
@@ -70,7 +70,7 @@ export function MainUI({
           history: translations[3]
         });
       } catch (error) {
-        console.error("Failed to translate feedback labels:", error);
+        // Handle silently
       }
     };
     
@@ -80,8 +80,6 @@ export function MainUI({
     getStoredStudyLanguage().then((storedLang) => {
       if (storedLang) {
         setStudyLanguage(storedLang);
-      } else {
-        console.warn("⚠ Study Language was empty or not found.");
       }
     });
   }, []);
@@ -92,7 +90,7 @@ export function MainUI({
       try {
         await AsyncStorage.setItem('historyWords', JSON.stringify(historyWords));
       } catch (error) {
-        console.error("Failed to save history words:", error);
+        // Handle silently
       }
     };
     
