@@ -25,7 +25,9 @@ export function MainUI({
   loadingBook,
   listeningSpeed,
   setListeningSpeed,
-  isSpeaking
+  isSpeaking,
+  onWordFeedback,
+  knownWords
 }) {
   const [showFeedback, setShowFeedback] = useState(false);
   const [newWords, setNewWords] = useState([]);
@@ -99,7 +101,7 @@ export function MainUI({
     }
   }, [historyWords]);
 
-  // Extract words when sentence changes
+  // Extract words when sentence changes and update known words list
   useEffect(() => {
     if (sentence) {
       // Remove punctuation and split into words
@@ -120,7 +122,13 @@ export function MainUI({
         }
       }
       
-      setNewWords(uniqueWords);
+      // Filter out words that are already known
+      const lowerCaseKnownWords = new Set(knownWords.map(w => w.toLowerCase()));
+      const filteredNewWords = uniqueWords.filter(
+        word => !lowerCaseKnownWords.has(word.toLowerCase())
+      );
+      
+      setNewWords(filteredNewWords);
       
       // Add new words to history if they're not already there
       const lowerHistoryWords = new Set(historyWords.map(w => w.toLowerCase()));
@@ -140,7 +148,7 @@ export function MainUI({
         setHistoryWords(uniqueHistory.sort());
       }
     }
-  }, [sentence]);
+  }, [sentence, knownWords]);
 
   const updateListeningSpeed = async (speed) => {
     setListeningSpeed(speed);
@@ -153,6 +161,21 @@ export function MainUI({
     
     // Remove from history
     setHistoryWords(historyWords.filter(w => w.toLowerCase() !== word.toLowerCase()));
+    
+    // Notify parent component about word feedback (this word is too hard)
+    if (onWordFeedback) {
+      onWordFeedback([word], false);
+    }
+  };
+  
+  const handleAddToKnown = (word) => {
+    // When a word is learned, update the known words
+    if (onWordFeedback) {
+      onWordFeedback([word], true);
+    }
+    
+    // Remove from new words list to avoid confusion
+    setNewWords(newWords.filter(w => w.toLowerCase() !== word.toLowerCase()));
   };
 
   // Only show controls if content is loaded
@@ -268,13 +291,20 @@ export function MainUI({
                   <Text style={styles.feedbackHeader}>{feedbackLabels.newWords}</Text>
                   <ScrollView style={styles.wordList}>
                     {newWords.map((word, index) => (
-                      <TouchableOpacity 
-                        key={`new-${index}`} 
-                        style={styles.wordItem}
-                        onPress={() => handleWordClick(word)}
-                      >
-                        <Text style={styles.wordText}>{word}</Text>
-                      </TouchableOpacity>
+                      <View key={`new-${index}`} style={styles.wordItemContainer}>
+                        <TouchableOpacity 
+                          style={styles.wordItem}
+                          onPress={() => handleWordClick(word)}
+                        >
+                          <Text style={styles.wordText}>{word}</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity 
+                          style={styles.knownButton}
+                          onPress={() => handleAddToKnown(word)}
+                        >
+                          <Text style={styles.knownButtonText}>✓</Text>
+                        </TouchableOpacity>
+                      </View>
                     ))}
                   </ScrollView>
                 </View>
@@ -288,7 +318,16 @@ export function MainUI({
                         style={styles.historyWordItem}
                         onPress={() => handleWordClick(word)}
                       >
-                        <Text style={styles.historyWordText}>{word}</Text>
+                        <Text 
+                          style={[
+                            styles.historyWordText, 
+                            knownWords.some(
+                              w => w.toLowerCase() === word.toLowerCase()
+                            ) ? styles.knownWordText : null
+                          ]}
+                        >
+                          {word}
+                        </Text>
                       </TouchableOpacity>
                     ))}
                   </ScrollView>

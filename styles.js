@@ -214,25 +214,49 @@ export const styles = StyleSheet.create({
   wordList: {
     maxHeight: 110
   },
-  wordItem: {
-    paddingVertical: 5,
-    paddingHorizontal: 10,
+  wordItemContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
+  },
+  wordItem: {
+    flex: 1,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
     backgroundColor: '#fff'
   },
   wordText: {
     fontSize: 14
+  },
+  knownButton: {
+    width: 30,
+    height: 30,
+    backgroundColor: '#1fb28a',
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 5
+  },
+  knownButtonText: {
+    color: '#fff',
+    fontWeight: 'bold'
   },
   historyWordItem: {
     paddingVertical: 5,
     paddingHorizontal: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
-    backgroundColor: '#f9f9f9'
+    backgroundColor: '#f9f9f9',
+    flexDirection: 'row',
+    alignItems: 'center'
   },
   historyWordText: {
     fontSize: 14,
     color: '#888'
+  },
+  knownWordText: {
+    color: '#1fb28a',
+    fontWeight: '500'
   }
 });
