@@ -107,19 +107,29 @@ export function MainUI({
 
       <View style={styles.toggleContainer}>
         <View style={styles.toggleItem}>
-          <Text style={styles.toggleLabel}>{uiText.showText || "Show Foreign Sentence"}</Text>
+          <Text style={styles.toggleLabel}>{uiText.showText || "Show Study Language"}</Text>
           <Switch value={showText} onValueChange={setShowText} />
         </View>
         <View style={styles.toggleItem}>
-          <Text style={styles.toggleLabel}>{uiText.showTranslation || "Show Translation"}</Text>
+          <Text style={styles.toggleLabel}>{uiText.showTranslation || "Show System Language"}</Text>
           <Switch value={showTranslation} onValueChange={setShowTranslation} />
         </View>
       </View>
-
+      
       {sentence && (
         <View style={styles.contentContainer}>
-          {showText && <Text style={styles.sentence}>{sentence}</Text>}
-          {showTranslation && <Text style={styles.translation}>{translatedSentence}</Text>}
+          {showText && (
+            <View style={styles.sentenceWrapper}>
+              <Text style={styles.studyLanguageLabel}>Study Language:</Text>
+              <Text style={styles.foreignSentence}>{sentence}</Text>
+            </View>
+          )}
+          {showTranslation && translatedSentence && (
+            <View style={styles.translationWrapper}>
+              <Text style={styles.translationLabel}>Your Language:</Text>
+              <Text style={styles.translation}>{translatedSentence}</Text>
+            </View>
+          )}
         </View>
       )}
     </View>

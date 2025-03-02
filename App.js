@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 
 import { MainUI } from './UI';
 import { fetchBookTextFromChatGPT } from './api';
-import { getStoredStudyLanguage } from './listeningSpeed'; 
+import { getStoredStudyLanguage, detectLanguageCode } from './listeningSpeed'; 
 import { loadBook } from './loadBook';
 import { loadStoredSettings } from './loadStoredSettings';
-import { speakSentenceWithPauses, stopSpeaking } from './listeningSpeed'; // Updated import
+import { speakSentenceWithPauses, stopSpeaking } from './listeningSpeed';
 import { translateLabels } from './translateLabels';
 import { translateText } from './api';
 import { updateSpeechRate } from './listeningSpeed';
@@ -34,7 +34,7 @@ export default function App() {
 
     getStoredStudyLanguage().then(async (language) => {
       setStudyLanguage(language);
-      detectedLanguageCode = await detectLanguageCode(language);
+      await detectLanguageCode(language);
     });
   }, []);
   
@@ -44,9 +44,21 @@ export default function App() {
       stopSpeaking();
       setIsSpeaking(false);
     } else {
-      speakSentenceWithPauses(translatedSentence, listeningSpeed, () => setIsSpeaking(false));
+      speakSentenceWithPauses(sentence, listeningSpeed, () => setIsSpeaking(false));
       setIsSpeaking(true);
     }
+  };
+  
+  // Handle book loading
+  const handleLoadBook = () => {
+    loadBook(
+      userQuery, 
+      setLoadingBook, 
+      setSentence, 
+      setDetectedLanguage, 
+      studyLanguage, 
+      setTranslatedSentence
+    );
   };
     
   return (
@@ -54,8 +66,9 @@ export default function App() {
       uiText={uiText}
       userQuery={userQuery}  
       setUserQuery={(query) => updateUserQuery(query, setUserQuery)}
-      loadBook={() => loadBook(userQuery, setLoadingBook, setSentence, setDetectedLanguage, studyLanguage, setTranslatedSentence)}
-      sentence={translatedSentence}
+      loadBook={handleLoadBook}
+      sentence={sentence}
+      translatedSentence={translatedSentence}
       showText={showText}
       showTranslation={showTranslation}
       setShowText={setShowText}

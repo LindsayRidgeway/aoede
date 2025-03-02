@@ -66,15 +66,42 @@ export const styles = StyleSheet.create({
   },
   contentContainer: {
     width: '80%',
-    marginTop: 5
+    marginTop: 5,
+    padding: 10,
+    backgroundColor: '#f9f9f9',
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: '#ddd'
   },
-  sentence: {
+  sentenceWrapper: {
+    marginBottom: 10
+  },
+  translationWrapper: {
+    marginTop: 5,
+    paddingTop: 5,
+    borderTopWidth: 1,
+    borderTopColor: '#eee'
+  },
+  studyLanguageLabel: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#1fb28a',
+    marginBottom: 2
+  },
+  translationLabel: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#4a90e2',
+    marginBottom: 2
+  },
+  foreignSentence: {
     fontSize: 16,
     fontStyle: 'italic',
-    marginBottom: 5
+    color: '#444'
   },
   translation: {
-    fontSize: 16
+    fontSize: 16,
+    color: '#333'
   },
   controlsContainer: {
     width: '80%',
