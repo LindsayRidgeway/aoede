@@ -50,18 +50,66 @@ export default function App() {
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [newWordsList, setNewWordsList] = useState([]);
   const [loadProgress, setLoadProgress] = useState({ sections: 1, loading: false, complete: false });
+  const [historyWords, setHistoryWords] = useState([]);
+  
+  // Extract words from text (works with any script)
+  const extractWords = (text) => {
+    if (!text) return [];
+    
+    // Step 1: Split by whitespace to get raw words
+    const spaceSplit = text.split(/\s+/);
+    
+    // Step 2: Remove punctuation from each word
+    // Include all possible punctuation marks from various writing systems
+    const cleanWords = spaceSplit.map(word => 
+      word.replace(/[.,!?;:'"(){}[\]<>«»„""''—–\-\u05BE\u05C0\u05C3\u05F3\u05F4\u0600-\u060F\u2000-\u206F]+/g, '')
+    );
+    
+    // Step 3: Filter out empty strings
+    return cleanWords.filter(word => word.length > 0);
+  };
+  
+  // Custom translation setter that handles word extraction
+  const customSetStudyLangSentence = (text) => {
+    // Update the sentence state
+    setStudyLangSentence(text);
+    
+    if (!text) return;
+    
+    // Extract all words
+    const words = extractWords(text);
+    console.log("Extracted words:", words);
+    
+    // Process immediately for the UI
+    processWords(words);
+  };
+  
+  // Process words for both lists
+  const processWords = (words) => {
+    if (!words || words.length === 0) return;
+    
+    // Update New Words list (exclude too-hard words)
+    const lowerCaseTooHardWords = new Set(tooHardWordsList.map(w => w.toLowerCase()));
+    const newWords = words.filter(word => 
+      !lowerCaseTooHardWords.has(word.toLowerCase())
+    );
+    
+    // Set new words (directly, no filtering)
+    setNewWordsList([...newWords]);
+    
+    // Add all words to history
+    updateHistoryWords(words);
+  };
   
   useEffect(() => {
     const initialize = async () => {
       translateLabels(setUiText);
       loadStoredSettings(setUserQuery, setSpeechRate);
       
-      // Load study language first - critical for initial translations
       const language = await getStoredStudyLanguage();
       setStudyLanguage(language);
       await detectLanguageCode(language);
       
-      // Load too hard words
       try {
         const savedTooHardWords = await AsyncStorage.getItem('tooHardWords');
         if (savedTooHardWords) {
@@ -70,11 +118,14 @@ export default function App() {
           setTooHardWordsList(parsedWords);
         }
         
-        // Check if we have a book already loaded
+        const savedHistory = await AsyncStorage.getItem('historyWords');
+        if (savedHistory) {
+          setHistoryWords(JSON.parse(savedHistory));
+        }
+        
         const hasStoredBook = await AsyncStorage.getItem('bookSections');
         
         if (hasStoredBook) {
-          // Get the full book text from all sections
           const bookData = await getAllBookText();
           
           if (bookData && bookData.text) {
@@ -82,13 +133,11 @@ export default function App() {
             setSourceLanguage(bookData.language);
             sentences = splitIntoSentences(sourceText);
             
-            // Load current position
             const savedIndex = await AsyncStorage.getItem('currentSentenceIndex');
             if (savedIndex) {
               currentSentenceIndex = parseInt(savedIndex, 10);
             }
             
-            // Load adaptive sentences if available
             const savedAdaptiveSentences = await AsyncStorage.getItem('adaptiveSentences');
             const savedAdaptiveIndex = await AsyncStorage.getItem('currentAdaptiveIndex');
             
@@ -98,13 +147,10 @@ export default function App() {
                 currentAdaptiveIndex = parseInt(savedAdaptiveIndex, 10);
               }
               
-              // If we have adaptive sentences, use them
               if (adaptiveSentences.length > 0 && currentAdaptiveIndex < adaptiveSentences.length) {
-                // Get the current adaptive sentence
                 const adaptiveSentence = adaptiveSentences[currentAdaptiveIndex];
-                await translateAndSetSentences(adaptiveSentence, bookData.language, setStudyLangSentence, setNativeLangSentence);
+                await translateAndSetSentences(adaptiveSentence, bookData.language, customSetStudyLangSentence, setNativeLangSentence);
               } else {
-                // Otherwise, generate new adaptive sentences
                 await handleNextSentence(
                   sentences, 
                   adaptiveSentences, 
@@ -113,7 +159,7 @@ export default function App() {
                   tooHardWords,
                   sourceLanguage,
                   loadProgress, 
-                  setStudyLangSentence, 
+                  customSetStudyLangSentence, 
                   setNativeLangSentence, 
                   setLoadingBook,
                   setLoadProgress,
@@ -121,7 +167,6 @@ export default function App() {
                 );
               }
             } else if (sentences.length > 0) {
-              // No adaptive sentences yet, but we have source sentences
               await handleNextSentence(
                 sentences, 
                 adaptiveSentences, 
@@ -130,7 +175,7 @@ export default function App() {
                 tooHardWords,
                 sourceLanguage,
                 loadProgress, 
-                setStudyLangSentence, 
+                customSetStudyLangSentence, 
                 setNativeLangSentence, 
                 setLoadingBook,
                 setLoadProgress,
@@ -138,7 +183,6 @@ export default function App() {
               );
             }
             
-            // Start background loading of additional sections
             startBackgroundLoading(setLoadProgress);
           }
         }
@@ -150,25 +194,42 @@ export default function App() {
     initialize();
   }, []);
 
-  // Extract new words from current sentence
+  // Process the current sentence when component mounts
   useEffect(() => {
     if (studyLangSentence) {
-      // Extract words from the sentence
-      const words = studyLangSentence
-        .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "")
-        .split(/\s+/)
-        .filter(word => word.length > 0);
-      
-      // Filter to only show words that haven't been marked as too hard
-      const lowerCaseTooHardWords = new Set(tooHardWordsList.map(w => w.toLowerCase()));
-      const newWords = words.filter(word => 
-        !lowerCaseTooHardWords.has(word.toLowerCase())
-      );
-      
-      // Update new words list
-      setNewWordsList([...new Set(newWords)]);
+      const words = extractWords(studyLangSentence);
+      processWords(words);
     }
-  }, [studyLangSentence, tooHardWordsList]);
+  }, []);
+  
+  // Function to update history words
+  const updateHistoryWords = async (wordsToAdd) => {
+    try {
+      if (!wordsToAdd || wordsToAdd.length === 0) return;
+      
+      let currentHistory = [...historyWords];
+      const lowerHistoryWords = new Set(currentHistory.map(w => w.toLowerCase()));
+      
+      let updated = false;
+      for (const word of wordsToAdd) {
+        if (!word || word.length === 0) continue;
+        
+        if (!lowerHistoryWords.has(word.toLowerCase())) {
+          currentHistory.push(word);
+          lowerHistoryWords.add(word.toLowerCase());
+          updated = true;
+        }
+      }
+      
+      if (updated) {
+        currentHistory.sort();
+        setHistoryWords(currentHistory);
+        await AsyncStorage.setItem('historyWords', JSON.stringify(currentHistory));
+      }
+    } catch (error) {
+      console.error("Error updating history words:", error);
+    }
+  };
   
   // Toggle speak function
   const toggleSpeak = () => {
@@ -188,29 +249,22 @@ export default function App() {
     setLoadingBook(true);
     
     try {
-      // Fetch book text
       const { text, language } = await fetchBookTextFromChatGPT(userQuery);
       
-      // Set source text and language
       sourceText = text;
       const sourceLang = language || "en";
       setSourceLanguage(sourceLang);
       
-      // Split into sentences
       sentences = splitIntoSentences(sourceText);
       currentSentenceIndex = 0;
       
-      // Reset adaptive sentences
       adaptiveSentences = [];
       currentAdaptiveIndex = 0;
       
-      // Reset loading progress
       setLoadProgress({ sections: 1, loading: false, complete: false });
       
-      // Save state
       await saveCurrentState();
       
-      // Generate first adaptive sentence
       if (sentences.length > 0) {
         await handleNextSentence(
           sentences, 
@@ -220,7 +274,7 @@ export default function App() {
           tooHardWords,
           sourceLang,
           loadProgress, 
-          setStudyLangSentence, 
+          customSetStudyLangSentence, 
           setNativeLangSentence, 
           setLoadingBook,
           setLoadProgress,
@@ -228,7 +282,6 @@ export default function App() {
         );
       }
       
-      // Start background loading of additional sections
       startBackgroundLoading(setLoadProgress);
     } catch (error) {
       console.error("Error loading book:", error);
@@ -249,7 +302,7 @@ export default function App() {
       tooHardWords,
       sourceLanguage,
       loadProgress, 
-      setStudyLangSentence, 
+      customSetStudyLangSentence, 
       setNativeLangSentence, 
       setLoadingBook,
       setLoadProgress,
@@ -260,15 +313,37 @@ export default function App() {
   // Handle word feedback
   const handleWordFeedback = async (words, isTooHard) => {
     if (isTooHard) {
-      // Add words to too-hard words list
       words.forEach(word => tooHardWords.add(word.toLowerCase()));
+      
+      const updatedTooHardList = Array.from(tooHardWords);
+      setTooHardWordsList(updatedTooHardList);
+      
+      if (studyLangSentence) {
+        const allWords = extractWords(studyLangSentence);
+        const lowerCaseTooHardWords = new Set(updatedTooHardList.map(w => w.toLowerCase()));
+        const filteredNewWords = allWords.filter(word => 
+          !lowerCaseTooHardWords.has(word.toLowerCase())
+        );
+        
+        setNewWordsList(filteredNewWords);
+      }
     } else {
-      // Remove words from too-hard words list
       words.forEach(word => tooHardWords.delete(word.toLowerCase()));
+      
+      const updatedTooHardList = Array.from(tooHardWords);
+      setTooHardWordsList(updatedTooHardList);
+      
+      if (studyLangSentence) {
+        const allWords = extractWords(studyLangSentence);
+        const lowerCaseTooHardWords = new Set(updatedTooHardList.map(w => w.toLowerCase()));
+        const filteredNewWords = allWords.filter(word => 
+          !lowerCaseTooHardWords.has(word.toLowerCase())
+        );
+        
+        setNewWordsList(filteredNewWords);
+      }
     }
     
-    // Update state
-    setTooHardWordsList(Array.from(tooHardWords));
     await saveCurrentState();
   };
 
@@ -280,41 +355,42 @@ export default function App() {
   // Confirm clear history
   const confirmClearHistory = async () => {
     try {
-      // Clear too-hard words
       tooHardWords.clear();
       setTooHardWordsList([]);
       
-      // Also clear history words in AsyncStorage
+      setHistoryWords([]);
       await AsyncStorage.removeItem('historyWords');
       
-      // Reset adaptive sentences
       adaptiveSentences = [];
       currentAdaptiveIndex = 0;
       
-      // Save state
       await saveCurrentState();
       
-      // Close confirmation dialog
       setShowConfirmation(false);
       
-      // Regenerate current sentence
       if (sentences.length > 0) {
-        // Reset to beginning of current sentence's adaptive sentences
         const currentSourceIndex = Math.max(0, currentSentenceIndex - 1);
         const currentSourceSentence = sentences[currentSourceIndex];
         
-        // Generate new adaptive sentences
         adaptiveSentences = await generateAdaptiveSentences(currentSourceSentence, tooHardWords, openaiKey);
         currentAdaptiveIndex = 0;
         
-        // Save state
         await saveCurrentState();
         
-        // Display the first adaptive sentence
         if (adaptiveSentences.length > 0) {
-          await translateAndSetSentences(adaptiveSentences[0], sourceLanguage, setStudyLangSentence, setNativeLangSentence);
+          await translateAndSetSentences(
+            adaptiveSentences[0], 
+            sourceLanguage, 
+            customSetStudyLangSentence, 
+            setNativeLangSentence
+          );
         } else {
-          await translateAndSetSentences(currentSourceSentence, sourceLanguage, setStudyLangSentence, setNativeLangSentence);
+          await translateAndSetSentences(
+            currentSourceSentence, 
+            sourceLanguage, 
+            customSetStudyLangSentence, 
+            setNativeLangSentence
+          );
         }
       }
     } catch (error) {
@@ -357,6 +433,7 @@ export default function App() {
       confirmClearHistory={confirmClearHistory}
       cancelClearHistory={cancelClearHistory}
       loadProgress={loadProgress}
+      historyWords={historyWords}
     />
   );
 }

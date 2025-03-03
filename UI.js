@@ -33,10 +33,10 @@ export function MainUI({
   showConfirmation,
   confirmClearHistory,
   cancelClearHistory,
-  loadProgress
+  loadProgress,
+  historyWords
 }) {
   const [showFeedback, setShowFeedback] = useState(false);
-  const [historyWords, setHistoryWords] = useState([]);
   const [feedbackLabels, setFeedbackLabels] = useState({
     showFeedback: "Show Feedback Panel",
     instruction: "Click the words that are too hard for you:",
@@ -51,19 +51,8 @@ export function MainUI({
     sectionsLoaded: "Sections loaded:"
   });
 
-  // Load saved words and translate UI labels
+  // Translate UI labels
   useEffect(() => {
-    const loadSavedWords = async () => {
-      try {
-        const savedHistory = await AsyncStorage.getItem('historyWords');
-        if (savedHistory) {
-          setHistoryWords(JSON.parse(savedHistory).sort());
-        }
-      } catch (error) {
-        // Handle silently
-      }
-    };
-    
     const translateFeedbackLabels = async () => {
       try {
         const userLang = navigator.language.split('-')[0] || "en";
@@ -102,7 +91,6 @@ export function MainUI({
       }
     };
     
-    loadSavedWords();
     translateFeedbackLabels();
     getStoredListeningSpeed().then(setListeningSpeed);
     getStoredStudyLanguage().then((storedLang) => {
@@ -112,88 +100,16 @@ export function MainUI({
     });
   }, []);
 
-  // Save history words when they change
-  useEffect(() => {
-    const saveWords = async () => {
-      try {
-        if (historyWords.length > 0) {
-          await AsyncStorage.setItem('historyWords', JSON.stringify(historyWords));
-        } else {
-          // If history is empty, remove the item from storage
-          await AsyncStorage.removeItem('historyWords');
-        }
-      } catch (error) {
-        // Handle silently
-      }
-    };
-    
-    saveWords();
-  }, [historyWords]);
-
-  // Update history words when sentence changes
-  useEffect(() => {
-    if (sentence) {
-      // Remove punctuation and split into words
-      const words = sentence
-        .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "")
-        .split(/\s+/)
-        .filter(word => word.length > 0);
-      
-      // Add words to history if they're not already there
-      const lowerHistoryWords = new Set(historyWords.map(w => w.toLowerCase()));
-      const wordsToAdd = words.filter(word => 
-        !lowerHistoryWords.has(word.toLowerCase())
-      );
-      
-      if (wordsToAdd.length > 0) {
-        // Ensure no duplicates in the history list
-        const uniqueHistory = [...historyWords];
-        for (const word of wordsToAdd) {
-          if (!lowerHistoryWords.has(word.toLowerCase())) {
-            uniqueHistory.push(word);
-            lowerHistoryWords.add(word.toLowerCase());
-          }
-        }
-        setHistoryWords(uniqueHistory.sort());
-      }
-    }
-  }, [sentence]);
-
   const updateListeningSpeed = async (speed) => {
     setListeningSpeed(speed);
     await saveListeningSpeed(speed);
   };
 
   const handleWordClick = (word) => {
-    // Mark the word as "too hard" and remove from both lists
-    const updatedHistory = historyWords.filter(w => w.toLowerCase() !== word.toLowerCase());
-    setHistoryWords(updatedHistory);
-    
-    // Notify parent component about word feedback (this word is too hard)
+    // Mark the word as "too hard"
     if (onWordFeedback) {
       onWordFeedback([word], true);
     }
-  };
-
-  // Handle the confirmation of clearing history
-  const handleConfirmClearHistory = () => {
-    // Clear the local history words state
-    setHistoryWords([]);
-    
-    // But immediately repopulate with current sentence words
-    if (sentence) {
-      const words = sentence
-        .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "")
-        .split(/\s+/)
-        .filter(word => word.length > 0);
-      
-      // Use a Set to ensure uniqueness
-      const uniqueWords = Array.from(new Set(words));
-      setHistoryWords(uniqueWords);
-    }
-    
-    // Call the parent component's confirmClearHistory function
-    confirmClearHistory();
   };
 
   // Only show controls if content is loaded
@@ -353,7 +269,7 @@ export function MainUI({
                 <View style={styles.feedbackColumn}>
                   <Text style={styles.feedbackColumnHeader}>{feedbackLabels.history}</Text>
                   <ScrollView style={styles.wordList}>
-                    {historyWords.map((word, index) => (
+                    {historyWords && historyWords.map((word, index) => (
                       <TouchableOpacity 
                         key={`history-${index}`} 
                         style={styles.historyWordItem}
@@ -398,7 +314,7 @@ export function MainUI({
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={[styles.modalButton, styles.confirmButton]}
-                      onPress={handleConfirmClearHistory}
+                      onPress={confirmClearHistory}
                     >
                       <Text style={styles.modalButtonText}>{feedbackLabels.confirm}</Text>
                     </TouchableOpacity>
