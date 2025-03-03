@@ -173,6 +173,18 @@ export function MainUI({
     // Clear the local history words state
     setHistoryWords([]);
     
+    // But immediately repopulate with current sentence words
+    if (sentence) {
+      const words = sentence
+        .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "")
+        .split(/\s+/)
+        .filter(word => word.length > 0);
+      
+      // Use a Set to ensure uniqueness
+      const uniqueWords = Array.from(new Set(words));
+      setHistoryWords(uniqueWords);
+    }
+    
     // Call the parent component's confirmClearHistory function
     confirmClearHistory();
   };

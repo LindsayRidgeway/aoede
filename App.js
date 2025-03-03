@@ -192,7 +192,11 @@ export default function App() {
           return [sourceSentence];
         } else {
           // Break the sentence into chunks of about 6 words
-          return await breakIntoMeaningfulChunks(sourceSentence);
+          const chunks = [];
+          for (let i = 0; i < words.length; i += 6) {
+            chunks.push(words.slice(i, i + 6).join(' '));
+          }
+          return chunks;
         }
       }
       
@@ -218,106 +222,45 @@ export default function App() {
     }
   };
   
-  // Break a long sentence into meaningful chunks using AI
-  const breakIntoMeaningfulChunks = async (sentence) => {
-    try {
-      const prompt = `
-        You are helping a language learner by breaking a long sentence into shorter, meaningful chunks.
-        
-        Original sentence: "${sentence}"
-        
-        Please break this sentence into multiple shorter sentences that:
-        1. Each have about 6 words or fewer
-        2. Maintain the meaning of the original sentence
-        3. Are grammatically correct
-        4. IMPORTANT: Preserve the original sentence structure and word order 
-        5. DO NOT create sentences in simple Subject-Verb-Object format unless the original was already in that format
-        6. MAINTAIN the complexity of the original grammatical constructions where possible
-        7. Cover all important information from the original
-        
-        Return ONLY the simplified sentences separated by line breaks. Do not include any explanation.
-      `;
-      
-      // Call the AI API
-      const chunkedText = await fetchFromAI(prompt);
-      
-      // Split the response into separate sentences
-      const chunks = chunkedText.split(/\n+/).filter(s => s.trim().length > 0);
-      
-      return chunks.length > 0 ? chunks : [sentence];
-    } catch (error) {
-      // If anything goes wrong, do a simple mechanical chunking
-      const words = sentence.split(/\s+/);
-      const chunks = [];
-      for (let i = 0; i < words.length; i += 6) {
-        chunks.push(words.slice(i, i + 6).join(' '));
-      }
-      return chunks;
-    }
-  };
-  
   // Generate adaptive sentences using AI
   const generateAdaptiveSentencesWithAI = async (sourceSentence) => {
     const tooHardWordsArray = Array.from(tooHardWords);
     
-    // Limit the number of too-hard words to avoid overloading the API
-    const limitedTooHardWords = tooHardWordsArray.slice(0, 100);
-    
     const prompt = `
-      You are helping a language learner by generating simplified sentences for listening practice.
+      Generate simpler sentences for a language learner. The original sentence is:
+      "${sourceSentence}"
       
-      Here is the list of words the user finds TOO DIFFICULT:
-      ${limitedTooHardWords.join(', ')}${tooHardWordsArray.length > 100 ? ' [and more...]' : ''}
+      These words are TOO DIFFICULT for the learner:
+      ${tooHardWordsArray.join(', ')}
       
-      Original sentence: "${sourceSentence}"
-      
-      Please adapt this sentence according to these rules:
-      1. Break the original sentence into multiple simpler sentences if needed
-      2. Each sentence should contain AT MOST ONE difficult word (from the too-difficult words list)
-      3. If a sentence has a difficult word, it should be no longer than 6 words total
-      4. IMPORTANT: Preserve the original sentence structure and word order where possible
-      5. DO NOT revert to simple Subject-Verb-Object format unless the original was already in that format
-      6. MAINTAIN similar grammatical constructions to the original where possible
-      7. You may simplify difficult words when necessary
-      8. Make sure all the important information from the original sentence is preserved
-      9. Each sentence should be grammatically correct and meaningful
-      
-      Return ONLY the simplified sentence(s) separated by line breaks. Do not include any explanation or commentary.
+      Rules:
+      1. Create very short, simple sentences of 6 words or fewer
+      2. Each sentence should have AT MOST ONE difficult word
+      3. Keep the original meaning but simplify vocabulary and grammar
+      4. Break the sentence into multiple simpler sentences if needed
+      5. Return ONLY the simplified sentences with no explanations
     `;
     
-    // Call the AI API
-    const adaptiveText = await fetchFromAI(prompt);
-    
-    // Split the response into separate sentences
-    const adaptives = adaptiveText.split(/\n+/).filter(s => s.trim().length > 0);
-    
-    if (adaptives.length === 0) {
-      return [sourceSentence];
-    }
-    
-    return adaptives;
-  };
-  
-  // Make API call to get adaptive sentences from AI
-  const fetchFromAI = async (prompt) => {
     try {
-      const requestBody = {
-        model: "gpt-3.5-turbo", // Using GPT-3.5 for cost efficiency
-        messages: [
-          { role: "system", content: "You are a language learning assistant that helps create sentences for listening practice. AVOID creating simple Subject-Verb-Object sentences unless absolutely necessary. Maintain the original sentence structure where possible." },
-          { role: "user", content: prompt }
-        ],
-        max_tokens: 250,
-        temperature: 0.3 // Lower temperature for more consistent results
-      };
-
+      // Call the AI API
       const response = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${openaiKey}`,
           "Content-Type": "application/json"
         },
-        body: JSON.stringify(requestBody)
+        body: JSON.stringify({
+          model: "gpt-3.5-turbo",
+          messages: [
+            { 
+              role: "system", 
+              content: "You simplify sentences for language learners. Create very short, simple sentences with basic grammar."
+            },
+            { role: "user", content: prompt }
+          ],
+          max_tokens: 150,
+          temperature: 0.3
+        })
       });
 
       const data = await response.json();
@@ -326,10 +269,45 @@ export default function App() {
         throw new Error("No response from AI");
       }
       
-      return data.choices[0].message.content.trim();
+      // Split the response into separate sentences
+      const adaptiveText = data.choices[0].message.content.trim();
+      const adaptives = adaptiveText.split(/\n+/).filter(s => s.trim().length > 0);
+      
+      // If we get no valid sentences back, do a simple split
+      if (adaptives.length === 0) {
+        const words = sourceSentence.split(/\s+/);
+        const chunks = [];
+        for (let i = 0; i < words.length; i += 6) {
+          chunks.push(words.slice(i, i + 6).join(' '));
+        }
+        return chunks;
+      }
+      
+      // Verify that all adaptive sentences are 6 words or fewer
+      const verifiedAdaptives = adaptives.flatMap(sentence => {
+        const sentenceWords = sentence.split(/\s+/);
+        // If more than 6 words, break it down further
+        if (sentenceWords.length > 6) {
+          const chunks = [];
+          for (let i = 0; i < sentenceWords.length; i += 6) {
+            chunks.push(sentenceWords.slice(i, i + 6).join(' '));
+          }
+          return chunks;
+        }
+        return sentence;
+      });
+      
+      return verifiedAdaptives;
     } catch (error) {
       console.error("Error fetching from AI:", error);
-      throw error;
+      
+      // Fall back to simple mechanical chunking
+      const words = sourceSentence.split(/\s+/);
+      const chunks = [];
+      for (let i = 0; i < words.length; i += 6) {
+        chunks.push(words.slice(i, i + 6).join(' '));
+      }
+      return chunks;
     }
   };
   
