@@ -15,7 +15,7 @@ import Constants from "expo-constants";
 let sourceText = "";
 let currentSentenceIndex = 0;
 let sentences = [];
-let knownWords = new Set();
+let knownWords = new Set(); // This actually tracks words that are TOO HARD for the user
 let adaptiveSentences = [];
 let currentAdaptiveIndex = 0;
 
@@ -49,11 +49,11 @@ export default function App() {
       setStudyLanguage(language);
       await detectLanguageCode(language);
       
-      // Load known words
+      // Load too hard words
       try {
-        const savedKnownWords = await AsyncStorage.getItem('knownWords');
-        if (savedKnownWords) {
-          const parsedWords = JSON.parse(savedKnownWords);
+        const savedTooHardWords = await AsyncStorage.getItem('tooHardWords');
+        if (savedTooHardWords) {
+          const parsedWords = JSON.parse(savedTooHardWords);
           knownWords = new Set(parsedWords);
           setKnownWordsList(parsedWords);
         }
@@ -114,10 +114,10 @@ export default function App() {
         .split(/\s+/)
         .filter(word => word.length > 0);
       
-      // Filter out words that are already known
-      const lowerCaseKnownWords = new Set(knownWordsList.map(w => w.toLowerCase()));
+      // Filter to only show words that haven't been marked as too hard
+      const lowerCaseTooHardWords = new Set(knownWordsList.map(w => w.toLowerCase()));
       const newWords = words.filter(word => 
-        !lowerCaseKnownWords.has(word.toLowerCase())
+        !lowerCaseTooHardWords.has(word.toLowerCase())
       );
       
       // Update new words list
@@ -170,7 +170,7 @@ export default function App() {
   // Save current state
   const saveCurrentState = async () => {
     try {
-      await AsyncStorage.setItem('knownWords', JSON.stringify(Array.from(knownWords)));
+      await AsyncStorage.setItem('tooHardWords', JSON.stringify(Array.from(knownWords)));
       await AsyncStorage.setItem('sourceText', sourceText);
       await AsyncStorage.setItem('currentSentenceIndex', currentSentenceIndex.toString());
       await AsyncStorage.setItem('sourceLanguage', sourceLanguage);
@@ -184,7 +184,7 @@ export default function App() {
   // Generate adaptive sentences from a single source sentence
   const generateAdaptiveSentences = async (sourceSentence) => {
     try {
-      // If we have no known words, just return the source sentence
+      // If we have no too-hard words, just return the source sentence
       // But still apply the 6-word limit rule if it's a long sentence
       if (knownWords.size === 0) {
         const words = sourceSentence.split(/\s+/);
@@ -198,13 +198,13 @@ export default function App() {
       
       // Check if the sentence already fits our criteria (0-1 unknown words)
       const words = sourceSentence.split(/\s+/);
-      const unknownWordsCount = words.filter(word => {
+      const tooHardWordsCount = words.filter(word => {
         const cleanWord = word.toLowerCase().replace(/[.,!?;:'"()]/g, '');
-        return cleanWord.length > 0 && !knownWords.has(cleanWord);
+        return cleanWord.length > 0 && knownWords.has(cleanWord);
       }).length;
       
-      // If the source sentence is short (≤ 6 words) or has 0-1 unknown words, use it directly
-      if (words.length <= 6 || unknownWordsCount <= 1) {
+      // If the source sentence is short (≤ 6 words) and has 0-1 too-hard words, use it directly
+      if (words.length <= 6 && tooHardWordsCount <= 1) {
         return [sourceSentence];
       }
       
@@ -256,25 +256,25 @@ export default function App() {
   
   // Generate adaptive sentences using AI
   const generateAdaptiveSentencesWithAI = async (sourceSentence) => {
-    const knownWordsArray = Array.from(knownWords);
+    const tooHardWordsArray = Array.from(knownWords);
     
-    // Limit the number of known words to avoid overloading the API
-    const limitedKnownWords = knownWordsArray.slice(0, 100);
+    // Limit the number of too-hard words to avoid overloading the API
+    const limitedTooHardWords = tooHardWordsArray.slice(0, 100);
     
     const prompt = `
       You are helping a language learner by generating simplified sentences for listening practice.
       
-      Here is the list of words the user already knows:
-      ${limitedKnownWords.join(', ')}${knownWordsArray.length > 100 ? ' [and more...]' : ''}
+      Here is the list of words the user finds TOO DIFFICULT:
+      ${limitedTooHardWords.join(', ')}${tooHardWordsArray.length > 100 ? ' [and more...]' : ''}
       
       Original sentence: "${sourceSentence}"
       
       Please adapt this sentence according to these rules:
       1. Break the original sentence into multiple simpler sentences if needed
-      2. Each sentence should contain AT MOST ONE unknown word (words not in the user's known words list)
-      3. If a sentence has an unknown word, it should be no longer than 6 words total
+      2. Each sentence should contain AT MOST ONE difficult word (from the too-difficult words list)
+      3. If a sentence has a difficult word, it should be no longer than 6 words total
       4. Preserve the original sentence structure and style where possible (don't default to SVO)
-      5. You may simplify unknown words when necessary
+      5. You may simplify difficult words when necessary
       6. DO NOT create sentences in SVO (Subject-Verb-Object) format unless the original was in that format
       7. Make sure all the important information from the original sentence is preserved
       8. Each sentence should be grammatically correct and meaningful
@@ -301,7 +301,7 @@ export default function App() {
       const requestBody = {
         model: "gpt-3.5-turbo", // Using GPT-3.5 for cost efficiency
         messages: [
-          { role: "system", content: "You are a language learning assistant that simplifies sentences for beginners. Your goal is to create very simple, short sentences with at most one unknown word per sentence." },
+          { role: "system", content: "You are a language learning assistant that simplifies sentences for beginners. Your goal is to create very simple, short sentences with at most one difficult word per sentence." },
           { role: "user", content: prompt }
         ],
         max_tokens: 250,
@@ -445,12 +445,12 @@ export default function App() {
   };
   
   // Handle word feedback
-  const handleWordFeedback = async (words, isKnown) => {
-    if (isKnown) {
-      // Add words to known words
+  const handleWordFeedback = async (words, isTooHard) => {
+    if (isTooHard) {
+      // Add words to too-hard words list
       words.forEach(word => knownWords.add(word.toLowerCase()));
     } else {
-      // Remove words from known words
+      // Remove words from too-hard words list
       words.forEach(word => knownWords.delete(word.toLowerCase()));
     }
     
@@ -466,39 +466,46 @@ export default function App() {
 
   // Confirm clear history
   const confirmClearHistory = async () => {
-    // Clear known words
-    knownWords.clear();
-    setKnownWordsList([]);
-    
-    // Save state
-    await saveCurrentState();
-    
-    // Close confirmation dialog
-    setShowConfirmation(false);
-    
-    // Regenerate current sentence
-    if (sentences.length > 0) {
-      // Reset to beginning of current sentence's adaptive sentences
+    try {
+      // Clear too-hard words
+      knownWords.clear();
+      setKnownWordsList([]);
+      
+      // Also clear history words in AsyncStorage
+      await AsyncStorage.removeItem('historyWords');
+      
+      // Reset adaptive sentences
       adaptiveSentences = [];
-      currentAdaptiveIndex = 0;
-      
-      // Generate new adaptive sentences based on the current source sentence
-      const currentSourceIndex = Math.max(0, currentSentenceIndex - 1);
-      const currentSourceSentence = sentences[currentSourceIndex];
-      
-      // Generate new adaptive sentences
-      adaptiveSentences = await generateAdaptiveSentences(currentSourceSentence);
       currentAdaptiveIndex = 0;
       
       // Save state
       await saveCurrentState();
       
-      // Display the first adaptive sentence
-      if (adaptiveSentences.length > 0) {
-        await translateAndSetSentences(adaptiveSentences[0], sourceLanguage);
-      } else {
-        await translateAndSetSentences(currentSourceSentence, sourceLanguage);
+      // Close confirmation dialog
+      setShowConfirmation(false);
+      
+      // Regenerate current sentence
+      if (sentences.length > 0) {
+        // Reset to beginning of current sentence's adaptive sentences
+        const currentSourceIndex = Math.max(0, currentSentenceIndex - 1);
+        const currentSourceSentence = sentences[currentSourceIndex];
+        
+        // Generate new adaptive sentences
+        adaptiveSentences = await generateAdaptiveSentences(currentSourceSentence);
+        currentAdaptiveIndex = 0;
+        
+        // Save state
+        await saveCurrentState();
+        
+        // Display the first adaptive sentence
+        if (adaptiveSentences.length > 0) {
+          await translateAndSetSentences(adaptiveSentences[0], sourceLanguage);
+        } else {
+          await translateAndSetSentences(currentSourceSentence, sourceLanguage);
+        }
       }
+    } catch (error) {
+      console.error("Error clearing history:", error);
     }
   };
 

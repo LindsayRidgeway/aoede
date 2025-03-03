@@ -27,7 +27,7 @@ export function MainUI({
   setListeningSpeed,
   isSpeaking,
   onWordFeedback,
-  knownWords,
+  knownWords, // Actually the "too hard" words list
   newWords,
   clearHistory,
   showConfirmation,
@@ -43,7 +43,7 @@ export function MainUI({
     history: "History",
     clearHistory: "Clear History",
     confirmClear: "Confirm Clear",
-    confirmClearText: "Are you sure you want to clear all known words? This cannot be undone.",
+    confirmClearText: "Are you sure you want to clear all history? This cannot be undone.",
     cancel: "Cancel",
     confirm: "Confirm"
   });
@@ -109,15 +109,18 @@ export function MainUI({
   useEffect(() => {
     const saveWords = async () => {
       try {
-        await AsyncStorage.setItem('historyWords', JSON.stringify(historyWords));
+        if (historyWords.length > 0) {
+          await AsyncStorage.setItem('historyWords', JSON.stringify(historyWords));
+        } else {
+          // If history is empty, remove the item from storage
+          await AsyncStorage.removeItem('historyWords');
+        }
       } catch (error) {
         // Handle silently
       }
     };
     
-    if (historyWords.length > 0) {
-      saveWords();
-    }
+    saveWords();
   }, [historyWords]);
 
   // Update history words when sentence changes
@@ -155,20 +158,26 @@ export function MainUI({
   };
 
   const handleWordClick = (word) => {
-    // Remove from history
-    setHistoryWords(historyWords.filter(w => w.toLowerCase() !== word.toLowerCase()));
-    
-    // Notify parent component about word feedback (this word is too hard)
+    // Mark the word as "too hard"
     if (onWordFeedback) {
-      onWordFeedback([word], false);
+      onWordFeedback([word], true);
     }
   };
   
   const handleAddToKnown = (word) => {
-    // When a word is learned, update the known words
+    // Remove word from "too hard" list
     if (onWordFeedback) {
-      onWordFeedback([word], true);
+      onWordFeedback([word], false);
     }
+  };
+
+  // Handle the confirmation of clearing history
+  const handleConfirmClearHistory = () => {
+    // Clear the local history words state
+    setHistoryWords([]);
+    
+    // Call the parent component's confirmClearHistory function
+    confirmClearHistory();
   };
 
   // Only show controls if content is loaded
@@ -355,7 +364,7 @@ export function MainUI({
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={[styles.modalButton, styles.confirmButton]}
-                      onPress={confirmClearHistory}
+                      onPress={handleConfirmClearHistory}
                     >
                       <Text style={styles.modalButtonText}>{feedbackLabels.confirm}</Text>
                     </TouchableOpacity>
