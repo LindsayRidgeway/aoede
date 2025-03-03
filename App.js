@@ -56,21 +56,22 @@ export default function App() {
   const extractWords = (text) => {
     if (!text) return [];
     
-    // Step 1: Split by whitespace to get raw words
-    const spaceSplit = text.split(/\s+/);
+    // First split by whitespace to get initial words
+    const wordCandidates = text.split(/\s+/);
     
-    // Step 2: Remove punctuation from each word
-    // Include all possible punctuation marks from various writing systems
-    const cleanWords = spaceSplit.map(word => 
-      word.replace(/[.,!?;:'"(){}[\]<>«»„""''—–\-\u05BE\u05C0\u05C3\u05F3\u05F4\u0600-\u060F\u2000-\u206F]+/g, '')
+    // Clean punctuation from each word individually
+    const cleaned = wordCandidates.map(word => 
+      word.replace(/[^\p{L}\p{N}]/gu, '') // Remove anything that's not a letter or number
     );
     
-    // Step 3: Filter out empty strings
-    return cleanWords.filter(word => word.length > 0);
+    // Remove empty strings
+    return cleaned.filter(word => word && word.length > 0);
   };
   
   // Custom translation setter that handles word extraction
   const customSetStudyLangSentence = (text) => {
+    console.log("Setting study lang sentence:", text);
+    
     // Update the sentence state
     setStudyLangSentence(text);
     
@@ -88,13 +89,15 @@ export default function App() {
   const processWords = (words) => {
     if (!words || words.length === 0) return;
     
-    // Update New Words list (exclude too-hard words)
+    // Filter out words that have been marked as too hard
     const lowerCaseTooHardWords = new Set(tooHardWordsList.map(w => w.toLowerCase()));
     const newWords = words.filter(word => 
       !lowerCaseTooHardWords.has(word.toLowerCase())
     );
     
-    // Set new words (directly, no filtering)
+    console.log("Setting newWordsList:", newWords);
+    
+    // Update new words list
     setNewWordsList([...newWords]);
     
     // Add all words to history

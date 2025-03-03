@@ -37,6 +37,8 @@ export function MainUI({
   historyWords
 }) {
   const [showFeedback, setShowFeedback] = useState(false);
+  const [localHistoryWords, setLocalHistoryWords] = useState([]);
+  const [localNewWords, setLocalNewWords] = useState([]);
   const [feedbackLabels, setFeedbackLabels] = useState({
     showFeedback: "Show Feedback Panel",
     instruction: "Click the words that are too hard for you:",
@@ -50,6 +52,15 @@ export function MainUI({
     loadingMore: "Loading more content...",
     sectionsLoaded: "Sections loaded:"
   });
+
+  // Update local copies when props change
+  useEffect(() => {
+    setLocalHistoryWords(historyWords || []);
+  }, [historyWords]);
+
+  useEffect(() => {
+    setLocalNewWords(newWords || []);
+  }, [newWords]);
 
   // Translate UI labels
   useEffect(() => {
@@ -110,6 +121,10 @@ export function MainUI({
     if (onWordFeedback) {
       onWordFeedback([word], true);
     }
+    
+    // Remove word from local lists
+    setLocalNewWords(prevWords => prevWords.filter(w => w.toLowerCase() !== word.toLowerCase()));
+    setLocalHistoryWords(prevWords => prevWords.filter(w => w.toLowerCase() !== word.toLowerCase()));
   };
 
   // Only show controls if content is loaded
@@ -254,7 +269,7 @@ export function MainUI({
                 <View style={styles.feedbackColumn}>
                   <Text style={styles.feedbackColumnHeader}>{feedbackLabels.newWords}</Text>
                   <ScrollView style={styles.wordList}>
-                    {newWords && newWords.map((word, index) => (
+                    {localNewWords && localNewWords.map((word, index) => (
                       <TouchableOpacity 
                         key={`new-${index}`} 
                         style={styles.wordItem}
@@ -269,22 +284,13 @@ export function MainUI({
                 <View style={styles.feedbackColumn}>
                   <Text style={styles.feedbackColumnHeader}>{feedbackLabels.history}</Text>
                   <ScrollView style={styles.wordList}>
-                    {historyWords && historyWords.map((word, index) => (
+                    {localHistoryWords && localHistoryWords.map((word, index) => (
                       <TouchableOpacity 
                         key={`history-${index}`} 
                         style={styles.historyWordItem}
                         onPress={() => handleWordClick(word)}
                       >
-                        <Text 
-                          style={[
-                            styles.historyWordText, 
-                            knownWords.some(
-                              w => w.toLowerCase() === word.toLowerCase()
-                            ) ? styles.knownWordText : null
-                          ]}
-                        >
-                          {word}
-                        </Text>
+                        <Text style={styles.historyWordText}>{word}</Text>
                       </TouchableOpacity>
                     ))}
                   </ScrollView>
