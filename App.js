@@ -7,6 +7,7 @@ import { speakSentenceWithPauses, stopSpeaking } from './listeningSpeed';
 import { translateLabels } from './translateLabels';
 import { updateSpeechRate } from './listeningSpeed';
 import { updateUserQuery } from './updateUserQuery';
+import { handleNextSentence } from './sentenceProcessor';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from "expo-constants";
 import { 
@@ -104,11 +105,37 @@ export default function App() {
                 await translateAndSetSentences(adaptiveSentence, bookData.language, setStudyLangSentence, setNativeLangSentence);
               } else {
                 // Otherwise, generate new adaptive sentences
-                await handleNextSentence();
+                await handleNextSentence(
+                  sentences, 
+                  adaptiveSentences, 
+                  currentSentenceIndex, 
+                  currentAdaptiveIndex, 
+                  tooHardWords,
+                  sourceLanguage,
+                  loadProgress, 
+                  setStudyLangSentence, 
+                  setNativeLangSentence, 
+                  setLoadingBook,
+                  setLoadProgress,
+                  openaiKey
+                );
               }
             } else if (sentences.length > 0) {
               // No adaptive sentences yet, but we have source sentences
-              await handleNextSentence();
+              await handleNextSentence(
+                sentences, 
+                adaptiveSentences, 
+                currentSentenceIndex, 
+                currentAdaptiveIndex, 
+                tooHardWords,
+                sourceLanguage,
+                loadProgress, 
+                setStudyLangSentence, 
+                setNativeLangSentence, 
+                setLoadingBook,
+                setLoadProgress,
+                openaiKey
+              );
             }
             
             // Start background loading of additional sections
@@ -185,7 +212,20 @@ export default function App() {
       
       // Generate first adaptive sentence
       if (sentences.length > 0) {
-        await handleNextSentence();
+        await handleNextSentence(
+          sentences, 
+          adaptiveSentences, 
+          currentSentenceIndex, 
+          currentAdaptiveIndex, 
+          tooHardWords,
+          sourceLang,
+          loadProgress, 
+          setStudyLangSentence, 
+          setNativeLangSentence, 
+          setLoadingBook,
+          setLoadProgress,
+          openaiKey
+        );
       }
       
       // Start background loading of additional sections
@@ -199,104 +239,22 @@ export default function App() {
     }
   };
   
-  // Handle next sentence
-  const handleNextSentence = async () => {
-    // Check if we have sentences to display
-    if (sentences.length === 0) {
-      console.log("No sentences available");
-      setStudyLangSentence("Error: No content available. Please load a book.");
-      setNativeLangSentence("Error: No content available. Please load a book.");
-      return;
-    }
-    
-    setLoadingBook(true);
-    
-    try {
-      // Check if we have more adaptive sentences for the current source sentence
-      if (adaptiveSentences.length > 0 && currentAdaptiveIndex < adaptiveSentences.length - 1) {
-        // If so, increment the adaptive index and show the next adaptive sentence
-        currentAdaptiveIndex++;
-        const adaptiveSentence = adaptiveSentences[currentAdaptiveIndex];
-        
-        // Save state
-        await saveCurrentState();
-        
-        // Translate and display
-        await translateAndSetSentences(adaptiveSentence, sourceLanguage, setStudyLangSentence, setNativeLangSentence);
-      } else {
-        // We've finished the current adaptive sentences, move to the next source sentence
-        if (currentSentenceIndex < sentences.length) {
-          const nextSourceSentence = sentences[currentSentenceIndex];
-          currentSentenceIndex++;
-          
-          // Generate adaptive sentences for this source sentence
-          adaptiveSentences = await generateAdaptiveSentences(nextSourceSentence, tooHardWords, openaiKey);
-          currentAdaptiveIndex = 0;
-          
-          // Save state
-          await saveCurrentState();
-          
-          // Translate and display the first adaptive sentence
-          if (adaptiveSentences.length > 0) {
-            await translateAndSetSentences(adaptiveSentences[0], sourceLanguage, setStudyLangSentence, setNativeLangSentence);
-          } else {
-            // Fallback if no adaptive sentences were generated
-            await translateAndSetSentences(nextSourceSentence, sourceLanguage, setStudyLangSentence, setNativeLangSentence);
-          }
-          
-          // Check if we're getting close to the end of our content
-          if (currentSentenceIndex > (sentences.length * 0.7)) {
-            // Start background loading of next section if not already loading
-            needsMoreContent = true;
-            if (!isLoadingNextSection) {
-              startBackgroundLoading(setLoadProgress);
-            }
-          }
-        } else {
-          // We've reached the end of the source text
-          
-          // Check if we're still loading more content
-          if (isLoadingNextSection || (!loadProgress.complete && needsMoreContent)) {
-            // Display loading message
-            setStudyLangSentence("Loading more content...");
-            setNativeLangSentence("Loading more content...");
-            
-            // Wait for content to load (retry in 2 seconds)
-            setTimeout(() => {
-              if (currentSentenceIndex >= sentences.length) {
-                handleNextSentence();
-              }
-            }, 2000);
-          } else if (loadProgress.complete) {
-            // No more content to load, loop back to beginning
-            currentSentenceIndex = 0;
-            
-            if (sentences.length > 0) {
-              // Generate adaptive sentences for the first source sentence
-              const firstSourceSentence = sentences[0];
-              adaptiveSentences = await generateAdaptiveSentences(firstSourceSentence, tooHardWords, openaiKey);
-              currentAdaptiveIndex = 0;
-              
-              // Save state
-              await saveCurrentState();
-              
-              // Translate and display the first adaptive sentence
-              if (adaptiveSentences.length > 0) {
-                await translateAndSetSentences(adaptiveSentences[0], sourceLanguage, setStudyLangSentence, setNativeLangSentence);
-              } else {
-                await translateAndSetSentences(firstSourceSentence, sourceLanguage, setStudyLangSentence, setNativeLangSentence);
-              }
-            }
-          }
-        }
-      }
-    } catch (error) {
-      console.error("Error in handleNextSentence:", error);
-      setStudyLangSentence("Error generating sentence.");
-      setNativeLangSentence("Error generating sentence.");
-    } finally {
-      setLoadingBook(false);
-    }
+  // Process next sentence
+  const processNextSentence = async () => {
+    await handleNextSentence(
+      sentences, 
+      adaptiveSentences, 
+      currentSentenceIndex, 
+      currentAdaptiveIndex, 
+      tooHardWords,
+      sourceLanguage,
+      loadProgress, 
+      setStudyLangSentence, 
+      setNativeLangSentence, 
+      setLoadingBook,
+      setLoadProgress,
+      openaiKey
+    );
   };
   
   // Handle word feedback
@@ -384,7 +342,7 @@ export default function App() {
       speechRate={speechRate}
       setSpeechRate={(rate) => updateSpeechRate(rate, setSpeechRate)}
       speakSentence={toggleSpeak}
-      nextSentence={handleNextSentence}
+      nextSentence={processNextSentence}
       isSpeaking={isSpeaking}
       loadingBook={loadingBook}
       listeningSpeed={listeningSpeed}
