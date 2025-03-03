@@ -1,12 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchNextBookSection, getAllBookText, translateText } from './api';
 
-// Import state variables from App.js to maintain shared state
-import { 
-  sourceText, sentences, currentSentenceIndex, adaptiveSentences, 
-  currentAdaptiveIndex, tooHardWords, isLoadingNextSection, needsMoreContent 
-} from './App';
-
 // Split text into sentences
 export const splitIntoSentences = (text) => {
   if (!text) return [];
@@ -50,10 +44,11 @@ export const translateAndSetSentences = async (sentence, sourceLang, setStudyLan
 // Save current state
 export const saveCurrentState = async () => {
   try {
-    await AsyncStorage.setItem('tooHardWords', JSON.stringify(Array.from(tooHardWords)));
-    await AsyncStorage.setItem('currentSentenceIndex', currentSentenceIndex.toString());
-    await AsyncStorage.setItem('adaptiveSentences', JSON.stringify(adaptiveSentences));
-    await AsyncStorage.setItem('currentAdaptiveIndex', currentAdaptiveIndex.toString());
+    const appModule = require('./App');
+    await AsyncStorage.setItem('tooHardWords', JSON.stringify(Array.from(appModule.tooHardWords)));
+    await AsyncStorage.setItem('currentSentenceIndex', appModule.currentSentenceIndex.toString());
+    await AsyncStorage.setItem('adaptiveSentences', JSON.stringify(appModule.adaptiveSentences));
+    await AsyncStorage.setItem('currentAdaptiveIndex', appModule.currentAdaptiveIndex.toString());
   } catch (error) {
     console.error("Error saving current state:", error);
   }
@@ -62,10 +57,12 @@ export const saveCurrentState = async () => {
 // Background loading of additional book sections
 export const startBackgroundLoading = async (setLoadProgress) => {
   try {
-    // Check if we're already loading
-    if (isLoadingNextSection) return;
+    const appModule = require('./App');
     
-    global.isLoadingNextSection = true;
+    // Check if we're already loading
+    if (appModule.isLoadingNextSection) return;
+    
+    appModule.isLoadingNextSection = true;
     setLoadProgress(prev => ({ ...prev, loading: true }));
     
     // Get how many sections we already have
@@ -75,19 +72,20 @@ export const startBackgroundLoading = async (setLoadProgress) => {
     setLoadProgress(prev => ({ ...prev, sections: sectionsCount }));
     
     // Check if we need more content
-    const shouldLoadMore = !needsMoreContent && currentSentenceIndex > (sentences.length * 0.7);
+    const shouldLoadMore = !appModule.needsMoreContent && 
+                          appModule.currentSentenceIndex > (appModule.sentences.length * 0.7);
     
-    if (shouldLoadMore || needsMoreContent) {
+    if (shouldLoadMore || appModule.needsMoreContent) {
       // Load the next section
       const nextSection = await fetchNextBookSection();
       
       if (nextSection && nextSection.text) {
         // Get all sections and update our text
         const allText = await getAllBookText();
-        global.sourceText = allText.text;
+        appModule.sourceText = allText.text;
         
         // Update sentences array with new content
-        global.sentences = splitIntoSentences(allText.text);
+        appModule.sentences = splitIntoSentences(allText.text);
         
         // Update sections count
         const updatedSectionsStr = await AsyncStorage.getItem('bookSections');
@@ -98,7 +96,7 @@ export const startBackgroundLoading = async (setLoadProgress) => {
         await saveCurrentState();
         
         // Reset flag
-        global.needsMoreContent = false;
+        appModule.needsMoreContent = false;
       } else {
         // No more content available
         setLoadProgress(prev => ({ ...prev, complete: true }));
@@ -107,72 +105,70 @@ export const startBackgroundLoading = async (setLoadProgress) => {
   } catch (error) {
     console.error("Error loading additional sections:", error);
   } finally {
-    global.isLoadingNextSection = false;
+    const appModule = require('./App');
+    appModule.isLoadingNextSection = false;
     setLoadProgress(prev => ({ ...prev, loading: false }));
   }
 };
 
 // Generate adaptive sentences from a single source sentence
-export const generateAdaptiveSentences = async (sourceSentence, tooHardWords, openaiKey) => {
+export const generateAdaptiveSentences = async (sourceSentence, knownWords, openaiKey) => {
   try {
     if (!sourceSentence || sourceSentence.trim() === "") {
       return [];
     }
     
-    // If we have no too-hard words, just return the source sentence
-    // But still apply the 6-word limit rule if it's a long sentence
-    if (tooHardWords.size === 0) {
-      const words = sourceSentence.split(/\s+/);
-      if (words.length <= 6) {
-        return [sourceSentence];
-      } else {
-        // Break the sentence into chunks of about 6 words
-        const chunks = [];
-        for (let i = 0; i < words.length; i += 6) {
-          chunks.push(words.slice(i, i + 6).join(' '));
-        }
-        return chunks;
-      }
-    }
-    
-    // Check if the sentence already fits our criteria (0-1 too-hard words)
+    // Count unknown words in the source sentence
     const words = sourceSentence.split(/\s+/);
-    const tooHardWordsCount = words.filter(word => {
-      const cleanWord = word.toLowerCase().replace(/[.,!?;:'"()]/g, '');
-      return cleanWord.length > 0 && tooHardWords.has(cleanWord);
-    }).length;
+    const unknownWordsCount = countUnknownWords(words, knownWords);
     
-    // If the source sentence is short (≤ 6 words) and has 0-1 too-hard words, use it directly
-    if (words.length <= 6 && tooHardWordsCount <= 1) {
+    // If the sentence has 0-1 unknown words, return it as is (regardless of length)
+    if (unknownWordsCount <= 1) {
       return [sourceSentence];
     }
     
-    // Otherwise, use AI to generate adaptive sentences
-    return await generateAdaptiveSentencesWithAI(sourceSentence, tooHardWords, openaiKey);
+    // For sentences with multiple unknown words, generate adaptive sentences
+    return await generateAdaptiveSentencesWithAI(sourceSentence, knownWords, openaiKey);
   } catch (error) {
-    // If anything goes wrong, return the original sentence
     console.error("Error generating adaptive sentences:", error);
     return [sourceSentence];
   }
 };
 
+// Count how many unknown words are in a sentence
+const countUnknownWords = (words, knownWords) => {
+  const lowerCaseKnownWords = new Set(Array.from(knownWords).map(w => w.toLowerCase()));
+  
+  return words.filter(word => {
+    const cleanWord = word.toLowerCase().replace(/[.,!?;:'"()]/g, '');
+    return cleanWord.length > 0 && !lowerCaseKnownWords.has(cleanWord);
+  }).length;
+};
+
 // Generate adaptive sentences using AI
-const generateAdaptiveSentencesWithAI = async (sourceSentence, tooHardWords, openaiKey) => {
-  const tooHardWordsArray = Array.from(tooHardWords);
+const generateAdaptiveSentencesWithAI = async (sourceSentence, knownWords, openaiKey) => {
+  const knownWordsArray = Array.from(knownWords);
   
   const prompt = `
-    Generate simpler sentences for a language learner. The original sentence is:
+    Generate sentences for a language learner based on this original sentence:
     "${sourceSentence}"
     
-    These words are TOO DIFFICULT for the learner:
-    ${tooHardWordsArray.join(', ')}
+    The learner knows these words:
+    ${knownWordsArray.join(', ')}
     
-    Rules:
-    1. Create very short, simple sentences of 6 words or fewer
-    2. Each sentence should have AT MOST ONE difficult word
-    3. Keep the original meaning but simplify vocabulary and grammar
-    4. Break the sentence into multiple simpler sentences if needed
-    5. Return ONLY the simplified sentences with no explanations
+    Important rules:
+    1. Never include more than ONE unknown word per sentence
+    2. If a sentence has zero or one unknown words, it can be any length
+    3. If you must include more than one unknown word, limit the sentence to 6 words maximum
+    4. Create complete, meaningful sentences - not fragments
+    5. Preserve the original sentence structure where possible - do NOT default to Subject-Verb-Object format
+    6. Simplify unknown words when appropriate, but don't simplify known words
+    7. Return only the simplified sentences with no explanations
+    
+    Prioritize:
+    - Sentences with zero unknown words to build confidence 
+    - Maintaining natural sentence structure and flow
+    - Complete, grammatical sentences
   `;
   
   try {
@@ -188,12 +184,12 @@ const generateAdaptiveSentencesWithAI = async (sourceSentence, tooHardWords, ope
         messages: [
           { 
             role: "system", 
-            content: "You simplify sentences for language learners. Create very short, simple sentences with basic grammar."
+            content: "You create comprehensible sentences for language learners that sound like natural spoken language, not literary text. Your goal is to help the user's listening comprehension."
           },
           { role: "user", content: prompt }
         ],
-        max_tokens: 150,
-        temperature: 0.3
+        max_tokens: 200,
+        temperature: 0.4
       })
     });
 
@@ -207,40 +203,49 @@ const generateAdaptiveSentencesWithAI = async (sourceSentence, tooHardWords, ope
     const adaptiveText = data.choices[0].message.content.trim();
     const adaptives = adaptiveText.split(/\n+/).filter(s => s.trim().length > 0);
     
-    // If we get no valid sentences back, do a simple split
+    // If we get no valid sentences back, do a more mechanical approach
     if (adaptives.length === 0) {
-      const words = sourceSentence.split(/\s+/);
-      const chunks = [];
-      for (let i = 0; i < words.length; i += 6) {
-        chunks.push(words.slice(i, i + 6).join(' '));
-      }
-      return chunks;
+      // Try to create at least one sentence with 0-1 unknown words
+      const simpleSentence = simplifyToOneUnknownWord(sourceSentence, knownWords);
+      return [simpleSentence];
     }
     
-    // Verify that all adaptive sentences are 6 words or fewer
-    const verifiedAdaptives = adaptives.flatMap(sentence => {
-      const sentenceWords = sentence.split(/\s+/);
-      // If more than 6 words, break it down further
-      if (sentenceWords.length > 6) {
-        const chunks = [];
-        for (let i = 0; i < sentenceWords.length; i += 6) {
-          chunks.push(sentenceWords.slice(i, i + 6).join(' '));
-        }
-        return chunks;
-      }
-      return sentence;
-    });
-    
-    return verifiedAdaptives;
+    return adaptives;
   } catch (error) {
     console.error("Error fetching from AI:", error);
-    
-    // Fall back to simple mechanical chunking
-    const words = sourceSentence.split(/\s+/);
-    const chunks = [];
-    for (let i = 0; i < words.length; i += 6) {
-      chunks.push(words.slice(i, i + 6).join(' '));
-    }
-    return chunks;
+    return [sourceSentence];
   }
+};
+
+// Fallback function that mechanically tries to create a sentence with at most one unknown word
+const simplifyToOneUnknownWord = (sourceSentence, knownWords) => {
+  const words = sourceSentence.split(/\s+/);
+  const lowerCaseKnownWords = new Set(Array.from(knownWords).map(w => w.toLowerCase()));
+  
+  // Find unknown words
+  const unknownWords = words.filter(word => {
+    const cleanWord = word.toLowerCase().replace(/[.,!?;:'"()]/g, '');
+    return cleanWord.length > 0 && !lowerCaseKnownWords.has(cleanWord);
+  });
+  
+  if (unknownWords.length <= 1) {
+    return sourceSentence; // Already meets our criteria
+  }
+  
+  // Keep only the first unknown word, replace others with placeholders
+  let result = sourceSentence;
+  let foundFirst = false;
+  
+  for (const word of unknownWords) {
+    if (!foundFirst) {
+      foundFirst = true;
+      continue; // Keep the first unknown word
+    }
+    
+    // Replace other unknown words with a generic term
+    const wordRegex = new RegExp(`\\b${word}\\b`, 'gi');
+    result = result.replace(wordRegex, 'this');
+  }
+  
+  return result;
 };
