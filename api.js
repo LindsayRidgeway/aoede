@@ -10,7 +10,7 @@ export const fetchBookTextFromChatGPT = async (query) => {
     }
 
     const requestBody = {
-      model: "gpt-4",
+      model: "gpt-4", // Switched back to GPT-4 for reliable source material access
       messages: [
         { role: "system", content: "You retrieve the first paragraph of books or genres in their original language. Respond with only the paragraph text, followed by the detected two-letter ISO language code (e.g., 'fr', 'de', 'ru'). The language code must be on a separate last line, and contain only the two-letter code." },
         { role: "user", content: `Provide the first paragraph of "${query}" in its original language, followed by the language code on a new line.` }

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Text, View, TouchableOpacity, TextInput, Switch, ScrollView } from 'react-native';
+import { Text, View, TouchableOpacity, TextInput, Switch, ScrollView, Modal } from 'react-native';
 import Slider from '@react-native-community/slider';
 import { styles } from './styles';  
 import { getStoredListeningSpeed, saveListeningSpeed } from './listeningSpeed';
@@ -27,16 +27,25 @@ export function MainUI({
   setListeningSpeed,
   isSpeaking,
   onWordFeedback,
-  knownWords
+  knownWords,
+  newWords,
+  clearHistory,
+  showConfirmation,
+  confirmClearHistory,
+  cancelClearHistory
 }) {
   const [showFeedback, setShowFeedback] = useState(false);
-  const [newWords, setNewWords] = useState([]);
   const [historyWords, setHistoryWords] = useState([]);
   const [feedbackLabels, setFeedbackLabels] = useState({
     showFeedback: "Show Feedback Panel",
     instruction: "Click the words that are too hard for you:",
     newWords: "New Words",
-    history: "History"
+    history: "History",
+    clearHistory: "Clear History",
+    confirmClear: "Confirm Clear",
+    confirmClearText: "Are you sure you want to clear all known words? This cannot be undone.",
+    cancel: "Cancel",
+    confirm: "Confirm"
   });
 
   // Load saved words and translate UI labels
@@ -62,14 +71,24 @@ export function MainUI({
           translateText(labels.showFeedback, "en", userLang),
           translateText(labels.instruction, "en", userLang),
           translateText(labels.newWords, "en", userLang),
-          translateText(labels.history, "en", userLang)
+          translateText(labels.history, "en", userLang),
+          translateText(labels.clearHistory, "en", userLang),
+          translateText(labels.confirmClear, "en", userLang),
+          translateText(labels.confirmClearText, "en", userLang),
+          translateText(labels.cancel, "en", userLang),
+          translateText(labels.confirm, "en", userLang)
         ]);
         
         setFeedbackLabels({
           showFeedback: translations[0],
           instruction: translations[1],
           newWords: translations[2],
-          history: translations[3]
+          history: translations[3],
+          clearHistory: translations[4],
+          confirmClear: translations[5],
+          confirmClearText: translations[6],
+          cancel: translations[7],
+          confirm: translations[8]
         });
       } catch (error) {
         // Handle silently
@@ -101,38 +120,18 @@ export function MainUI({
     }
   }, [historyWords]);
 
-  // Extract words when sentence changes and update known words list
+  // Update history words when sentence changes
   useEffect(() => {
     if (sentence) {
       // Remove punctuation and split into words
-      const rawWords = sentence
+      const words = sentence
         .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "")
         .split(/\s+/)
         .filter(word => word.length > 0);
       
-      // Remove duplicates case-insensitively
-      const uniqueWords = [];
-      const lowerCaseWords = new Set();
-      
-      for (const word of rawWords) {
-        const lowerWord = word.toLowerCase();
-        if (!lowerCaseWords.has(lowerWord)) {
-          lowerCaseWords.add(lowerWord);
-          uniqueWords.push(word);
-        }
-      }
-      
-      // Filter out words that are already known
-      const lowerCaseKnownWords = new Set(knownWords.map(w => w.toLowerCase()));
-      const filteredNewWords = uniqueWords.filter(
-        word => !lowerCaseKnownWords.has(word.toLowerCase())
-      );
-      
-      setNewWords(filteredNewWords);
-      
-      // Add new words to history if they're not already there
+      // Add words to history if they're not already there
       const lowerHistoryWords = new Set(historyWords.map(w => w.toLowerCase()));
-      const wordsToAdd = uniqueWords.filter(word => 
+      const wordsToAdd = words.filter(word => 
         !lowerHistoryWords.has(word.toLowerCase())
       );
       
@@ -148,7 +147,7 @@ export function MainUI({
         setHistoryWords(uniqueHistory.sort());
       }
     }
-  }, [sentence, knownWords]);
+  }, [sentence]);
 
   const updateListeningSpeed = async (speed) => {
     setListeningSpeed(speed);
@@ -156,9 +155,6 @@ export function MainUI({
   };
 
   const handleWordClick = (word) => {
-    // Remove from new words
-    setNewWords(newWords.filter(w => w.toLowerCase() !== word.toLowerCase()));
-    
     // Remove from history
     setHistoryWords(historyWords.filter(w => w.toLowerCase() !== word.toLowerCase()));
     
@@ -173,17 +169,13 @@ export function MainUI({
     if (onWordFeedback) {
       onWordFeedback([word], true);
     }
-    
-    // Remove from new words list to avoid confusion
-    setNewWords(newWords.filter(w => w.toLowerCase() !== word.toLowerCase()));
   };
 
   // Only show controls if content is loaded
   const showControls = sentence && sentence.length > 0;
 
   return (
-      <View style={styles.container}>
-      
+    <View style={styles.container}>
       <Text style={styles.header}>{uiText.appName || "Aoede"}</Text>
 
       <View style={styles.inputContainer}>
@@ -285,12 +277,18 @@ export function MainUI({
 
           {showFeedback && (
             <View style={styles.feedbackWrapper}>
-              <Text style={styles.feedbackInstruction}>{feedbackLabels.instruction}</Text>
+              <View style={styles.feedbackHeader}>
+                <Text style={styles.feedbackInstruction}>{feedbackLabels.instruction}</Text>
+                <TouchableOpacity style={styles.clearButton} onPress={clearHistory}>
+                  <Text style={styles.clearButtonText}>{feedbackLabels.clearHistory}</Text>
+                </TouchableOpacity>
+              </View>
+              
               <View style={styles.feedbackContainer}>
                 <View style={styles.feedbackColumn}>
-                  <Text style={styles.feedbackHeader}>{feedbackLabels.newWords}</Text>
+                  <Text style={styles.feedbackColumnHeader}>{feedbackLabels.newWords}</Text>
                   <ScrollView style={styles.wordList}>
-                    {newWords.map((word, index) => (
+                    {newWords && newWords.map((word, index) => (
                       <View key={`new-${index}`} style={styles.wordItemContainer}>
                         <TouchableOpacity 
                           style={styles.wordItem}
@@ -310,7 +308,7 @@ export function MainUI({
                 </View>
                 
                 <View style={styles.feedbackColumn}>
-                  <Text style={styles.feedbackHeader}>{feedbackLabels.history}</Text>
+                  <Text style={styles.feedbackColumnHeader}>{feedbackLabels.history}</Text>
                   <ScrollView style={styles.wordList}>
                     {historyWords.map((word, index) => (
                       <TouchableOpacity 
@@ -334,6 +332,37 @@ export function MainUI({
                 </View>
               </View>
             </View>
+          )}
+          
+          {/* Confirmation Modal */}
+          {showConfirmation && (
+            <Modal
+              transparent={true}
+              visible={showConfirmation}
+              animationType="fade"
+              onRequestClose={cancelClearHistory}
+            >
+              <View style={styles.modalOverlay}>
+                <View style={styles.modalContent}>
+                  <Text style={styles.modalTitle}>{feedbackLabels.confirmClear}</Text>
+                  <Text style={styles.modalText}>{feedbackLabels.confirmClearText}</Text>
+                  <View style={styles.modalButtons}>
+                    <TouchableOpacity
+                      style={[styles.modalButton, styles.cancelButton]}
+                      onPress={cancelClearHistory}
+                    >
+                      <Text style={styles.modalButtonText}>{feedbackLabels.cancel}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.modalButton, styles.confirmButton]}
+                      onPress={confirmClearHistory}
+                    >
+                      <Text style={styles.modalButtonText}>{feedbackLabels.confirm}</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            </Modal>
           )}
         </>
       )}

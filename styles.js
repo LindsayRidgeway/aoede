@@ -182,12 +182,28 @@ export const styles = StyleSheet.create({
     width: '80%',
     marginTop: 5
   },
+  feedbackHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 3
+  },
   feedbackInstruction: {
     fontSize: 12,
     color: '#666',
     textAlign: 'left',
-    marginBottom: 3,
     paddingLeft: 2
+  },
+  clearButton: {
+    backgroundColor: '#e24a4a',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 4
+  },
+  clearButtonText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: 'bold'
   },
   feedbackContainer: {
     width: '100%',
@@ -202,7 +218,7 @@ export const styles = StyleSheet.create({
     flex: 1,
     maxHeight: 150
   },
-  feedbackHeader: {
+  feedbackColumnHeader: {
     fontSize: 14,
     fontWeight: 'bold',
     textAlign: 'center',
@@ -258,5 +274,60 @@ export const styles = StyleSheet.create({
   knownWordText: {
     color: '#1fb28a',
     fontWeight: '500'
+  },
+  // Modal styles for confirmation dialog
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 20,
+    width: '80%',
+    maxWidth: 400,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    color: '#333'
+  },
+  modalText: {
+    fontSize: 14,
+    color: '#555',
+    marginBottom: 20,
+    textAlign: 'center'
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+    paddingHorizontal: 20
+  },
+  modalButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+    minWidth: 80,
+    alignItems: 'center'
+  },
+  cancelButton: {
+    backgroundColor: '#ccc'
+  },
+  confirmButton: {
+    backgroundColor: '#e24a4a'
+  },
+  modalButtonText: {
+    color: '#fff',
+    fontWeight: 'bold'
   }
 });
