@@ -15,7 +15,7 @@ import Constants from "expo-constants";
 let sourceText = "";
 let currentSentenceIndex = 0;
 let sentences = [];
-let knownWords = new Set(); // This actually tracks words that are TOO HARD for the user
+let tooHardWords = new Set(); // Words that are too hard for the user
 let adaptiveSentences = [];
 let currentAdaptiveIndex = 0;
 
@@ -34,7 +34,7 @@ export default function App() {
   const [listeningSpeed, setListeningSpeed] = useState(1.0);
   const [loadingBook, setLoadingBook] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  const [knownWordsList, setKnownWordsList] = useState([]);
+  const [tooHardWordsList, setTooHardWordsList] = useState([]);
   const [sourceLanguage, setSourceLanguage] = useState("en");
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [newWordsList, setNewWordsList] = useState([]);
@@ -54,8 +54,8 @@ export default function App() {
         const savedTooHardWords = await AsyncStorage.getItem('tooHardWords');
         if (savedTooHardWords) {
           const parsedWords = JSON.parse(savedTooHardWords);
-          knownWords = new Set(parsedWords);
-          setKnownWordsList(parsedWords);
+          tooHardWords = new Set(parsedWords);
+          setTooHardWordsList(parsedWords);
         }
         
         // Load source text and language if available
@@ -115,7 +115,7 @@ export default function App() {
         .filter(word => word.length > 0);
       
       // Filter to only show words that haven't been marked as too hard
-      const lowerCaseTooHardWords = new Set(knownWordsList.map(w => w.toLowerCase()));
+      const lowerCaseTooHardWords = new Set(tooHardWordsList.map(w => w.toLowerCase()));
       const newWords = words.filter(word => 
         !lowerCaseTooHardWords.has(word.toLowerCase())
       );
@@ -123,7 +123,7 @@ export default function App() {
       // Update new words list
       setNewWordsList([...new Set(newWords)]);
     }
-  }, [studyLangSentence, knownWordsList]);
+  }, [studyLangSentence, tooHardWordsList]);
   
   // Helper function to translate and set sentences in both languages
   const translateAndSetSentences = async (sentence, sourceLang) => {
@@ -170,7 +170,7 @@ export default function App() {
   // Save current state
   const saveCurrentState = async () => {
     try {
-      await AsyncStorage.setItem('tooHardWords', JSON.stringify(Array.from(knownWords)));
+      await AsyncStorage.setItem('tooHardWords', JSON.stringify(Array.from(tooHardWords)));
       await AsyncStorage.setItem('sourceText', sourceText);
       await AsyncStorage.setItem('currentSentenceIndex', currentSentenceIndex.toString());
       await AsyncStorage.setItem('sourceLanguage', sourceLanguage);
@@ -186,7 +186,7 @@ export default function App() {
     try {
       // If we have no too-hard words, just return the source sentence
       // But still apply the 6-word limit rule if it's a long sentence
-      if (knownWords.size === 0) {
+      if (tooHardWords.size === 0) {
         const words = sourceSentence.split(/\s+/);
         if (words.length <= 6) {
           return [sourceSentence];
@@ -196,11 +196,11 @@ export default function App() {
         }
       }
       
-      // Check if the sentence already fits our criteria (0-1 unknown words)
+      // Check if the sentence already fits our criteria (0-1 too-hard words)
       const words = sourceSentence.split(/\s+/);
       const tooHardWordsCount = words.filter(word => {
         const cleanWord = word.toLowerCase().replace(/[.,!?;:'"()]/g, '');
-        return cleanWord.length > 0 && knownWords.has(cleanWord);
+        return cleanWord.length > 0 && tooHardWords.has(cleanWord);
       }).length;
       
       // If the source sentence is short (≤ 6 words) and has 0-1 too-hard words, use it directly
@@ -230,8 +230,10 @@ export default function App() {
         1. Each have about 6 words or fewer
         2. Maintain the meaning of the original sentence
         3. Are grammatically correct
-        4. Preserve the original sentence structure where possible (don't default to SVO)
-        5. Cover all important information from the original
+        4. IMPORTANT: Preserve the original sentence structure and word order 
+        5. DO NOT create sentences in simple Subject-Verb-Object format unless the original was already in that format
+        6. MAINTAIN the complexity of the original grammatical constructions where possible
+        7. Cover all important information from the original
         
         Return ONLY the simplified sentences separated by line breaks. Do not include any explanation.
       `;
@@ -256,7 +258,7 @@ export default function App() {
   
   // Generate adaptive sentences using AI
   const generateAdaptiveSentencesWithAI = async (sourceSentence) => {
-    const tooHardWordsArray = Array.from(knownWords);
+    const tooHardWordsArray = Array.from(tooHardWords);
     
     // Limit the number of too-hard words to avoid overloading the API
     const limitedTooHardWords = tooHardWordsArray.slice(0, 100);
@@ -273,11 +275,12 @@ export default function App() {
       1. Break the original sentence into multiple simpler sentences if needed
       2. Each sentence should contain AT MOST ONE difficult word (from the too-difficult words list)
       3. If a sentence has a difficult word, it should be no longer than 6 words total
-      4. Preserve the original sentence structure and style where possible (don't default to SVO)
-      5. You may simplify difficult words when necessary
-      6. DO NOT create sentences in SVO (Subject-Verb-Object) format unless the original was in that format
-      7. Make sure all the important information from the original sentence is preserved
-      8. Each sentence should be grammatically correct and meaningful
+      4. IMPORTANT: Preserve the original sentence structure and word order where possible
+      5. DO NOT revert to simple Subject-Verb-Object format unless the original was already in that format
+      6. MAINTAIN similar grammatical constructions to the original where possible
+      7. You may simplify difficult words when necessary
+      8. Make sure all the important information from the original sentence is preserved
+      9. Each sentence should be grammatically correct and meaningful
       
       Return ONLY the simplified sentence(s) separated by line breaks. Do not include any explanation or commentary.
     `;
@@ -301,7 +304,7 @@ export default function App() {
       const requestBody = {
         model: "gpt-3.5-turbo", // Using GPT-3.5 for cost efficiency
         messages: [
-          { role: "system", content: "You are a language learning assistant that simplifies sentences for beginners. Your goal is to create very simple, short sentences with at most one difficult word per sentence." },
+          { role: "system", content: "You are a language learning assistant that helps create sentences for listening practice. AVOID creating simple Subject-Verb-Object sentences unless absolutely necessary. Maintain the original sentence structure where possible." },
           { role: "user", content: prompt }
         ],
         max_tokens: 250,
@@ -448,14 +451,14 @@ export default function App() {
   const handleWordFeedback = async (words, isTooHard) => {
     if (isTooHard) {
       // Add words to too-hard words list
-      words.forEach(word => knownWords.add(word.toLowerCase()));
+      words.forEach(word => tooHardWords.add(word.toLowerCase()));
     } else {
       // Remove words from too-hard words list
-      words.forEach(word => knownWords.delete(word.toLowerCase()));
+      words.forEach(word => tooHardWords.delete(word.toLowerCase()));
     }
     
     // Update state
-    setKnownWordsList(Array.from(knownWords));
+    setTooHardWordsList(Array.from(tooHardWords));
     await saveCurrentState();
   };
 
@@ -468,8 +471,8 @@ export default function App() {
   const confirmClearHistory = async () => {
     try {
       // Clear too-hard words
-      knownWords.clear();
-      setKnownWordsList([]);
+      tooHardWords.clear();
+      setTooHardWordsList([]);
       
       // Also clear history words in AsyncStorage
       await AsyncStorage.removeItem('historyWords');
@@ -537,7 +540,7 @@ export default function App() {
       studyLanguage={studyLanguage}
       setStudyLanguage={setStudyLanguage}
       onWordFeedback={handleWordFeedback}
-      knownWords={knownWordsList}
+      knownWords={tooHardWordsList}
       newWords={newWordsList}
       clearHistory={clearHistory}
       showConfirmation={showConfirmation}

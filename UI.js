@@ -158,16 +158,13 @@ export function MainUI({
   };
 
   const handleWordClick = (word) => {
-    // Mark the word as "too hard"
+    // Mark the word as "too hard" and remove from both lists
+    const updatedHistory = historyWords.filter(w => w.toLowerCase() !== word.toLowerCase());
+    setHistoryWords(updatedHistory);
+    
+    // Notify parent component about word feedback (this word is too hard)
     if (onWordFeedback) {
       onWordFeedback([word], true);
-    }
-  };
-  
-  const handleAddToKnown = (word) => {
-    // Remove word from "too hard" list
-    if (onWordFeedback) {
-      onWordFeedback([word], false);
     }
   };
 
@@ -187,39 +184,42 @@ export function MainUI({
     <View style={styles.container}>
       <Text style={styles.header}>{uiText.appName || "Aoede"}</Text>
 
-      <View style={styles.inputContainer}>
-        <View style={styles.studyLangRow}>
-          <Text style={styles.smallLabel}>{uiText.studyLanguage || "Study Language"}:</Text>
-          <TextInput
-            style={styles.studyLangInput}
-            placeholder={uiText.enterLanguage || "Enter study language"}
-            value={studyLanguage}
-            onChangeText={(text) => {
-              setStudyLanguage(text);
-              saveStudyLanguage(text);
-            }}
-          />
-        </View>
-
-        <View style={styles.sourceRow}>
-          <View style={styles.sourceInputWrapper}>
-            <Text style={styles.smallLabel}>{uiText.sourceMaterial || "Source Material"}:</Text>
+      {/* Only show the input container when feedback panel is hidden */}
+      {!showFeedback && (
+        <View style={styles.inputContainer}>
+          <View style={styles.studyLangRow}>
+            <Text style={styles.smallLabel}>{uiText.studyLanguage || "Study Language"}:</Text>
             <TextInput
-              style={styles.input}
-              placeholder={uiText.enterBook || "Enter a book title or genre"}
-              value={userQuery}
-              onChangeText={setUserQuery}
+              style={styles.studyLangInput}
+              placeholder={uiText.enterLanguage || "Enter study language"}
+              value={studyLanguage}
+              onChangeText={(text) => {
+                setStudyLanguage(text);
+                saveStudyLanguage(text);
+              }}
             />
           </View>
-          <TouchableOpacity 
-            style={[styles.loadButton, loadingBook ? styles.disabledButton : null]} 
-            onPress={loadBook} 
-            disabled={loadingBook}
-          >
-            <Text style={styles.buttonText}>Load</Text>
-          </TouchableOpacity>
+
+          <View style={styles.sourceRow}>
+            <View style={styles.sourceInputWrapper}>
+              <Text style={styles.smallLabel}>{uiText.sourceMaterial || "Source Material"}:</Text>
+              <TextInput
+                style={styles.input}
+                placeholder={uiText.enterBook || "Enter a book title or genre"}
+                value={userQuery}
+                onChangeText={setUserQuery}
+              />
+            </View>
+            <TouchableOpacity 
+              style={[styles.loadButton, loadingBook ? styles.disabledButton : null]} 
+              onPress={loadBook} 
+              disabled={loadingBook}
+            >
+              <Text style={styles.buttonText}>Load</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
+      )}
 
       {showControls && (
         <>
@@ -298,20 +298,13 @@ export function MainUI({
                   <Text style={styles.feedbackColumnHeader}>{feedbackLabels.newWords}</Text>
                   <ScrollView style={styles.wordList}>
                     {newWords && newWords.map((word, index) => (
-                      <View key={`new-${index}`} style={styles.wordItemContainer}>
-                        <TouchableOpacity 
-                          style={styles.wordItem}
-                          onPress={() => handleWordClick(word)}
-                        >
-                          <Text style={styles.wordText}>{word}</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity 
-                          style={styles.knownButton}
-                          onPress={() => handleAddToKnown(word)}
-                        >
-                          <Text style={styles.knownButtonText}>✓</Text>
-                        </TouchableOpacity>
-                      </View>
+                      <TouchableOpacity 
+                        key={`new-${index}`} 
+                        style={styles.wordItem}
+                        onPress={() => handleWordClick(word)}
+                      >
+                        <Text style={styles.wordText}>{word}</Text>
+                      </TouchableOpacity>
                     ))}
                   </ScrollView>
                 </View>
