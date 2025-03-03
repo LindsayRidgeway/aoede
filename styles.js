@@ -329,5 +329,31 @@ export const styles = StyleSheet.create({
   modalButtonText: {
     color: '#fff',
     fontWeight: 'bold'
+  },
+  // Progress container
+  progressContainer: {
+    marginTop: 5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start'
+  },
+  progressText: {
+    fontSize: 12,
+    color: '#666'
+  },
+  completeText: {
+    color: '#1fb28a',
+    fontWeight: 'bold'
+  },
+  // Loading indicator
+  loadingIndicator: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 10
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 14,
+    color: '#555'
   }
 });

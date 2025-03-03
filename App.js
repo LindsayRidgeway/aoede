@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-
 import { MainUI } from './UI';
-import { fetchBookTextFromChatGPT, translateText } from './api';
+import { fetchBookTextFromChatGPT, fetchNextBookSection, getAllBookText, translateText } from './api';
 import { getStoredStudyLanguage, detectLanguageCode, detectedLanguageCode } from './listeningSpeed'; 
 import { loadStoredSettings } from './loadStoredSettings';
 import { speakSentenceWithPauses, stopSpeaking } from './listeningSpeed';
@@ -10,14 +9,25 @@ import { updateSpeechRate } from './listeningSpeed';
 import { updateUserQuery } from './updateUserQuery';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from "expo-constants";
+import { 
+  generateAdaptiveSentences, 
+  translateAndSetSentences,
+  splitIntoSentences,
+  saveCurrentState,
+  startBackgroundLoading
+} from './sentenceManager';
 
-// State variables for adaptive sentence generation
-let sourceText = "";
-let currentSentenceIndex = 0;
-let sentences = [];
-let tooHardWords = new Set(); // Words that are too hard for the user
-let adaptiveSentences = [];
-let currentAdaptiveIndex = 0;
+// Global state shared between files
+export let sourceText = "";
+export let currentSentenceIndex = 0;
+export let sentences = [];
+export let tooHardWords = new Set(); // Words that are too hard for the user
+export let adaptiveSentences = [];
+export let currentAdaptiveIndex = 0;
+
+// Variables for background section loading
+export let isLoadingNextSection = false;
+export let needsMoreContent = false;
 
 // OpenAI key from config
 const openaiKey = Constants.expoConfig?.extra?.EXPO_PUBLIC_OPENAI_API_KEY;
@@ -25,8 +35,8 @@ const openaiKey = Constants.expoConfig?.extra?.EXPO_PUBLIC_OPENAI_API_KEY;
 export default function App() {
   const [uiText, setUiText] = useState({});
   const [userQuery, setUserQuery] = useState("");  
-  const [studyLangSentence, setStudyLangSentence] = useState(""); // Sentence in study language
-  const [nativeLangSentence, setNativeLangSentence] = useState(""); // Sentence in user's native language
+  const [studyLangSentence, setStudyLangSentence] = useState(""); 
+  const [nativeLangSentence, setNativeLangSentence] = useState(""); 
   const [showText, setShowText] = useState(false);
   const [showTranslation, setShowTranslation] = useState(false);
   const [speechRate, setSpeechRate] = useState(1.0);
@@ -38,6 +48,7 @@ export default function App() {
   const [sourceLanguage, setSourceLanguage] = useState("en");
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [newWordsList, setNewWordsList] = useState([]);
+  const [loadProgress, setLoadProgress] = useState({ sections: 1, loading: false, complete: false });
   
   useEffect(() => {
     const initialize = async () => {
@@ -58,47 +69,54 @@ export default function App() {
           setTooHardWordsList(parsedWords);
         }
         
-        // Load source text and language if available
-        const savedSourceText = await AsyncStorage.getItem('sourceText');
-        const savedSourceLang = await AsyncStorage.getItem('sourceLanguage');
+        // Check if we have a book already loaded
+        const hasStoredBook = await AsyncStorage.getItem('bookSections');
         
-        if (savedSourceText && savedSourceLang) {
-          sourceText = savedSourceText;
-          setSourceLanguage(savedSourceLang);
-          sentences = splitIntoSentences(sourceText);
+        if (hasStoredBook) {
+          // Get the full book text from all sections
+          const bookData = await getAllBookText();
           
-          // Load current position
-          const savedIndex = await AsyncStorage.getItem('currentSentenceIndex');
-          if (savedIndex) {
-            currentSentenceIndex = parseInt(savedIndex, 10);
-          }
-          
-          // Load adaptive sentences if available
-          const savedAdaptiveSentences = await AsyncStorage.getItem('adaptiveSentences');
-          const savedAdaptiveIndex = await AsyncStorage.getItem('currentAdaptiveIndex');
-          
-          if (savedAdaptiveSentences) {
-            adaptiveSentences = JSON.parse(savedAdaptiveSentences);
-            if (savedAdaptiveIndex) {
-              currentAdaptiveIndex = parseInt(savedAdaptiveIndex, 10);
+          if (bookData && bookData.text) {
+            sourceText = bookData.text;
+            setSourceLanguage(bookData.language);
+            sentences = splitIntoSentences(sourceText);
+            
+            // Load current position
+            const savedIndex = await AsyncStorage.getItem('currentSentenceIndex');
+            if (savedIndex) {
+              currentSentenceIndex = parseInt(savedIndex, 10);
             }
             
-            // If we have adaptive sentences, use them
-            if (adaptiveSentences.length > 0 && currentAdaptiveIndex < adaptiveSentences.length) {
-              // Get the current adaptive sentence
-              const adaptiveSentence = adaptiveSentences[currentAdaptiveIndex];
-              await translateAndSetSentences(adaptiveSentence, savedSourceLang);
-            } else {
-              // Otherwise, generate new adaptive sentences
+            // Load adaptive sentences if available
+            const savedAdaptiveSentences = await AsyncStorage.getItem('adaptiveSentences');
+            const savedAdaptiveIndex = await AsyncStorage.getItem('currentAdaptiveIndex');
+            
+            if (savedAdaptiveSentences) {
+              adaptiveSentences = JSON.parse(savedAdaptiveSentences);
+              if (savedAdaptiveIndex) {
+                currentAdaptiveIndex = parseInt(savedAdaptiveIndex, 10);
+              }
+              
+              // If we have adaptive sentences, use them
+              if (adaptiveSentences.length > 0 && currentAdaptiveIndex < adaptiveSentences.length) {
+                // Get the current adaptive sentence
+                const adaptiveSentence = adaptiveSentences[currentAdaptiveIndex];
+                await translateAndSetSentences(adaptiveSentence, bookData.language, setStudyLangSentence, setNativeLangSentence);
+              } else {
+                // Otherwise, generate new adaptive sentences
+                await handleNextSentence();
+              }
+            } else if (sentences.length > 0) {
+              // No adaptive sentences yet, but we have source sentences
               await handleNextSentence();
             }
-          } else if (sentences.length > 0) {
-            // No adaptive sentences yet, but we have source sentences
-            await handleNextSentence();
+            
+            // Start background loading of additional sections
+            startBackgroundLoading(setLoadProgress);
           }
         }
       } catch (error) {
-        // Handle silently
+        console.error("Error during initialization:", error);
       }
     };
     
@@ -125,37 +143,6 @@ export default function App() {
     }
   }, [studyLangSentence, tooHardWordsList]);
   
-  // Helper function to translate and set sentences in both languages
-  const translateAndSetSentences = async (sentence, sourceLang) => {
-    try {
-      // Translate to study language
-      const studyLangCode = detectedLanguageCode || "en";
-      if (sourceLang !== studyLangCode) {
-        const translatedToStudy = await translateText(sentence, sourceLang, studyLangCode);
-        setStudyLangSentence(translatedToStudy.replace(/^"|"$/g, ""));
-      } else {
-        setStudyLangSentence(sentence);
-      }
-      
-      // Translate to user's native language
-      const nativeLang = navigator.language.split('-')[0] || "en";
-      if (sourceLang !== nativeLang) {
-        const translatedToNative = await translateText(sentence, sourceLang, nativeLang);
-        setNativeLangSentence(translatedToNative.replace(/^"|"$/g, ""));
-      } else {
-        setNativeLangSentence(sentence);
-      }
-    } catch (error) {
-      setStudyLangSentence("Error translating sentence.");
-      setNativeLangSentence("Error translating sentence.");
-    }
-  };
-  
-  // Split text into sentences
-  const splitIntoSentences = (text) => {
-    return text.split(/(?<=[.!?])\s+/).filter(sentence => sentence.trim().length > 0);
-  };
-  
   // Toggle speak function
   const toggleSpeak = () => {
     if (isSpeaking) {
@@ -164,150 +151,6 @@ export default function App() {
     } else {
       speakSentenceWithPauses(studyLangSentence, listeningSpeed, () => setIsSpeaking(false));
       setIsSpeaking(true);
-    }
-  };
-  
-  // Save current state
-  const saveCurrentState = async () => {
-    try {
-      await AsyncStorage.setItem('tooHardWords', JSON.stringify(Array.from(tooHardWords)));
-      await AsyncStorage.setItem('sourceText', sourceText);
-      await AsyncStorage.setItem('currentSentenceIndex', currentSentenceIndex.toString());
-      await AsyncStorage.setItem('sourceLanguage', sourceLanguage);
-      await AsyncStorage.setItem('adaptiveSentences', JSON.stringify(adaptiveSentences));
-      await AsyncStorage.setItem('currentAdaptiveIndex', currentAdaptiveIndex.toString());
-    } catch (error) {
-      // Handle silently
-    }
-  };
-  
-  // Generate adaptive sentences from a single source sentence
-  const generateAdaptiveSentences = async (sourceSentence) => {
-    try {
-      // If we have no too-hard words, just return the source sentence
-      // But still apply the 6-word limit rule if it's a long sentence
-      if (tooHardWords.size === 0) {
-        const words = sourceSentence.split(/\s+/);
-        if (words.length <= 6) {
-          return [sourceSentence];
-        } else {
-          // Break the sentence into chunks of about 6 words
-          const chunks = [];
-          for (let i = 0; i < words.length; i += 6) {
-            chunks.push(words.slice(i, i + 6).join(' '));
-          }
-          return chunks;
-        }
-      }
-      
-      // Check if the sentence already fits our criteria (0-1 too-hard words)
-      const words = sourceSentence.split(/\s+/);
-      const tooHardWordsCount = words.filter(word => {
-        const cleanWord = word.toLowerCase().replace(/[.,!?;:'"()]/g, '');
-        return cleanWord.length > 0 && tooHardWords.has(cleanWord);
-      }).length;
-      
-      // If the source sentence is short (≤ 6 words) and has 0-1 too-hard words, use it directly
-      if (words.length <= 6 && tooHardWordsCount <= 1) {
-        return [sourceSentence];
-      }
-      
-      // Otherwise, use AI to generate adaptive sentences
-      const adaptiveSentences = await generateAdaptiveSentencesWithAI(sourceSentence);
-      return adaptiveSentences;
-    } catch (error) {
-      // If anything goes wrong, return the original sentence
-      console.error("Error generating adaptive sentences:", error);
-      return [sourceSentence];
-    }
-  };
-  
-  // Generate adaptive sentences using AI
-  const generateAdaptiveSentencesWithAI = async (sourceSentence) => {
-    const tooHardWordsArray = Array.from(tooHardWords);
-    
-    const prompt = `
-      Generate simpler sentences for a language learner. The original sentence is:
-      "${sourceSentence}"
-      
-      These words are TOO DIFFICULT for the learner:
-      ${tooHardWordsArray.join(', ')}
-      
-      Rules:
-      1. Create very short, simple sentences of 6 words or fewer
-      2. Each sentence should have AT MOST ONE difficult word
-      3. Keep the original meaning but simplify vocabulary and grammar
-      4. Break the sentence into multiple simpler sentences if needed
-      5. Return ONLY the simplified sentences with no explanations
-    `;
-    
-    try {
-      // Call the AI API
-      const response = await fetch("https://api.openai.com/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${openaiKey}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          model: "gpt-3.5-turbo",
-          messages: [
-            { 
-              role: "system", 
-              content: "You simplify sentences for language learners. Create very short, simple sentences with basic grammar."
-            },
-            { role: "user", content: prompt }
-          ],
-          max_tokens: 150,
-          temperature: 0.3
-        })
-      });
-
-      const data = await response.json();
-      
-      if (!data.choices || data.choices.length === 0) {
-        throw new Error("No response from AI");
-      }
-      
-      // Split the response into separate sentences
-      const adaptiveText = data.choices[0].message.content.trim();
-      const adaptives = adaptiveText.split(/\n+/).filter(s => s.trim().length > 0);
-      
-      // If we get no valid sentences back, do a simple split
-      if (adaptives.length === 0) {
-        const words = sourceSentence.split(/\s+/);
-        const chunks = [];
-        for (let i = 0; i < words.length; i += 6) {
-          chunks.push(words.slice(i, i + 6).join(' '));
-        }
-        return chunks;
-      }
-      
-      // Verify that all adaptive sentences are 6 words or fewer
-      const verifiedAdaptives = adaptives.flatMap(sentence => {
-        const sentenceWords = sentence.split(/\s+/);
-        // If more than 6 words, break it down further
-        if (sentenceWords.length > 6) {
-          const chunks = [];
-          for (let i = 0; i < sentenceWords.length; i += 6) {
-            chunks.push(sentenceWords.slice(i, i + 6).join(' '));
-          }
-          return chunks;
-        }
-        return sentence;
-      });
-      
-      return verifiedAdaptives;
-    } catch (error) {
-      console.error("Error fetching from AI:", error);
-      
-      // Fall back to simple mechanical chunking
-      const words = sourceSentence.split(/\s+/);
-      const chunks = [];
-      for (let i = 0; i < words.length; i += 6) {
-        chunks.push(words.slice(i, i + 6).join(' '));
-      }
-      return chunks;
     }
   };
   
@@ -334,17 +177,21 @@ export default function App() {
       adaptiveSentences = [];
       currentAdaptiveIndex = 0;
       
+      // Reset loading progress
+      setLoadProgress({ sections: 1, loading: false, complete: false });
+      
       // Save state
       await saveCurrentState();
       
       // Generate first adaptive sentence
       if (sentences.length > 0) {
         await handleNextSentence();
-      } else {
-        setStudyLangSentence("No content available.");
-        setNativeLangSentence("No content available.");
       }
+      
+      // Start background loading of additional sections
+      startBackgroundLoading(setLoadProgress);
     } catch (error) {
+      console.error("Error loading book:", error);
       setStudyLangSentence("Error loading content.");
       setNativeLangSentence("Error loading content.");
     } finally {
@@ -354,9 +201,11 @@ export default function App() {
   
   // Handle next sentence
   const handleNextSentence = async () => {
+    // Check if we have sentences to display
     if (sentences.length === 0) {
-      setStudyLangSentence("No content available. Please load a book.");
-      setNativeLangSentence("No content available. Please load a book.");
+      console.log("No sentences available");
+      setStudyLangSentence("Error: No content available. Please load a book.");
+      setNativeLangSentence("Error: No content available. Please load a book.");
       return;
     }
     
@@ -373,7 +222,7 @@ export default function App() {
         await saveCurrentState();
         
         // Translate and display
-        await translateAndSetSentences(adaptiveSentence, sourceLanguage);
+        await translateAndSetSentences(adaptiveSentence, sourceLanguage, setStudyLangSentence, setNativeLangSentence);
       } else {
         // We've finished the current adaptive sentences, move to the next source sentence
         if (currentSentenceIndex < sentences.length) {
@@ -381,7 +230,7 @@ export default function App() {
           currentSentenceIndex++;
           
           // Generate adaptive sentences for this source sentence
-          adaptiveSentences = await generateAdaptiveSentences(nextSourceSentence);
+          adaptiveSentences = await generateAdaptiveSentences(nextSourceSentence, tooHardWords, openaiKey);
           currentAdaptiveIndex = 0;
           
           // Save state
@@ -389,29 +238,54 @@ export default function App() {
           
           // Translate and display the first adaptive sentence
           if (adaptiveSentences.length > 0) {
-            await translateAndSetSentences(adaptiveSentences[0], sourceLanguage);
+            await translateAndSetSentences(adaptiveSentences[0], sourceLanguage, setStudyLangSentence, setNativeLangSentence);
           } else {
             // Fallback if no adaptive sentences were generated
-            await translateAndSetSentences(nextSourceSentence, sourceLanguage);
+            await translateAndSetSentences(nextSourceSentence, sourceLanguage, setStudyLangSentence, setNativeLangSentence);
+          }
+          
+          // Check if we're getting close to the end of our content
+          if (currentSentenceIndex > (sentences.length * 0.7)) {
+            // Start background loading of next section if not already loading
+            needsMoreContent = true;
+            if (!isLoadingNextSection) {
+              startBackgroundLoading(setLoadProgress);
+            }
           }
         } else {
-          // We've reached the end of the source text, loop back to the beginning
-          currentSentenceIndex = 0;
+          // We've reached the end of the source text
           
-          if (sentences.length > 0) {
-            // Generate adaptive sentences for the first source sentence
-            const firstSourceSentence = sentences[0];
-            adaptiveSentences = await generateAdaptiveSentences(firstSourceSentence);
-            currentAdaptiveIndex = 0;
+          // Check if we're still loading more content
+          if (isLoadingNextSection || (!loadProgress.complete && needsMoreContent)) {
+            // Display loading message
+            setStudyLangSentence("Loading more content...");
+            setNativeLangSentence("Loading more content...");
             
-            // Save state
-            await saveCurrentState();
+            // Wait for content to load (retry in 2 seconds)
+            setTimeout(() => {
+              if (currentSentenceIndex >= sentences.length) {
+                handleNextSentence();
+              }
+            }, 2000);
+          } else if (loadProgress.complete) {
+            // No more content to load, loop back to beginning
+            currentSentenceIndex = 0;
             
-            // Translate and display the first adaptive sentence
-            if (adaptiveSentences.length > 0) {
-              await translateAndSetSentences(adaptiveSentences[0], sourceLanguage);
-            } else {
-              await translateAndSetSentences(firstSourceSentence, sourceLanguage);
+            if (sentences.length > 0) {
+              // Generate adaptive sentences for the first source sentence
+              const firstSourceSentence = sentences[0];
+              adaptiveSentences = await generateAdaptiveSentences(firstSourceSentence, tooHardWords, openaiKey);
+              currentAdaptiveIndex = 0;
+              
+              // Save state
+              await saveCurrentState();
+              
+              // Translate and display the first adaptive sentence
+              if (adaptiveSentences.length > 0) {
+                await translateAndSetSentences(adaptiveSentences[0], sourceLanguage, setStudyLangSentence, setNativeLangSentence);
+              } else {
+                await translateAndSetSentences(firstSourceSentence, sourceLanguage, setStudyLangSentence, setNativeLangSentence);
+              }
             }
           }
         }
@@ -472,7 +346,7 @@ export default function App() {
         const currentSourceSentence = sentences[currentSourceIndex];
         
         // Generate new adaptive sentences
-        adaptiveSentences = await generateAdaptiveSentences(currentSourceSentence);
+        adaptiveSentences = await generateAdaptiveSentences(currentSourceSentence, tooHardWords, openaiKey);
         currentAdaptiveIndex = 0;
         
         // Save state
@@ -480,9 +354,9 @@ export default function App() {
         
         // Display the first adaptive sentence
         if (adaptiveSentences.length > 0) {
-          await translateAndSetSentences(adaptiveSentences[0], sourceLanguage);
+          await translateAndSetSentences(adaptiveSentences[0], sourceLanguage, setStudyLangSentence, setNativeLangSentence);
         } else {
-          await translateAndSetSentences(currentSourceSentence, sourceLanguage);
+          await translateAndSetSentences(currentSourceSentence, sourceLanguage, setStudyLangSentence, setNativeLangSentence);
         }
       }
     } catch (error) {
@@ -524,6 +398,7 @@ export default function App() {
       showConfirmation={showConfirmation}
       confirmClearHistory={confirmClearHistory}
       cancelClearHistory={cancelClearHistory}
+      loadProgress={loadProgress}
     />
   );
 }

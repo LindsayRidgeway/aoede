@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Text, View, TouchableOpacity, TextInput, Switch, ScrollView, Modal } from 'react-native';
+import { Text, View, TouchableOpacity, TextInput, Switch, ScrollView, Modal, ActivityIndicator } from 'react-native';
 import Slider from '@react-native-community/slider';
 import { styles } from './styles';  
 import { getStoredListeningSpeed, saveListeningSpeed } from './listeningSpeed';
@@ -32,7 +32,8 @@ export function MainUI({
   clearHistory,
   showConfirmation,
   confirmClearHistory,
-  cancelClearHistory
+  cancelClearHistory,
+  loadProgress
 }) {
   const [showFeedback, setShowFeedback] = useState(false);
   const [historyWords, setHistoryWords] = useState([]);
@@ -45,7 +46,9 @@ export function MainUI({
     confirmClear: "Confirm Clear",
     confirmClearText: "Are you sure you want to clear all history? This cannot be undone.",
     cancel: "Cancel",
-    confirm: "Confirm"
+    confirm: "Confirm",
+    loadingMore: "Loading more content...",
+    sectionsLoaded: "Sections loaded:"
   });
 
   // Load saved words and translate UI labels
@@ -76,7 +79,9 @@ export function MainUI({
           translateText(labels.confirmClear, "en", userLang),
           translateText(labels.confirmClearText, "en", userLang),
           translateText(labels.cancel, "en", userLang),
-          translateText(labels.confirm, "en", userLang)
+          translateText(labels.confirm, "en", userLang),
+          translateText(labels.loadingMore, "en", userLang),
+          translateText(labels.sectionsLoaded, "en", userLang)
         ]);
         
         setFeedbackLabels({
@@ -88,7 +93,9 @@ export function MainUI({
           confirmClear: translations[5],
           confirmClearText: translations[6],
           cancel: translations[7],
-          confirm: translations[8]
+          confirm: translations[8],
+          loadingMore: translations[9],
+          sectionsLoaded: translations[10]
         });
       } catch (error) {
         // Handle silently
@@ -230,6 +237,21 @@ export function MainUI({
               <Text style={styles.buttonText}>Load</Text>
             </TouchableOpacity>
           </View>
+          
+          {/* Show load progress indicator */}
+          {loadProgress && loadProgress.sections > 1 && (
+            <View style={styles.progressContainer}>
+              <Text style={styles.progressText}>
+                {feedbackLabels.sectionsLoaded} {loadProgress.sections}
+                {loadProgress.loading && (
+                  <ActivityIndicator size="small" color="#4a90e2" style={{ marginLeft: 5 }} />
+                )}
+                {loadProgress.complete && (
+                  <Text style={styles.completeText}> (Complete)</Text>
+                )}
+              </Text>
+            </View>
+          )}
         </View>
       )}
 
@@ -284,6 +306,13 @@ export function MainUI({
           </View>
           
           <View style={styles.contentContainer}>
+            {loadProgress && loadProgress.loading && sentence === feedbackLabels.loadingMore && (
+              <View style={styles.loadingIndicator}>
+                <ActivityIndicator size="large" color="#4a90e2" />
+                <Text style={styles.loadingText}>{feedbackLabels.loadingMore}</Text>
+              </View>
+            )}
+            
             {showText && (
               <View style={styles.sentenceWrapper}>
                 <Text style={styles.foreignSentence}>{sentence}</Text>
