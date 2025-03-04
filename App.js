@@ -16,8 +16,7 @@ import {
   generateAdaptiveSentences, 
   translateAndSetSentences,
   splitIntoSentences,
-  saveCurrentState,
-  startBackgroundLoading
+  saveCurrentState
 } from './sentenceManager';
 
 // Global state shared between files
@@ -27,10 +26,6 @@ export let sentences = [];
 export let tooHardWords = new Set(); // Words that are too hard for the user
 export let adaptiveSentences = [];
 export let currentAdaptiveIndex = 0;
-
-// Variables for background section loading
-export let isLoadingNextSection = false;
-export let needsMoreContent = false;
 
 // OpenAI key from config
 const openaiKey = Constants.expoConfig?.extra?.EXPO_PUBLIC_OPENAI_API_KEY;
@@ -169,8 +164,6 @@ export default function App() {
                 openaiKey
               );
             }
-            
-            startBackgroundLoading(setLoadProgress);
           }
         }
       } catch (error) {

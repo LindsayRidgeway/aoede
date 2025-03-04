@@ -1,7 +1,7 @@
 import { 
   generateAdaptiveSentences, 
   translateAndSetSentences,
-  startBackgroundLoading,
+  loadNextSection,
   saveCurrentState
 } from './sentenceManager';
 
@@ -128,45 +128,35 @@ export const handleNextSentence = async (
             setNativeLangSentence
           );
         }
-        
-        // Check if we're getting close to the end of our content
-        if (appModule.currentSentenceIndex > (appModule.sentences.length * 0.7)) {
-          // Start background loading of next section if not already loading
-          appModule.needsMoreContent = true;
-          if (!appModule.isLoadingNextSection) {
-            startBackgroundLoading(setLoadProgress);
-          }
-        }
       } else {
-        // We've reached the end of the source text
+        // We've reached the end of available sentences, attempt to load the next section
+        setStudyLangSentence("Loading more content...");
+        setNativeLangSentence("Loading more content...");
         
-        // Check if we're still loading more content
-        if (appModule.isLoadingNextSection || (!loadProgress.complete && appModule.needsMoreContent)) {
-          // Display loading message
-          setStudyLangSentence("Loading more content...");
-          setNativeLangSentence("Loading more content...");
+        // Load the next section directly (no background process)
+        const moreContentAvailable = await loadNextSection(setLoadingBook);
+        
+        if (moreContentAvailable) {
+          // Reset sentence index to continue from the first new sentence
+          appModule.currentSentenceIndex = appModule.sentences.length - 1;
           
-          // Wait for content to load (retry in 2 seconds)
-          setTimeout(() => {
-            if (appModule.currentSentenceIndex >= appModule.sentences.length) {
-              handleNextSentence(
-                appModule.sentences,
-                appModule.adaptiveSentences,
-                appModule.currentSentenceIndex,
-                appModule.currentAdaptiveIndex,
-                tooHardWords,
-                sourceLanguage,
-                loadProgress,
-                setStudyLangSentence,
-                setNativeLangSentence,
-                setLoadingBook,
-                setLoadProgress,
-                openaiKey
-              );
-            }
-          }, 2000);
-        } else if (loadProgress.complete) {
-          // No more content to load, loop back to beginning
+          // Process the next sentence
+          await handleNextSentence(
+            appModule.sentences,
+            appModule.adaptiveSentences,
+            appModule.currentSentenceIndex,
+            appModule.currentAdaptiveIndex,
+            tooHardWords,
+            sourceLanguage,
+            loadProgress,
+            setStudyLangSentence,
+            setNativeLangSentence,
+            setLoadingBook,
+            setLoadProgress,
+            openaiKey
+          );
+        } else {
+          // No more content available, loop back to beginning
           appModule.currentSentenceIndex = 0;
           
           if (appModule.sentences.length > 0) {

@@ -54,60 +54,39 @@ export const saveCurrentState = async () => {
   }
 };
 
-// Background loading of additional book sections
-export const startBackgroundLoading = async (setLoadProgress) => {
+// Load the next section of content when needed
+export const loadNextSection = async (setLoadingBook) => {
   try {
-    const appModule = require('./App');
+    setLoadingBook(true);
     
-    // Check if we're already loading
-    if (appModule.isLoadingNextSection) return;
+    // Fetch the next section
+    const nextSection = await fetchNextBookSection();
     
-    appModule.isLoadingNextSection = true;
-    setLoadProgress(prev => ({ ...prev, loading: true }));
-    
-    // Get how many sections we already have
-    const storedSectionsStr = await AsyncStorage.getItem('bookSections');
-    const sectionsCount = storedSectionsStr ? JSON.parse(storedSectionsStr).length : 0;
-    
-    setLoadProgress(prev => ({ ...prev, sections: sectionsCount }));
-    
-    // Check if we need more content
-    const shouldLoadMore = !appModule.needsMoreContent && 
-                          appModule.currentSentenceIndex > (appModule.sentences.length * 0.7);
-    
-    if (shouldLoadMore || appModule.needsMoreContent) {
-      // Load the next section
-      const nextSection = await fetchNextBookSection();
+    if (nextSection && nextSection.text) {
+      // Get all sections and update our text
+      const allText = await getAllBookText();
       
-      if (nextSection && nextSection.text) {
-        // Get all sections and update our text
-        const allText = await getAllBookText();
-        appModule.sourceText = allText.text;
-        
-        // Update sentences array with new content
-        appModule.sentences = splitIntoSentences(allText.text);
-        
-        // Update sections count
-        const updatedSectionsStr = await AsyncStorage.getItem('bookSections');
-        const updatedCount = updatedSectionsStr ? JSON.parse(updatedSectionsStr).length : 0;
-        setLoadProgress(prev => ({ ...prev, sections: updatedCount }));
-        
-        // Save state
-        await saveCurrentState();
-        
-        // Reset flag
-        appModule.needsMoreContent = false;
-      } else {
-        // No more content available
-        setLoadProgress(prev => ({ ...prev, complete: true }));
-      }
+      // Get app module for state update
+      const appModule = require('./App');
+      
+      // Update source text
+      appModule.sourceText = allText.text;
+      
+      // Update sentences array with new content
+      appModule.sentences = splitIntoSentences(allText.text);
+      
+      // Save state
+      await saveCurrentState();
+      
+      return true;
     }
+    
+    return false;
   } catch (error) {
-    console.error("Error loading additional sections:", error);
+    console.error("Error loading additional section:", error);
+    return false;
   } finally {
-    const appModule = require('./App');
-    appModule.isLoadingNextSection = false;
-    setLoadProgress(prev => ({ ...prev, loading: false }));
+    setLoadingBook(false);
   }
 };
 
