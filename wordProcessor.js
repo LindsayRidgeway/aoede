@@ -4,27 +4,46 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 export const extractWords = (text) => {
   if (!text) return [];
   
-  // First split by whitespace to get initial words
-  const wordCandidates = text.split(/\s+/);
+  // Debug log for troubleshooting
+  console.log("Extracting words from:", text);
   
-  // Clean punctuation from each word individually
-  const cleaned = wordCandidates.map(word => 
-    word.replace(/[^\p{L}\p{N}]/gu, '') // Remove anything that's not a letter or number
-  );
+  // Extract words using a two-step approach
+  // 1. Split by any whitespace first to get raw tokens
+  const rawTokens = text.split(/\s+/);
+  console.log("Raw tokens:", rawTokens);
   
-  // Remove empty strings
-  return cleaned.filter(word => word && word.length > 0);
+  // 2. Clean each token and ensure it's valid
+  const words = [];
+  for (const token of rawTokens) {
+    // Remove all punctuation and symbols, keeping only letters and numbers
+    const cleanWord = token.replace(/[^\p{L}\p{N}]/gu, '');
+    
+    // Only add non-empty words
+    if (cleanWord && cleanWord.length > 0) {
+      words.push(cleanWord);
+    }
+  }
+  
+  console.log("Final extracted words:", words);
+  return words;
 };
 
 // Process words for both lists
 export const processWords = (words, tooHardWordsList, setNewWordsList, historyWords, setHistoryWords) => {
   if (!words || words.length === 0) return;
   
+  // Log for debugging
+  console.log("Processing words:", words);
+  console.log("Current too hard words:", tooHardWordsList);
+  
   // Filter out words that have been marked as too hard
   const lowerCaseTooHardWords = new Set(tooHardWordsList.map(w => w.toLowerCase()));
-  const newWords = words.filter(word => 
-    !lowerCaseTooHardWords.has(word.toLowerCase())
-  );
+  const newWords = words.filter(word => {
+    const isHard = lowerCaseTooHardWords.has(word.toLowerCase());
+    return !isHard;
+  });
+  
+  console.log("New words after filtering:", newWords);
   
   // Update new words list
   setNewWordsList([...newWords]);

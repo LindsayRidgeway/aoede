@@ -169,20 +169,7 @@ export function MainUI({
             </TouchableOpacity>
           </View>
           
-          {/* Show load progress indicator */}
-          {loadProgress && loadProgress.sections > 1 && (
-            <View style={styles.progressContainer}>
-              <Text style={styles.progressText}>
-                {feedbackLabels.sectionsLoaded} {loadProgress.sections}
-                {loadProgress.loading && (
-                  <ActivityIndicator size="small" color="#4a90e2" style={{ marginLeft: 5 }} />
-                )}
-                {loadProgress.complete && (
-                  <Text style={styles.completeText}> (Complete)</Text>
-                )}
-              </Text>
-            </View>
-          )}
+          {/* Removed sections loaded indicator */}
         </View>
       )}
 
