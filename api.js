@@ -180,15 +180,26 @@ export const getAllBookText = async () => {
   }
 };
 
-// ✅ Google Translate API Integration
+// Enhanced Google Translate API Integration with retry & error handling
 export const translateText = async (text, sourceLang, targetLang) => {
-  if (!text || sourceLang === targetLang) return text;
+  if (!text) return "";
+  if (sourceLang === targetLang) return text;
+
+  // For logging purposes
+  const textPreview = text.substring(0, 50) + (text.length > 50 ? "..." : "");
+  console.log(`Translating from ${sourceLang} to ${targetLang}: "${textPreview}"`);
 
   try {
     if (!googleKey) {
+      console.error("Google API Key Missing");
       return "⚠ Google API Key Missing";
     }
 
+    // Ensure we have valid language codes
+    const validSourceLang = sourceLang || "auto";
+    const validTargetLang = targetLang || "en";
+
+    // First attempt: direct translation
     const response = await fetch(
       `https://translation.googleapis.com/language/translate/v2?key=${googleKey}`,
       {
@@ -198,8 +209,8 @@ export const translateText = async (text, sourceLang, targetLang) => {
         },
         body: JSON.stringify({
           q: text,
-          source: sourceLang,
-          target: targetLang,
+          source: validSourceLang,
+          target: validTargetLang,
           format: "text"
         })
       }
@@ -207,12 +218,53 @@ export const translateText = async (text, sourceLang, targetLang) => {
 
     const data = await response.json();
 
-    if (!data.data?.translations || data.data.translations.length === 0) {
+    // Handle API errors
+    if (data.error) {
+      console.error("Translation API error:", data.error);
+      
+      // If the error is related to the source language, try with auto-detection
+      if (data.error.message && data.error.message.includes("language")) {
+        console.log("Retrying with auto-detected source language");
+        
+        const retryResponse = await fetch(
+          `https://translation.googleapis.com/language/translate/v2?key=${googleKey}`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+              q: text,
+              target: validTargetLang,
+              format: "text"
+            })
+          }
+        );
+        
+        const retryData = await retryResponse.json();
+        
+        if (!retryData.data?.translations || retryData.data.translations.length === 0) {
+          return "⚠ Translation failed";
+        }
+        
+        return retryData.data.translations[0].translatedText;
+      }
+      
       return "⚠ Translation failed";
     }
 
-    return data.data.translations[0].translatedText;
+    if (!data.data?.translations || data.data.translations.length === 0) {
+      console.error("No translations in response:", data);
+      return "⚠ Translation failed";
+    }
+
+    const translatedText = data.data.translations[0].translatedText;
+    const resultPreview = translatedText.substring(0, 50) + (translatedText.length > 50 ? "..." : "");
+    console.log(`Translation result: "${resultPreview}"`);
+    
+    return translatedText;
   } catch (error) {
+    console.error("Translation failed:", error);
     return "⚠ Translation failed";
   }
 };

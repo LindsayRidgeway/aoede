@@ -23,30 +23,103 @@ export const translateAndSetSentences = async (sentence, sourceLang, setStudyLan
     // Get system language
     const nativeLang = navigator.language.split('-')[0] || "en";
     
-    // First handle the study language display
+    // Add some console logging to debug the translation flow
+    console.log(`Translation flow:
+      Source language: ${sourceLang}
+      Study language: ${studyLangCode}
+      System language: ${nativeLang}
+      Original sentence: "${sentence.substring(0, 100)}${sentence.length > 100 ? '...' : ''}"
+    `);
+    
+    // STUDY LANGUAGE HANDLING
+    let studySentence = "";
     if (sourceLang !== studyLangCode) {
-      // Source language is different from study language, translate it
-      const translatedToStudy = await translateText(sentence, sourceLang, studyLangCode);
-      setStudyLangSentence(translatedToStudy.replace(/^"|"$/g, ""));
+      try {
+        // Verify we have a valid source language
+        const validSourceLang = sourceLang || "en";
+        
+        // Explicitly translate from source to study language
+        const translatedToStudy = await translateText(sentence, validSourceLang, studyLangCode);
+        studySentence = translatedToStudy.replace(/^"|"$/g, "");
+        
+        console.log(`Successfully translated to study language: "${studySentence.substring(0, 100)}${studySentence.length > 100 ? '...' : ''}"`);
+      } catch (translateError) {
+        console.error("Error translating to study language:", translateError);
+        studySentence = sentence; // Fallback to original text
+      }
     } else {
-      // Source language is the same as study language, use it directly
-      setStudyLangSentence(sentence);
+      // Source is already in study language
+      studySentence = sentence;
+      console.log("Source is already in study language, using original");
     }
     
-    // Now handle the native (system) language display - always translate from source
+    // Set the study language text
+    setStudyLangSentence(studySentence);
+    
+    // SYSTEM LANGUAGE HANDLING - COMPLETELY SEPARATE FROM STUDY LANGUAGE
     if (sourceLang !== nativeLang) {
-      // Source language is different from native language, translate directly from source
-      const translatedToNative = await translateText(sentence, sourceLang, nativeLang);
-      setNativeLangSentence(translatedToNative.replace(/^"|"$/g, ""));
+      try {
+        // Verify we have a valid source language
+        const validSourceLang = sourceLang || "en";
+        
+        // Always translate directly from source to system language
+        // This is key - we never translate from study language to system language
+        const translatedToNative = await translateText(sentence, validSourceLang, nativeLang);
+        const nativeSentence = translatedToNative.replace(/^"|"$/g, "");
+        
+        console.log(`Successfully translated to system language: "${nativeSentence.substring(0, 100)}${nativeSentence.length > 100 ? '...' : ''}"`);
+        
+        // Verify the translation is actually in the system language
+        // If it looks like it's still in the source language, try again with a different approach
+        if (isSameLanguage(nativeSentence, sentence) && validSourceLang !== nativeLang) {
+          console.log("Translation may have failed - trying again with English as pivot language");
+          
+          // Use English as a pivot language if direct translation fails
+          const translatedToEnglish = await translateText(sentence, validSourceLang, "en");
+          const pivotText = translatedToEnglish.replace(/^"|"$/g, "");
+          
+          if (nativeLang !== "en") {
+            const translatedFromEnglish = await translateText(pivotText, "en", nativeLang);
+            const pivotedNativeSentence = translatedFromEnglish.replace(/^"|"$/g, "");
+            setNativeLangSentence(pivotedNativeSentence);
+          } else {
+            setNativeLangSentence(pivotText);
+          }
+        } else {
+          setNativeLangSentence(nativeSentence);
+        }
+      } catch (translateError) {
+        console.error("Error translating to system language:", translateError);
+        setNativeLangSentence("Translation failed. Please try again.");
+      }
     } else {
-      // Source language is the same as native language, use it directly
+      // Source is already in system language
+      console.log("Source is already in system language, using original");
       setNativeLangSentence(sentence);
     }
   } catch (error) {
-    console.error("Error translating sentence:", error);
+    console.error("Error in translation process:", error);
     setStudyLangSentence("Error translating sentence.");
     setNativeLangSentence("Error translating sentence.");
   }
+};
+
+// Helper function to check if two strings seem to be in the same language
+// This is a simple heuristic, not foolproof
+const isSameLanguage = (str1, str2) => {
+  // Check if a significant portion of words from str1 appear in str2
+  const words1 = str1.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+  const words2 = str2.toLowerCase().split(/\s+/).filter(w => w.length > 3);
+  
+  let matchCount = 0;
+  for (const word of words1) {
+    if (words2.includes(word)) {
+      matchCount++;
+    }
+  }
+  
+  // If more than 30% of words match, they might be in the same language
+  return matchCount > 0 && (matchCount / words1.length) > 0.3;
 };
 
 // Save current state
