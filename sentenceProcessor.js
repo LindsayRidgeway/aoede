@@ -130,8 +130,8 @@ export const handleNextSentence = async (
         }
       } else {
         // We've reached the end of available sentences, attempt to load the next section
-        setStudyLangSentence("Loading more content...");
-        setNativeLangSentence("Loading more content...");
+        // Keep current sentence visible while loading - don't modify setStudyLangSentence or setNativeLangSentence
+        // The UI will show a loading indicator separately
         
         // Load the next section directly (no background process)
         const moreContentAvailable = await loadNextSection(setLoadingBook);

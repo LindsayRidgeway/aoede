@@ -297,6 +297,20 @@ export const styles = StyleSheet.create({
     fontSize: 14,
     color: '#555'
   },
+  // New loading indicator container under buttons
+  loadingIndicatorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 5,
+    marginBottom: 2,
+    width: '80%'
+  },
+  loadingIndicatorText: {
+    fontSize: 12,
+    color: '#555',
+    marginLeft: 8
+  },
   // Modal styles for confirmation dialog
   modalOverlay: {
     flex: 1,
