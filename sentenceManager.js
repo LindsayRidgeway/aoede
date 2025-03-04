@@ -1,11 +1,11 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchNextBookSection, getAllBookText, translateText } from './api';
+import { splitIntoSentences } from './textUtils';
+import Constants from "expo-constants";
 
-// Split text into sentences
-export const splitIntoSentences = (text) => {
-  if (!text) return [];
-  return text.split(/(?<=[.!?])\s+/).filter(sentence => sentence.trim().length > 0);
-};
+// Get the Anthropic API key and CORS proxy from app.json
+const anthropicKey = Constants.expoConfig?.extra?.EXPO_PUBLIC_ANTHROPIC_API_KEY;
+const CORS_PROXY = Constants.expoConfig?.extra?.EXPO_PUBLIC_CORS_PROXY || "";
 
 // Helper function to translate and set sentences in both languages
 export const translateAndSetSentences = async (sentence, sourceLang, setStudyLangSentence, setNativeLangSentence) => {
@@ -172,7 +172,7 @@ export const loadNextSection = async (setLoadingBook) => {
 };
 
 // Generate adaptive sentences from a single source sentence
-export const generateAdaptiveSentences = async (sourceSentence, knownWords, openaiKey) => {
+export const generateAdaptiveSentences = async (sourceSentence, knownWords) => {
   try {
     if (!sourceSentence || sourceSentence.trim() === "") {
       return [];
@@ -188,7 +188,7 @@ export const generateAdaptiveSentences = async (sourceSentence, knownWords, open
     }
     
     // For sentences with multiple unknown words, generate adaptive sentences
-    return await generateAdaptiveSentencesWithAI(sourceSentence, knownWords, openaiKey);
+    return await generateAdaptiveSentencesWithAI(sourceSentence, knownWords);
   } catch (error) {
     console.error("Error generating adaptive sentences:", error);
     return [sourceSentence];
@@ -205,8 +205,8 @@ const countUnknownWords = (words, knownWords) => {
   }).length;
 };
 
-// Generate adaptive sentences using AI
-const generateAdaptiveSentencesWithAI = async (sourceSentence, knownWords, openaiKey) => {
+// Generate adaptive sentences using Claude Haiku
+const generateAdaptiveSentencesWithAI = async (sourceSentence, knownWords) => {
   const knownWordsArray = Array.from(knownWords);
   
   try {
@@ -247,35 +247,47 @@ const generateAdaptiveSentencesWithAI = async (sourceSentence, knownWords, opena
       - Complete, grammatical sentences
     `;
     
-    // Call the AI API
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    console.log(`Using CORS proxy for adaptive sentences: ${CORS_PROXY}`);
+    
+    // Call the Claude API with CORS proxy
+    const response = await fetch(`${CORS_PROXY}https://api.anthropic.com/v1/messages`, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${openaiKey}`,
+        "x-api-key": anthropicKey,
+        "anthropic-version": "2023-06-01",
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "gpt-3.5-turbo",
-        messages: [
-          { 
-            role: "system", 
-            content: "You create comprehensible sentences for language learners that sound like natural spoken language, not literary text. Your goal is to help the user's listening comprehension."
-          },
-          { role: "user", content: prompt }
-        ],
+        model: "claude-3-haiku-20240307",
         max_tokens: 200,
-        temperature: 0.4
+        temperature: 0.4,
+        messages: [
+          { role: "user", content: prompt }
+        ]
       })
     });
+    
+    // Check if response is ok
+    if (!response.ok) {
+      const responseText = await response.text();
+      console.error(`API error (status ${response.status}):`, responseText);
+      return [sourceSentence];
+    }
 
     const data = await response.json();
     
-    if (!data.choices || data.choices.length === 0) {
-      throw new Error("No response from AI");
+    if (data.error) {
+      console.error("Claude API error:", data.error);
+      return [sourceSentence];
+    }
+    
+    if (!data.content || data.content.length === 0) {
+      console.error("No content in Claude response:", data);
+      return [sourceSentence];
     }
     
     // Split the response into separate sentences
-    const adaptiveText = data.choices[0].message.content.trim();
+    const adaptiveText = data.content[0].text.trim();
     const adaptives = adaptiveText.split(/\n+/).filter(s => s.trim().length > 0);
     
     // If we get no valid sentences back, do a more mechanical approach

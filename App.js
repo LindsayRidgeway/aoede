@@ -12,10 +12,10 @@ import Constants from "expo-constants";
 import { 
   generateAdaptiveSentences, 
   translateAndSetSentences,
-  splitIntoSentences,
   saveCurrentState
 } from './sentenceManager';
 import { translateLabels } from './translateLabels';
+import { splitIntoSentences } from './textUtils';  // Import from textUtils instead
 
 // Global state shared between files
 export let sourceText = "";
@@ -24,9 +24,6 @@ export let sentences = [];
 export let tooHardWords = new Set(); // Words that are too hard for the user
 export let adaptiveSentences = [];
 export let currentAdaptiveIndex = 0;
-
-// OpenAI key from config
-const openaiKey = Constants.expoConfig?.extra?.EXPO_PUBLIC_OPENAI_API_KEY;
 
 export default function App() {
   const [uiText, setUiText] = useState({});
@@ -66,7 +63,7 @@ export default function App() {
     sourceText = text;
     setSourceLanguage(language);
     
-    // Split into sentences
+    // Split into sentences using the imported function
     sentences = splitIntoSentences(text);
     currentSentenceIndex = 0;
     
@@ -142,8 +139,7 @@ export default function App() {
                   customSetStudyLangSentence, 
                   setNativeLangSentence, 
                   setLoadingBook,
-                  setLoadProgress,
-                  openaiKey
+                  setLoadProgress
                 );
               }
             } else if (sentences.length > 0) {
@@ -158,8 +154,7 @@ export default function App() {
                 customSetStudyLangSentence, 
                 setNativeLangSentence, 
                 setLoadingBook,
-                setLoadProgress,
-                openaiKey
+                setLoadProgress
               );
             }
           }
@@ -201,8 +196,7 @@ export default function App() {
       setStateVariables,
       setLoadProgress,
       customSetStudyLangSentence,
-      setNativeLangSentence,
-      openaiKey
+      setNativeLangSentence
     );
   };
   
@@ -219,8 +213,7 @@ export default function App() {
       customSetStudyLangSentence, 
       setNativeLangSentence, 
       setLoadingBook,
-      setLoadProgress,
-      openaiKey
+      setLoadProgress
     );
   };
   
@@ -262,7 +255,7 @@ export default function App() {
         const currentSourceIndex = Math.max(0, currentSentenceIndex - 1);
         const currentSourceSentence = sentences[currentSourceIndex];
         
-        adaptiveSentences = await generateAdaptiveSentences(currentSourceSentence, tooHardWords, openaiKey);
+        adaptiveSentences = await generateAdaptiveSentences(currentSourceSentence, tooHardWords);
         currentAdaptiveIndex = 0;
         
         await saveCurrentState();

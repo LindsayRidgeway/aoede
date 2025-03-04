@@ -8,8 +8,9 @@ export let detectedLanguageCode = null;
 let lastDetectedLanguage = "";
 let currentSound = null; // Track the current sound object
 
-const GOOGLE_TRANSLATE_API_KEY = Constants.expoConfig.extra.EXPO_PUBLIC_GOOGLE_API_KEY;
-const GOOGLE_TTS_API_KEY = Constants.expoConfig.extra.EXPO_PUBLIC_GOOGLE_API_KEY;
+// Safely access API keys with optional chaining
+const GOOGLE_TRANSLATE_API_KEY = Constants.expoConfig?.extra?.EXPO_PUBLIC_GOOGLE_API_KEY || "";
+const GOOGLE_TTS_API_KEY = Constants.expoConfig?.extra?.EXPO_PUBLIC_GOOGLE_API_KEY || "";
 
 // Export all functions
 export const getStoredListeningSpeed = async () => {
@@ -95,6 +96,13 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
     const ttsLanguageCode = supportedTTSLanguages[detectedLanguageCode] || detectedLanguageCode;
 
     try {
+        // Check if we have a Google API key before attempting the API call
+        if (!GOOGLE_TTS_API_KEY) {
+            console.error("Missing Google API key for Text-to-Speech");
+            if (onFinish) onFinish();
+            return;
+        }
+
         const response = await fetch(
             `https://texttospeech.googleapis.com/v1/text:synthesize?key=${GOOGLE_TTS_API_KEY}`,
             {
@@ -127,6 +135,7 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
         
         await sound.playAsync();
     } catch (error) {
+        console.error("Error playing audio:", error);
         if (onFinish) onFinish(); // Call onFinish even on error
     }
 };
@@ -172,6 +181,12 @@ export const detectLanguageCode = async (languageName) => {
   }
   
   try {
+    // Check if we have a Google API key before attempting the API call
+    if (!GOOGLE_TRANSLATE_API_KEY) {
+      console.error("Missing Google API key for language detection");
+      return "";
+    }
+
     // Fetch Google's official language list
     const response = await fetch(
       `https://translation.googleapis.com/language/translate/v2/languages?key=${GOOGLE_TRANSLATE_API_KEY}&target=${navigator.language.split('-')[0] || "en"}`,
@@ -211,6 +226,7 @@ export const detectLanguageCode = async (languageName) => {
 
     return detectedLanguageCode;
   } catch (error) {
+    console.error("Error detecting language code:", error);
     return "";
   }
 };

@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchBookTextFromChatGPT } from './api';
+import { splitIntoSentences } from './textUtils';  // Import from textUtils
 import { 
-  splitIntoSentences, 
   saveCurrentState, 
   generateAdaptiveSentences, 
   translateAndSetSentences 
@@ -17,8 +17,7 @@ export const handleLoadBook = async (
   setStateVariables,
   setLoadProgress,
   customSetStudyLangSentence,
-  setNativeLangSentence,
-  openaiKey
+  setNativeLangSentence
 ) => {
   if (!userQuery) return;
   
@@ -55,8 +54,7 @@ export const handleLoadBook = async (
         customSetStudyLangSentence, 
         setNativeLangSentence, 
         setLoadingBook,
-        setLoadProgress,
-        openaiKey
+        setLoadProgress
       );
     }
   } catch (error) {
@@ -80,8 +78,7 @@ export const clearHistory = async (
   sentences,
   sourceLanguage,
   customSetStudyLangSentence,
-  setNativeLangSentence,
-  openaiKey
+  setNativeLangSentence
 ) => {
   try {
     // Clear too-hard words
@@ -108,7 +105,7 @@ export const clearHistory = async (
       const currentSourceSentence = sentences[currentSourceIndex];
       
       // Generate new adaptive sentences
-      adaptiveSentences = await generateAdaptiveSentences(currentSourceSentence, tooHardWords, openaiKey);
+      adaptiveSentences = await generateAdaptiveSentences(currentSourceSentence, tooHardWords);
       currentAdaptiveIndex = 0;
       
       // Save state

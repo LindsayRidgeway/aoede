@@ -1,8 +1,11 @@
 import Constants from "expo-constants";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { splitIntoSentences } from './textUtils';
 
-const openaiKey = Constants.expoConfig?.extra?.EXPO_PUBLIC_OPENAI_API_KEY;
+// Get API keys and CORS proxy from app.json
+const anthropicKey = Constants.expoConfig?.extra?.EXPO_PUBLIC_ANTHROPIC_API_KEY;
 const googleKey = Constants.expoConfig?.extra?.EXPO_PUBLIC_GOOGLE_API_KEY;
+const CORS_PROXY = Constants.expoConfig?.extra?.EXPO_PUBLIC_CORS_PROXY || "";
 
 // Maximum number of sequential book sections to fetch
 const MAX_SECTIONS = 5;
@@ -14,8 +17,9 @@ let currentSectionNumber = 0;
 // Initialize book retrieval
 export const fetchBookTextFromChatGPT = async (query) => {
   try {
-    if (!openaiKey) {
-      return { text: "⚠ OpenAI API Key Missing", language: "en" };
+    if (!anthropicKey) {
+      console.error("Missing Anthropic API key");
+      return { text: "⚠ Anthropic API Key Missing", language: "en" };
     }
 
     // Reset state for new book request
@@ -50,45 +54,68 @@ export const fetchBookTextFromChatGPT = async (query) => {
 // Fetch a specific section of the book
 export const fetchBookSection = async (bookTitle, sectionNumber) => {
   try {
-    if (!openaiKey) {
-      return { text: "⚠ OpenAI API Key Missing", language: "en" };
+    if (!anthropicKey) {
+      console.error("Missing Anthropic API key");
+      return { text: "⚠ Anthropic API Key Missing", language: "en" };
     }
 
-    const requestBody = {
-      model: "gpt-4",
-      messages: [
-        { 
-          role: "system", 
-          content: `You retrieve sections of books in their original language. For section ${sectionNumber}, provide several paragraphs (at least 500 words if available) from the requested book or genre. Respond with ONLY the text content, followed by the detected two-letter ISO language code (e.g., 'fr', 'de', 'ru') on the last line. The language code must be alone on the last line and contain only the two-letter code.` 
-        },
-        { 
-          role: "user", 
-          content: `Provide section ${sectionNumber} of "${bookTitle}" in its original language. If this is section 1, start from the beginning. If it's a later section, continue where the previous section would have left off. Include several paragraphs and end with the language code on a new line.` 
-        }
-      ],
-      max_tokens: 4000
-    };
+    console.log(`Fetch book section: ${bookTitle}, section ${sectionNumber}`);
+    console.log(`Using CORS proxy: ${CORS_PROXY}`);
 
-    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+    // Check if we need direct request or proxy
+    const apiUrl = `${CORS_PROXY}https://api.anthropic.com/v1/messages`;
+    console.log(`Full API URL: ${apiUrl}`);
+
+    // Use CORS proxy to avoid CORS issues
+    const response = await fetch(apiUrl, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${openaiKey}`,
+        "x-api-key": anthropicKey,
+        "anthropic-version": "2023-06-01",
         "Content-Type": "application/json"
       },
-      body: JSON.stringify(requestBody)
+      body: JSON.stringify({
+        model: "claude-3-haiku-20240307",
+        max_tokens: 4000,
+        messages: [
+          { 
+            role: "user", 
+            content: `You retrieve sections of books in their original language. For section ${sectionNumber}, provide several paragraphs (at least 500 words if available) from "${bookTitle}" or a book of that genre. 
+            
+            If this is section 1, start from the beginning. If it's a later section, continue where the previous section would have left off.
+            
+            Respond with ONLY the text content, followed by the detected two-letter ISO language code (e.g., 'fr', 'de', 'ru') on the last line. The language code must be alone on the last line and contain only the two-letter code.` 
+          }
+        ]
+      })
     });
+
+    // Check if response is ok
+    if (!response.ok) {
+      const responseText = await response.text();
+      console.error(`API error (status ${response.status}):`, responseText);
+      return { 
+        text: `⚠ Book fetch failed: API returned status ${response.status}`, 
+        language: "en" 
+      };
+    }
 
     const data = await response.json();
 
-    if (!data.choices || data.choices.length === 0) {
-      return { text: "⚠ Book fetch failed", language: "en" };
+    if (data.error) {
+      console.error("Claude API error:", data.error);
+      return { text: `⚠ Book fetch failed: ${data.error.message}`, language: "en" };
     }
 
-    const fullResponse = data.choices[0].message.content.trim();
+    if (!data.content || data.content.length === 0) {
+      return { text: "⚠ Book fetch failed: No content in response", language: "en" };
+    }
+
+    const fullResponse = data.content[0].text.trim();
     const parts = fullResponse.split("\n");
 
     if (parts.length < 2) {
-      return { text: "⚠ Book fetch failed", language: "en" };
+      return { text: "⚠ Book fetch failed: Invalid response format", language: "en" };
     }
 
     // Get the language code from the last line
@@ -105,7 +132,7 @@ export const fetchBookSection = async (bookTitle, sectionNumber) => {
     return { text, language: detectedLanguage };
   } catch (error) {
     console.error("Error fetching book section:", error);
-    return { text: "⚠ Book fetch failed", language: "en" };
+    return { text: `⚠ Book fetch failed: ${error.message}`, language: "en" };
   }
 };
 

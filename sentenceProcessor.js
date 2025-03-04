@@ -4,6 +4,7 @@ import {
   loadNextSection,
   saveCurrentState
 } from './sentenceManager';
+import { splitIntoSentences } from './textUtils';  // Import from textUtils
 
 // Handle processing of next sentence with tracking to avoid duplicates
 export const handleNextSentence = async (
@@ -17,8 +18,7 @@ export const handleNextSentence = async (
   setStudyLangSentence,
   setNativeLangSentence,
   setLoadingBook,
-  setLoadProgress,
-  openaiKey
+  setLoadProgress
 ) => {
   // Get module for direct state modification
   const appModule = require('./App');
@@ -60,7 +60,7 @@ export const handleNextSentence = async (
             appModule.currentSentenceIndex++;
             
             // Generate new adaptive sentences
-            appModule.adaptiveSentences = await generateAdaptiveSentences(nextSourceSentence, tooHardWords, openaiKey);
+            appModule.adaptiveSentences = await generateAdaptiveSentences(nextSourceSentence, tooHardWords);
             appModule.currentAdaptiveIndex = 0;
             
             await saveCurrentState();
@@ -105,7 +105,7 @@ export const handleNextSentence = async (
         appModule.currentSentenceIndex++;
         
         // Generate adaptive sentences for this source sentence
-        appModule.adaptiveSentences = await generateAdaptiveSentences(nextSourceSentence, tooHardWords, openaiKey);
+        appModule.adaptiveSentences = await generateAdaptiveSentences(nextSourceSentence, tooHardWords);
         appModule.currentAdaptiveIndex = 0;
         
         // Save state
@@ -152,8 +152,7 @@ export const handleNextSentence = async (
             setStudyLangSentence,
             setNativeLangSentence,
             setLoadingBook,
-            setLoadProgress,
-            openaiKey
+            setLoadProgress
           );
         } else {
           // No more content available, loop back to beginning
@@ -162,7 +161,7 @@ export const handleNextSentence = async (
           if (appModule.sentences.length > 0) {
             // Generate adaptive sentences for the first source sentence
             const firstSourceSentence = appModule.sentences[0];
-            appModule.adaptiveSentences = await generateAdaptiveSentences(firstSourceSentence, tooHardWords, openaiKey);
+            appModule.adaptiveSentences = await generateAdaptiveSentences(firstSourceSentence, tooHardWords);
             appModule.currentAdaptiveIndex = 0;
             
             // Save state
