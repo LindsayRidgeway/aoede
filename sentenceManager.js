@@ -23,19 +23,14 @@ export const translateAndSetSentences = async (sentence, sourceLang, setStudyLan
     // Get system language
     const nativeLang = navigator.language.split('-')[0] || "en";
     
-    console.log(`Translation flow: SOURCE(${sourceLang}) -> STUDY(${studyLangCode}) -> NATIVE(${nativeLang})`);
-    console.log(`Original sentence: "${sentence.substring(0, 50)}..."`);
-    
     // First handle the study language display
     if (sourceLang !== studyLangCode) {
       // Source language is different from study language, translate it
       const translatedToStudy = await translateText(sentence, sourceLang, studyLangCode);
       setStudyLangSentence(translatedToStudy.replace(/^"|"$/g, ""));
-      console.log(`Translated to study language: "${translatedToStudy.substring(0, 50)}..."`);
     } else {
       // Source language is the same as study language, use it directly
       setStudyLangSentence(sentence);
-      console.log(`Source is study language, using original`);
     }
     
     // Now handle the native (system) language display - always translate from source
@@ -43,11 +38,9 @@ export const translateAndSetSentences = async (sentence, sourceLang, setStudyLan
       // Source language is different from native language, translate directly from source
       const translatedToNative = await translateText(sentence, sourceLang, nativeLang);
       setNativeLangSentence(translatedToNative.replace(/^"|"$/g, ""));
-      console.log(`Translated to native language: "${translatedToNative.substring(0, 50)}..."`);
     } else {
       // Source language is the same as native language, use it directly
       setNativeLangSentence(sentence);
-      console.log(`Source is native language, using original`);
     }
   } catch (error) {
     console.error("Error translating sentence:", error);

@@ -1,5 +1,11 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchBookTextFromChatGPT } from './api';
-import { splitIntoSentences, saveCurrentState } from './sentenceManager';
+import { 
+  splitIntoSentences, 
+  saveCurrentState, 
+  generateAdaptiveSentences, 
+  translateAndSetSentences 
+} from './sentenceManager';
 import { handleNextSentence } from './sentenceProcessor';
 
 // Handle book loading
@@ -53,9 +59,6 @@ export const handleLoadBook = async (
         openaiKey
       );
     }
-    
-    // We no longer use background loading
-    // This fixes the error "(0, _sentenceManager.startBackgroundLoading) is not a function"
   } catch (error) {
     console.error("Error loading book:", error);
     customSetStudyLangSentence("Error loading content.");

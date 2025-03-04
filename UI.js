@@ -2,10 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { Text, View, TouchableOpacity, TextInput, Switch, ScrollView, Modal } from 'react-native';
 import Slider from '@react-native-community/slider';
 import { styles } from './styles';  
-import { getStoredListeningSpeed, saveListeningSpeed } from './listeningSpeed';
-import { getStoredStudyLanguage, saveStudyLanguage } from './listeningSpeed';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { translateText } from './api';
+import ListeningSpeed from './listeningSpeed';
 
 export function MainUI({
   studyLanguage,
@@ -97,8 +96,8 @@ export function MainUI({
     };
     
     translateFeedbackLabels();
-    getStoredListeningSpeed().then(setListeningSpeed);
-    getStoredStudyLanguage().then((storedLang) => {
+    ListeningSpeed.getStoredListeningSpeed().then(setListeningSpeed);
+    ListeningSpeed.getStoredStudyLanguage().then((storedLang) => {
       if (storedLang) {
         setStudyLanguage(storedLang);
       }
@@ -107,7 +106,7 @@ export function MainUI({
 
   const updateListeningSpeed = async (speed) => {
     setListeningSpeed(speed);
-    await saveListeningSpeed(speed);
+    await ListeningSpeed.saveListeningSpeed(speed);
   };
 
   const handleWordClick = (word) => {
@@ -139,7 +138,7 @@ export function MainUI({
               value={studyLanguage}
               onChangeText={(text) => {
                 setStudyLanguage(text);
-                saveStudyLanguage(text);
+                ListeningSpeed.saveStudyLanguage(text);
               }}
             />
           </View>

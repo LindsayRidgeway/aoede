@@ -1,11 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { MainUI } from './UI';
 import { fetchNextBookSection, getAllBookText, translateText } from './api';
-import { getStoredStudyLanguage, detectLanguageCode, detectedLanguageCode } from './listeningSpeed'; 
+import ListeningSpeed from './listeningSpeed';
 import { loadStoredSettings } from './loadStoredSettings';
-import { speakSentenceWithPauses, stopSpeaking } from './listeningSpeed';
-import { translateLabels } from './translateLabels';
-import { updateSpeechRate } from './listeningSpeed';
 import { updateUserQuery } from './updateUserQuery';
 import { handleNextSentence } from './sentenceProcessor';
 import { extractWords, processWords, handleWordFeedback } from './wordProcessor';
@@ -18,6 +15,7 @@ import {
   splitIntoSentences,
   saveCurrentState
 } from './sentenceManager';
+import { translateLabels } from './translateLabels';
 
 // Global state shared between files
 export let sourceText = "";
@@ -90,9 +88,9 @@ export default function App() {
       translateLabels(setUiText);
       loadStoredSettings(setUserQuery, setSpeechRate);
       
-      const language = await getStoredStudyLanguage();
+      const language = await ListeningSpeed.getStoredStudyLanguage();
       setStudyLanguage(language);
-      await detectLanguageCode(language);
+      await ListeningSpeed.detectLanguageCode(language);
       
       try {
         const savedTooHardWords = await AsyncStorage.getItem('tooHardWords');
@@ -185,10 +183,10 @@ export default function App() {
   // Toggle speak function
   const toggleSpeak = () => {
     if (isSpeaking) {
-      stopSpeaking();
+      ListeningSpeed.stopSpeaking();
       setIsSpeaking(false);
     } else {
-      speakSentenceWithPauses(studyLangSentence, listeningSpeed, () => setIsSpeaking(false));
+      ListeningSpeed.speakSentenceWithPauses(studyLangSentence, listeningSpeed, () => setIsSpeaking(false));
       setIsSpeaking(true);
     }
   };
