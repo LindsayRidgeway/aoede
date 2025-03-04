@@ -19,20 +19,35 @@ export const translateAndSetSentences = async (sentence, sourceLang, setStudyLan
     
     // Translate to study language
     const studyLangCode = detectedLanguageCode || "en";
+    
+    // Get system language
+    const nativeLang = navigator.language.split('-')[0] || "en";
+    
+    console.log(`Translation flow: SOURCE(${sourceLang}) -> STUDY(${studyLangCode}) -> NATIVE(${nativeLang})`);
+    console.log(`Original sentence: "${sentence.substring(0, 50)}..."`);
+    
+    // First handle the study language display
     if (sourceLang !== studyLangCode) {
+      // Source language is different from study language, translate it
       const translatedToStudy = await translateText(sentence, sourceLang, studyLangCode);
       setStudyLangSentence(translatedToStudy.replace(/^"|"$/g, ""));
+      console.log(`Translated to study language: "${translatedToStudy.substring(0, 50)}..."`);
     } else {
+      // Source language is the same as study language, use it directly
       setStudyLangSentence(sentence);
+      console.log(`Source is study language, using original`);
     }
     
-    // Translate to user's native language
-    const nativeLang = navigator.language.split('-')[0] || "en";
+    // Now handle the native (system) language display - always translate from source
     if (sourceLang !== nativeLang) {
+      // Source language is different from native language, translate directly from source
       const translatedToNative = await translateText(sentence, sourceLang, nativeLang);
       setNativeLangSentence(translatedToNative.replace(/^"|"$/g, ""));
+      console.log(`Translated to native language: "${translatedToNative.substring(0, 50)}..."`);
     } else {
+      // Source language is the same as native language, use it directly
       setNativeLangSentence(sentence);
+      console.log(`Source is native language, using original`);
     }
   } catch (error) {
     console.error("Error translating sentence:", error);
@@ -128,29 +143,44 @@ const countUnknownWords = (words, knownWords) => {
 const generateAdaptiveSentencesWithAI = async (sourceSentence, knownWords, openaiKey) => {
   const knownWordsArray = Array.from(knownWords);
   
-  const prompt = `
-    Generate sentences for a language learner based on this original sentence:
-    "${sourceSentence}"
-    
-    The learner knows these words:
-    ${knownWordsArray.join(', ')}
-    
-    Important rules:
-    1. Never include more than ONE unknown word per sentence
-    2. If a sentence has zero or one unknown words, it can be any length
-    3. If you must include more than one unknown word, limit the sentence to 6 words maximum
-    4. Create complete, meaningful sentences - not fragments
-    5. Preserve the original sentence structure where possible - do NOT default to Subject-Verb-Object format
-    6. Simplify unknown words when appropriate, but don't simplify known words
-    7. Return only the simplified sentences with no explanations
-    
-    Prioritize:
-    - Sentences with zero unknown words to build confidence 
-    - Maintaining natural sentence structure and flow
-    - Complete, grammatical sentences
-  `;
-  
   try {
+    // Get the source language
+    const { detectedLanguageCode } = require('./listeningSpeed');
+    const sourceLang = detectedLanguageCode || "en";
+    
+    // Translate source sentence to English for better AI processing
+    let englishSentence = sourceSentence;
+    let needsTranslation = false;
+    
+    if (sourceLang !== "en") {
+      needsTranslation = true;
+      const translatedSentence = await translateText(sourceSentence, sourceLang, "en");
+      englishSentence = translatedSentence.replace(/^"|"$/g, "");
+    }
+    
+    // Prepare prompt with English instructions
+    const prompt = `
+      Generate sentences for a language learner based on this original sentence:
+      "${englishSentence}"
+      
+      The learner knows these words:
+      ${knownWordsArray.join(', ')}
+      
+      Important rules:
+      1. Never include more than ONE unknown word per sentence
+      2. If a sentence has zero or one unknown words, it can be any length
+      3. If you must include more than one unknown word, limit the sentence to 6 words maximum
+      4. Create complete, meaningful sentences - not fragments
+      5. Preserve the original sentence structure where possible - do NOT default to Subject-Verb-Object format
+      6. Simplify unknown words when appropriate, but don't simplify known words
+      7. Return only the simplified sentences with no explanations
+      
+      Prioritize:
+      - Sentences with zero unknown words to build confidence 
+      - Maintaining natural sentence structure and flow
+      - Complete, grammatical sentences
+    `;
+    
     // Call the AI API
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
@@ -189,6 +219,19 @@ const generateAdaptiveSentencesWithAI = async (sourceSentence, knownWords, opena
       return [simpleSentence];
     }
     
+    // If we need to translate back to source language
+    if (needsTranslation && sourceLang !== "en") {
+      // Translate each adaptive sentence back to the source language
+      const translatedAdaptives = await Promise.all(
+        adaptives.map(async (sentence) => {
+          const translatedBack = await translateText(sentence, "en", sourceLang);
+          return translatedBack.replace(/^"|"$/g, "");
+        })
+      );
+      return translatedAdaptives;
+    }
+    
+    // Otherwise return English adaptives (for English source)
     return adaptives;
   } catch (error) {
     console.error("Error fetching from AI:", error);
