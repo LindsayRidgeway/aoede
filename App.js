@@ -195,17 +195,27 @@ export default function App() {
           messages: [
             { 
               role: "user", 
-              content: `Please provide the first 10 sentences of "${title}" in its original language.
+              content: `Please provide EXACTLY the first 10 sentences from the beginning of "${title}" in its original language. I need the EXACT opening sentences that appear in the published work, in sequential order, starting with the very first sentence.
 
-Just output the raw text of those 10 sentences, without any commentary, analysis, or explanation.
+IMPORTANT:
+1. Start with the VERY FIRST sentence of the book/story
+2. Provide EXACTLY 10 consecutive sentences in their original order
+3. DO NOT skip any sentences or paragraphs
+4. DO NOT include any intro sentences, explanations, or commentary
+5. DO NOT summarize or paraphrase - I need the EXACT text
+6. DO NOT include chapter headings, title, or any text that isn't part of the narrative
 
-Format as follows:
+Format your response exactly as follows:
+
 ORIGINAL_TEXT:
-[sentence 1]
-[sentence 2]
-...and so on
+[First sentence of the work]
+[Second sentence of the work]
+[Third sentence of the work]
+...and so on for exactly 10 sentences
 
-LANGUAGE: [language code]`
+LANGUAGE: [language code]
+
+Remember: I need the literal beginning of the text, starting with the first actual sentence.`
             }
           ]
         })
@@ -272,13 +282,19 @@ LANGUAGE: [language code]`
           messages: [
             { 
               role: "user", 
-              content: `Here are some sentences:
+              content: `Here are some consecutive sentences from a book that I need simplified:
 
 ${sourceText}
 
 Please translate these sentences into ${targetLanguage} if they're not already in that language, and then simplify them so that a ${ageGroup}-year-old native speaker of ${targetLanguage} could understand them.
 
-Follow these guidelines for simplification:
+CRITICAL REQUIREMENTS:
+1. Maintain the EXACT SAME SEQUENCE of content and events as the original text
+2. Do not skip any information or jump ahead in the story
+3. Each original sentence should be represented in your simplified version
+4. Preserve the narrative flow and order of events exactly as they appear
+
+Guidelines for simplification:
 1. Replace complex vocabulary with simpler words
 2. Break down sentences longer than 10-12 words into multiple shorter sentences
 3. Use vocabulary a ${ageGroup}-year-old would know
@@ -290,7 +306,7 @@ Follow these guidelines for simplification:
 
 Please aim to create about 25-30 simplified sentences total from these original sentences.
 
-Format your response by listing ONLY the simplified sentences in ${targetLanguage}, with each sentence on its own line.`
+VERY IMPORTANT: Format your response by listing ONLY ONE simplified sentence per line. Each sentence must be a complete thought ending with a period, question mark, or exclamation point. DO NOT include any explanations or commentary.`
             }
           ]
         })
@@ -319,7 +335,10 @@ Format your response by listing ONLY the simplified sentences in ${targetLanguag
       const processedText = data.content[0].text.trim();
       console.log("Processed text received:", processedText.substring(0, 100) + "...");
       
-      return processedText;
+      // Remove any potential intro sentence like "Here are simplified sentences in Russian:"
+      const cleanedText = processedText.replace(/^[^\.!?]*(?:[\.!?]|:)\s*/i, '');
+      
+      return cleanedText;
     } catch (error) {
       console.error("Error processing source text:", error);
       return null;
@@ -330,17 +349,37 @@ Format your response by listing ONLY the simplified sentences in ${targetLanguag
   const parseIntoSentences = (text) => {
     if (!text) return [];
     
-    // Split by newlines
-    let sentences = text.split('\n')
-                       .map(line => line.trim())
-                       .filter(line => line.length > 0);
+    // Split by newlines first (Claude usually puts one sentence per line)
+    let lines = text.split('\n')
+                   .map(line => line.trim())
+                   .filter(line => line.length > 0);
     
-    // If there aren't enough sentences, try to split by periods
-    if (sentences.length < 5) {
-      sentences = text.split(/(?<=[.!?])\s+/)
-                     .map(sentence => sentence.trim())
-                     .filter(sentence => sentence.length > 0);
+    // Initialize an array for the final sentences
+    let sentences = [];
+    
+    // Process each line - some lines may contain multiple sentences
+    for (let line of lines) {
+      // Split the line by sentence-ending punctuation
+      const lineSentences = line.split(/(?<=[.!?])\s+/)
+                               .map(s => s.trim())
+                               .filter(s => s.length > 0);
+      
+      if (lineSentences.length > 0) {
+        sentences.push(...lineSentences);
+      } else {
+        // If we couldn't split it, use the whole line as one sentence
+        sentences.push(line);
+      }
     }
+    
+    // Ensure each sentence ends with a punctuation mark
+    sentences = sentences.map(sentence => {
+      // If the sentence doesn't end with a punctuation mark, add a period
+      if (!/[.!?]$/.test(sentence)) {
+        return sentence + '.';
+      }
+      return sentence;
+    });
     
     return sentences;
   };
