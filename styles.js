@@ -5,7 +5,6 @@ export const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
     alignItems: 'center',
-    justifyContent: 'center',
     padding: 20
   },
   header: {
@@ -110,6 +109,19 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ddd'
   },
+  navigationContainer: {
+    marginBottom: 10
+  },
+  sentenceCounter: {
+    fontSize: 12,
+    color: '#888',
+    textAlign: 'center',
+    marginBottom: 5
+  },
+  navigationSlider: {
+    width: '100%',
+    height: 30
+  },
   sentenceWrapper: {
     marginBottom: 8
   },
@@ -147,7 +159,7 @@ export const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 5,
     alignItems: 'center',
-    width: '30%'
+    width: '45%'
   },
   speedControlContainer: {
     width: '80%',
@@ -177,193 +189,5 @@ export const styles = StyleSheet.create({
   toggleLabel: {
     fontSize: 14,
     marginRight: 10
-  },
-  feedbackWrapper: {
-    width: '80%',
-    marginTop: 5
-  },
-  feedbackHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 3
-  },
-  feedbackInstruction: {
-    fontSize: 12,
-    color: '#666',
-    textAlign: 'left',
-    paddingLeft: 2
-  },
-  clearButton: {
-    backgroundColor: '#e24a4a',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 4
-  },
-  clearButtonText: {
-    color: '#fff',
-    fontSize: 11,
-    fontWeight: 'bold'
-  },
-  feedbackContainer: {
-    width: '100%',
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    overflow: 'hidden'
-  },
-  feedbackColumn: {
-    flex: 1,
-    maxHeight: 150
-  },
-  feedbackColumnHeader: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    paddingVertical: 5,
-    backgroundColor: '#f0f0f0',
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd'
-  },
-  wordList: {
-    maxHeight: 110
-  },
-  wordItemContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-  },
-  wordItem: {
-    flex: 1,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    backgroundColor: '#fff'
-  },
-  wordText: {
-    fontSize: 14
-  },
-  knownButton: {
-    width: 30,
-    height: 30,
-    backgroundColor: '#1fb28a',
-    borderRadius: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 5
-  },
-  knownButtonText: {
-    color: '#fff',
-    fontWeight: 'bold'
-  },
-  historyWordItem: {
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
-    backgroundColor: '#f9f9f9',
-    flexDirection: 'row',
-    alignItems: 'center'
-  },
-  historyWordText: {
-    fontSize: 14,
-    color: '#888'
-  },
-  // Progress container
-  progressContainer: {
-    marginTop: 5,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-start'
-  },
-  progressText: {
-    fontSize: 12,
-    color: '#666'
-  },
-  completeText: {
-    color: '#1fb28a',
-    fontWeight: 'bold'
-  },
-  // Loading indicator
-  loadingIndicator: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 10
-  },
-  loadingText: {
-    marginTop: 10,
-    fontSize: 14,
-    color: '#555'
-  },
-  // New loading indicator container under buttons
-  loadingIndicatorContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 5,
-    marginBottom: 2,
-    width: '80%'
-  },
-  loadingIndicatorText: {
-    fontSize: 12,
-    color: '#555',
-    marginLeft: 8
-  },
-  // Modal styles for confirmation dialog
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 20,
-    width: '80%',
-    maxWidth: 400,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 15,
-    color: '#333'
-  },
-  modalText: {
-    fontSize: 14,
-    color: '#555',
-    marginBottom: 20,
-    textAlign: 'center'
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    width: '100%',
-    paddingHorizontal: 20
-  },
-  modalButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 20,
-    borderRadius: 5,
-    minWidth: 80,
-    alignItems: 'center'
-  },
-  cancelButton: {
-    backgroundColor: '#ccc'
-  },
-  confirmButton: {
-    backgroundColor: '#e24a4a'
-  },
-  modalButtonText: {
-    color: '#fff',
-    fontWeight: 'bold'
   }
 });

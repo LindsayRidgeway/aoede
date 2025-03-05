@@ -5,6 +5,6 @@ export const updateUserQuery = async (query, setUserQuery) => {
   try {
     await AsyncStorage.setItem("userQuery", query);
   } catch (error) {
-    console.error("❌ ERROR: Saving userQuery failed:", error);
+    console.error("Error saving userQuery:", error);
   }
 };

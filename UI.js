@@ -1,9 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { Text, View, TouchableOpacity, TextInput, Switch, ScrollView, Modal } from 'react-native';
+import React, { useEffect } from 'react';
+import { Text, View, TouchableOpacity, TextInput, Switch } from 'react-native';
 import Slider from '@react-native-community/slider';
 import { styles } from './styles';  
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { translateText } from './api';
 import ListeningSpeed from './listeningSpeed';
 
 export function MainUI({
@@ -25,77 +23,11 @@ export function MainUI({
   listeningSpeed,
   setListeningSpeed,
   isSpeaking,
-  onWordFeedback,
-  knownWords, // Actually the "too hard" words list
-  newWords,
-  clearHistory,
-  showConfirmation,
-  confirmClearHistory,
-  cancelClearHistory,
-  loadProgress,
-  historyWords
+  currentSentenceIndex,
+  totalSentences
 }) {
-  const [showFeedback, setShowFeedback] = useState(false);
-  const [localHistoryWords, setLocalHistoryWords] = useState([]);
-  const [localNewWords, setLocalNewWords] = useState([]);
-  const [feedbackLabels, setFeedbackLabels] = useState({
-    showFeedback: "Show Feedback Panel",
-    instruction: "Click the words that are too hard for you:",
-    newWords: "New Words",
-    history: "History",
-    clearHistory: "Clear History",
-    confirmClear: "Confirm Clear",
-    confirmClearText: "Are you sure you want to clear all history? This cannot be undone.",
-    cancel: "Cancel",
-    confirm: "Confirm"
-  });
-
-  // Update local copies when props change
+  // Initialize listening speed from storage when component mounts
   useEffect(() => {
-    setLocalHistoryWords(historyWords || []);
-  }, [historyWords]);
-
-  useEffect(() => {
-    setLocalNewWords(newWords || []);
-  }, [newWords]);
-
-  // Translate UI labels
-  useEffect(() => {
-    const translateFeedbackLabels = async () => {
-      try {
-        const userLang = navigator.language.split('-')[0] || "en";
-        if (userLang === 'en') return; // Skip translation for English
-        
-        const labels = feedbackLabels;
-        const translations = await Promise.all([
-          translateText(labels.showFeedback, "en", userLang),
-          translateText(labels.instruction, "en", userLang),
-          translateText(labels.newWords, "en", userLang),
-          translateText(labels.history, "en", userLang),
-          translateText(labels.clearHistory, "en", userLang),
-          translateText(labels.confirmClear, "en", userLang),
-          translateText(labels.confirmClearText, "en", userLang),
-          translateText(labels.cancel, "en", userLang),
-          translateText(labels.confirm, "en", userLang)
-        ]);
-        
-        setFeedbackLabels({
-          showFeedback: translations[0],
-          instruction: translations[1],
-          newWords: translations[2],
-          history: translations[3],
-          clearHistory: translations[4],
-          confirmClear: translations[5],
-          confirmClearText: translations[6],
-          cancel: translations[7],
-          confirm: translations[8]
-        });
-      } catch (error) {
-        // Handle silently
-      }
-    };
-    
-    translateFeedbackLabels();
     ListeningSpeed.getStoredListeningSpeed().then(setListeningSpeed);
     ListeningSpeed.getStoredStudyLanguage().then((storedLang) => {
       if (storedLang) {
@@ -109,17 +41,6 @@ export function MainUI({
     await ListeningSpeed.saveListeningSpeed(speed);
   };
 
-  const handleWordClick = (word) => {
-    // Mark the word as "too hard"
-    if (onWordFeedback) {
-      onWordFeedback([word], true);
-    }
-    
-    // Remove word from local lists
-    setLocalNewWords(prevWords => prevWords.filter(w => w.toLowerCase() !== word.toLowerCase()));
-    setLocalHistoryWords(prevWords => prevWords.filter(w => w.toLowerCase() !== word.toLowerCase()));
-  };
-
   // Only show controls if content is loaded
   const showControls = sentence && sentence.length > 0;
 
@@ -127,42 +48,40 @@ export function MainUI({
     <View style={styles.container}>
       <Text style={styles.header}>{uiText.appName || "Aoede"}</Text>
 
-      {/* Only show the input container when feedback panel is hidden */}
-      {!showFeedback && (
-        <View style={styles.inputContainer}>
-          <View style={styles.studyLangRow}>
-            <Text style={styles.smallLabel}>{uiText.studyLanguage || "Study Language"}:</Text>
+      {/* Input container is always visible */}
+      <View style={styles.inputContainer}>
+        <View style={styles.studyLangRow}>
+          <Text style={styles.smallLabel}>{uiText.studyLanguage || "Study Language"}:</Text>
+          <TextInput
+            style={styles.studyLangInput}
+            placeholder={uiText.enterLanguage || "Enter study language"}
+            value={studyLanguage}
+            onChangeText={(text) => {
+              setStudyLanguage(text);
+              ListeningSpeed.saveStudyLanguage(text);
+            }}
+          />
+        </View>
+
+        <View style={styles.sourceRow}>
+          <View style={styles.sourceInputWrapper}>
+            <Text style={styles.smallLabel}>{uiText.sourceMaterial || "Source Material"}:</Text>
             <TextInput
-              style={styles.studyLangInput}
-              placeholder={uiText.enterLanguage || "Enter study language"}
-              value={studyLanguage}
-              onChangeText={(text) => {
-                setStudyLanguage(text);
-                ListeningSpeed.saveStudyLanguage(text);
-              }}
+              style={styles.input}
+              placeholder={uiText.enterBook || "Enter a book title or genre"}
+              value={userQuery}
+              onChangeText={setUserQuery}
             />
           </View>
-
-          <View style={styles.sourceRow}>
-            <View style={styles.sourceInputWrapper}>
-              <Text style={styles.smallLabel}>{uiText.sourceMaterial || "Source Material"}:</Text>
-              <TextInput
-                style={styles.input}
-                placeholder={uiText.enterBook || "Enter a book title or genre"}
-                value={userQuery}
-                onChangeText={setUserQuery}
-              />
-            </View>
-            <TouchableOpacity 
-              style={[styles.loadButton, loadingBook ? styles.disabledButton : null]} 
-              onPress={loadBook} 
-              disabled={loadingBook}
-            >
-              <Text style={styles.buttonText}>Load</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity 
+            style={[styles.loadButton, loadingBook ? styles.disabledButton : null]} 
+            onPress={loadBook} 
+            disabled={loadingBook}
+          >
+            <Text style={styles.buttonText}>Load</Text>
+          </TouchableOpacity>
         </View>
-      )}
+      </View>
 
       {showControls && (
         <>
@@ -212,13 +131,14 @@ export function MainUI({
               <Text style={styles.toggleLabel}>{uiText.showTranslation || "Show System Language"}</Text>
               <Switch value={showTranslation} onValueChange={setShowTranslation} />
             </View>
-            <View style={styles.toggleItem}>
-              <Text style={styles.toggleLabel}>{feedbackLabels.showFeedback}</Text>
-              <Switch value={showFeedback} onValueChange={setShowFeedback} />
-            </View>
           </View>
           
           <View style={styles.contentContainer}>
+            {totalSentences > 0 && (
+              <Text style={styles.sentenceCounter}>
+                {`Sentence ${currentSentenceIndex + 1} of ${totalSentences}`}
+              </Text>
+            )}
             {showText && (
               <View style={styles.sentenceWrapper}>
                 <Text style={styles.foreignSentence}>{sentence}</Text>
@@ -230,80 +150,6 @@ export function MainUI({
               </View>
             )}
           </View>
-
-          {showFeedback && (
-            <View style={styles.feedbackWrapper}>
-              <View style={styles.feedbackHeader}>
-                <Text style={styles.feedbackInstruction}>{feedbackLabels.instruction}</Text>
-                <TouchableOpacity style={styles.clearButton} onPress={clearHistory}>
-                  <Text style={styles.clearButtonText}>{feedbackLabels.clearHistory}</Text>
-                </TouchableOpacity>
-              </View>
-              
-              <View style={styles.feedbackContainer}>
-                <View style={styles.feedbackColumn}>
-                  <Text style={styles.feedbackColumnHeader}>{feedbackLabels.newWords}</Text>
-                  <ScrollView style={styles.wordList}>
-                    {localNewWords && localNewWords.map((word, index) => (
-                      <TouchableOpacity 
-                        key={`new-${index}`} 
-                        style={styles.wordItem}
-                        onPress={() => handleWordClick(word)}
-                      >
-                        <Text style={styles.wordText}>{word}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                </View>
-                
-                <View style={styles.feedbackColumn}>
-                  <Text style={styles.feedbackColumnHeader}>{feedbackLabels.history}</Text>
-                  <ScrollView style={styles.wordList}>
-                    {localHistoryWords && localHistoryWords.map((word, index) => (
-                      <TouchableOpacity 
-                        key={`history-${index}`} 
-                        style={styles.historyWordItem}
-                        onPress={() => handleWordClick(word)}
-                      >
-                        <Text style={styles.historyWordText}>{word}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                </View>
-              </View>
-            </View>
-          )}
-          
-          {/* Confirmation Modal */}
-          {showConfirmation && (
-            <Modal
-              transparent={true}
-              visible={showConfirmation}
-              animationType="fade"
-              onRequestClose={cancelClearHistory}
-            >
-              <View style={styles.modalOverlay}>
-                <View style={styles.modalContent}>
-                  <Text style={styles.modalTitle}>{feedbackLabels.confirmClear}</Text>
-                  <Text style={styles.modalText}>{feedbackLabels.confirmClearText}</Text>
-                  <View style={styles.modalButtons}>
-                    <TouchableOpacity
-                      style={[styles.modalButton, styles.cancelButton]}
-                      onPress={cancelClearHistory}
-                    >
-                      <Text style={styles.modalButtonText}>{feedbackLabels.cancel}</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[styles.modalButton, styles.confirmButton]}
-                      onPress={confirmClearHistory}
-                    >
-                      <Text style={styles.modalButtonText}>{feedbackLabels.confirm}</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-            </Modal>
-          )}
         </>
       )}
     </View>
