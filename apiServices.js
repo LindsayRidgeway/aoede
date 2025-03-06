@@ -1,6 +1,13 @@
 import { getBookById } from './bookLibrary';
 import Constants from 'expo-constants';
 
+// Import all simplification prompts statically
+import getSimplificationPrompt6 from './simplifiers/simplify6';
+import getSimplificationPrompt9 from './simplifiers/simplify9';
+import getSimplificationPrompt12 from './simplifiers/simplify12';
+import getSimplificationPrompt15 from './simplifiers/simplify15';
+import getSimplificationPrompt18 from './simplifiers/simplify18';
+
 // Get API keys using both old and new Expo Constants paths for compatibility
 const getConstantValue = (key) => {
   // Try the new path (expoConfig.extra) first - Expo SDK 46+
@@ -56,8 +63,26 @@ export const fetchSourceText = async (bookId) => {
   }
 };
 
+// Function to get the appropriate simplification prompt based on reading level
+export const getPromptForLevel = (readingLevel) => {
+  // Default to level 6 if not specified or invalid
+  const level = readingLevel || 6;
+  
+  // Map of reading levels to prompt functions
+  const promptMap = {
+    6: getSimplificationPrompt6,
+    9: getSimplificationPrompt9,
+    12: getSimplificationPrompt12,
+    15: getSimplificationPrompt15,
+    18: getSimplificationPrompt18
+  };
+  
+  // Return the appropriate prompt function, or default to level 6
+  return promptMap[level] || getSimplificationPrompt6;
+};
+
 // Step 2: Process the source text - translate and simplify
-export const processSourceText = async (sourceText, targetLanguage) => {
+export const processSourceText = async (sourceText, targetLanguage, readingLevel = 6) => {
   try {
     if (!anthropicKey) {
       console.error("Missing Anthropic API key. Please check your app.json configuration.");
@@ -65,9 +90,12 @@ export const processSourceText = async (sourceText, targetLanguage) => {
     }
     
     const apiUrl = `${CORS_PROXY}https://api.anthropic.com/v1/messages`;
-    const ageGroup = 6; // Hardcoded to 6 as requested
     
-    console.log("Sending text to Claude API for processing");
+    console.log(`Sending text to Claude API for processing with reading level: ${readingLevel}`);
+    
+    // Get the appropriate prompt function based on reading level
+    const getPrompt = getPromptForLevel(readingLevel);
+    const prompt = getPrompt(sourceText, targetLanguage, readingLevel);
     
     const response = await fetch(apiUrl, {
       method: "POST",
@@ -82,31 +110,7 @@ export const processSourceText = async (sourceText, targetLanguage) => {
         messages: [
           { 
             role: "user", 
-            content: `Here are some consecutive sentences from a book that I need simplified:
-
-${sourceText}
-
-Please translate these sentences into ${targetLanguage} if they're not already in that language, and then simplify them so that a ${ageGroup}-year-old native speaker of ${targetLanguage} could understand them.
-
-CRITICAL REQUIREMENTS:
-1. Maintain the EXACT SAME SEQUENCE of content and events as the original text
-2. Do not skip any information or jump ahead in the story
-3. Each original sentence should be represented in your simplified version
-4. Preserve the narrative flow and order of events exactly as they appear
-
-Guidelines for simplification:
-1. Replace complex vocabulary with simpler words
-2. Break down sentences longer than 10-12 words into multiple shorter sentences
-3. Use vocabulary a ${ageGroup}-year-old would know
-4. Eliminate abstract concepts
-5. Focus on concrete, visual descriptions
-6. Split sentences with multiple clauses into separate sentences
-7. Target sentence length: 4-8 words, maximum 10 words
-8. Each simplified sentence must be clear and comprehensible to a ${ageGroup}-year-old
-
-Please aim to create about 25-30 simplified sentences total from these original sentences.
-
-VERY IMPORTANT: Format your response by listing ONLY ONE simplified sentence per line. Each sentence must be a complete thought ending with a period, question mark, or exclamation point. DO NOT include any explanations or commentary.`
+            content: prompt
           }
         ]
       })

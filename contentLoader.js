@@ -3,14 +3,14 @@ import { parseIntoSentences, translateSentences, detectLanguageCode } from './te
 
 // Load book handler
 export const loadContent = async (bookId, studyLanguage, setLoadingBook, setSentences, setStudyLangSentence, 
-  setNativeLangSentence, setSourceLanguage, setCurrentSentenceIndex) => {
+  setNativeLangSentence, setSourceLanguage, setCurrentSentenceIndex, readingLevel = 6) => {
   
   if (!bookId || !studyLanguage) return false;
   
   setLoadingBook(true);
   
   try {
-    console.log(`Loading content for book ID: "${bookId}" in language: "${studyLanguage}"`);
+    console.log(`Loading content for book ID: "${bookId}" in language: "${studyLanguage}" with reading level: ${readingLevel}`);
     
     // Step 1: Get the original sentences from the source material
     const sourceText = await fetchSourceText(bookId);
@@ -28,7 +28,7 @@ export const loadContent = async (bookId, studyLanguage, setLoadingBook, setSent
     const cleanSourceText = sourceText.replace(/^[^A-Za-z0-9\u00C0-\u017F]+/g, '').trim();
     
     // Step 2: Process the text - translate to study language and simplify
-    const processedText = await processSourceText(cleanSourceText, studyLanguage);
+    const processedText = await processSourceText(cleanSourceText, studyLanguage, readingLevel);
     console.log("Text processed successfully");
     
     if (!processedText || processedText.length === 0) {

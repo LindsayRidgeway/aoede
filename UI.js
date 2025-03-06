@@ -25,7 +25,9 @@ export function MainUI({
   setListeningSpeed,
   isSpeaking,
   currentSentenceIndex,
-  totalSentences
+  totalSentences,
+  readingLevel,
+  setReadingLevel
 }) {
   // Initialize listening speed from storage when component mounts
   useEffect(() => {
@@ -68,6 +70,32 @@ export function MainUI({
               ListeningSpeed.saveStudyLanguage(text);
             }}
           />
+        </View>
+
+        {/* Reading Level Row */}
+        <View style={styles.readingLevelRow}>
+          <Text style={styles.speedLabel}>{uiText.readingLevel || "Reading Level"}:</Text>
+          <View style={styles.readingLevelControls}>
+            {[6, 9, 12, 15, 18].map((level) => (
+              <TouchableOpacity
+                key={level}
+                style={[
+                  styles.readingLevelButton,
+                  readingLevel === level ? styles.readingLevelButtonActive : null
+                ]}
+                onPress={() => setReadingLevel(level)}
+              >
+                <Text 
+                  style={[
+                    styles.readingLevelButtonText,
+                    readingLevel === level ? styles.readingLevelButtonTextActive : null
+                  ]}
+                >
+                  {level}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         </View>
 
         <View style={styles.bookSelectionRow}>

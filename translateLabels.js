@@ -19,7 +19,7 @@ try {
 const labels = [
   "Aoede", "Source Material", "Select a book", "Listen", "Next Sentence",
   "Load Book", "Show Foreign Sentence", "Show Translation", "Reading Speed",
-  "Study Language", "Enter study language", "Stop", "Book Selection"
+  "Study Language", "Enter study language", "Stop", "Book Selection", "Reading Level"
 ];
 
 // Enhanced Google Translate API Integration with retry & error handling
@@ -128,7 +128,8 @@ export const translateLabels = async (setUiText) => {
         readingSpeed: "Reading Speed",
         studyLanguage: "Study Language",
         enterLanguage: "Enter study language",
-        bookSelection: "Book Selection"
+        bookSelection: "Book Selection",
+        readingLevel: "Reading Level"
       });
       
       // Also load the English book titles
@@ -152,7 +153,8 @@ export const translateLabels = async (setUiText) => {
       studyLanguage: translatedLabels[9],
       enterLanguage: translatedLabels[10],
       stop: translatedLabels[11],
-      bookSelection: translatedLabels[12]
+      bookSelection: translatedLabels[12],
+      readingLevel: translatedLabels[13]
     };
     
     // Set the base UI text first
@@ -182,7 +184,8 @@ export const translateLabels = async (setUiText) => {
       readingSpeed: "Reading Speed",
       studyLanguage: "Study Language",
       enterLanguage: "Enter study language",
-      bookSelection: "Book Selection"
+      bookSelection: "Book Selection",
+      readingLevel: "Reading Level"
     });
   }
 };

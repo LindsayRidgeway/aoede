@@ -32,6 +32,39 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 15
   },
+  // New styles for Reading Level
+  readingLevelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15
+  },
+  readingLevelControls: {
+    flexDirection: 'row',
+    marginLeft: 10
+  },
+  readingLevelButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f0f0f0',
+    marginHorizontal: 5,
+    borderWidth: 1,
+    borderColor: '#ddd'
+  },
+  readingLevelButtonActive: {
+    backgroundColor: '#4a90e2',
+    borderColor: '#3a80d2'
+  },
+  readingLevelButtonText: {
+    fontSize: 14,
+    color: '#555'
+  },
+  readingLevelButtonTextActive: {
+    color: '#fff',
+    fontWeight: '500'
+  },
   bookSelectionRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',

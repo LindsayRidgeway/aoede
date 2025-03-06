@@ -22,6 +22,8 @@ export default function App() {
   const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
   const [sentences, setSentences] = useState([]);
   const [sourceLanguage, setSourceLanguage] = useState("en");
+  // Add state for reading level with default value of 6
+  const [readingLevel, setReadingLevel] = useState(6);
   
   // Initialize the app
   useEffect(() => {
@@ -33,6 +35,7 @@ export default function App() {
         try {
           const storedSelectedBook = await AsyncStorage.getItem("selectedBook");
           const storedSpeechRate = await AsyncStorage.getItem("speechRate");
+          const storedReadingLevel = await AsyncStorage.getItem("readingLevel");
           
           if (storedSelectedBook !== null) {
             setSelectedBook(storedSelectedBook);
@@ -40,6 +43,10 @@ export default function App() {
           
           if (storedSpeechRate !== null) {
             setSpeechRate(parseFloat(storedSpeechRate));
+          }
+          
+          if (storedReadingLevel !== null) {
+            setReadingLevel(parseInt(storedReadingLevel, 10));
           }
         } catch (error) {
           console.error("Error loading stored settings:", error);
@@ -83,6 +90,16 @@ export default function App() {
     }
   };
   
+  // Handle reading level change
+  const handleReadingLevelChange = async (level) => {
+    setReadingLevel(level);
+    try {
+      await AsyncStorage.setItem("readingLevel", level.toString());
+    } catch (error) {
+      console.error("Error saving readingLevel:", error);
+    }
+  };
+  
   // Handle load book button click
   const handleLoadBook = async () => {
     await loadContent(
@@ -93,7 +110,8 @@ export default function App() {
       setStudyLangSentence,
       setNativeLangSentence,
       setSourceLanguage,
-      setCurrentSentenceIndex
+      setCurrentSentenceIndex,
+      readingLevel
     );
   };
   
@@ -121,6 +139,8 @@ export default function App() {
       setStudyLanguage={setStudyLanguage}
       currentSentenceIndex={currentSentenceIndex}
       totalSentences={sentences.length}
+      readingLevel={readingLevel}
+      setReadingLevel={handleReadingLevelChange}
     />
   );
 }
