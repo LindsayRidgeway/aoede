@@ -41,6 +41,9 @@ const CORS_PROXY = getConstantValue('EXPO_PUBLIC_CORS_PROXY') || '';
 // Log API key status for debugging
 console.log('Anthropic API key available:', !!anthropicKey);
 console.log('Google API key available:', !!googleKey);
+console.log('API Key length:', anthropicKey ? anthropicKey.length : 0);
+console.log('First 10 chars of API key:', anthropicKey ? anthropicKey.substring(0, 10) : 'N/A');
+console.log('CORS Proxy:', CORS_PROXY);
 
 // Fetch the source text by book ID
 export const fetchSourceText = async (bookId) => {
@@ -56,9 +59,33 @@ export const fetchSourceText = async (bookId) => {
     }
     
     console.log(`Found book: "${book.defaultTitle}" by ${book.author}`);
-    return book.content;
+    
+    if (!book.content) {
+      console.error(`Book content is missing for "${book.defaultTitle}"`);
+      return null;
+    }
+    
+    if (typeof book.content !== 'string') {
+      console.error(`Book content is not a string for "${book.defaultTitle}", type is: ${typeof book.content}`);
+      return null;
+    }
+    
+    if (book.content.length < 10) {
+      console.error(`Book content is too short for "${book.defaultTitle}", length: ${book.content.length}`);
+      return null;
+    }
+    
+    // Take a sample of the content
+    const contentSample = book.content.substring(0, 2000);
+    console.log(`Successfully fetched content for "${book.defaultTitle}"`);
+    console.log(`Content length: ${book.content.length}`);
+    console.log(`Content sample (first 100 chars): "${contentSample.substring(0, 100)}..."`);
+    
+    return contentSample;
   } catch (error) {
     console.error("Error fetching source text:", error);
+    console.error("Error details:", error.message);
+    console.error("Error stack:", error.stack);
     return null;
   }
 };
@@ -89,62 +116,95 @@ export const processSourceText = async (sourceText, targetLanguage, readingLevel
       return null;
     }
     
+    // Additional validation to ensure we have usable source text
+    if (!sourceText) {
+      console.error("Source text is missing");
+      return null;
+    }
+    
+    if (typeof sourceText !== 'string') {
+      console.error("Source text is not a string, type is:", typeof sourceText);
+      return null;
+    }
+    
+    if (sourceText.length < 10) {
+      console.error("Source text is too short, length:", sourceText.length);
+      return null;
+    }
+    
     const apiUrl = `${CORS_PROXY}https://api.anthropic.com/v1/messages`;
     
     console.log(`Sending text to Claude API for processing with reading level: ${readingLevel}`);
+    console.log("Text length:", sourceText.length);
+    console.log("Sample:", sourceText.substring(0, 50) + "...");
     
     // Get the appropriate prompt function based on reading level
     const getPrompt = getPromptForLevel(readingLevel);
     const prompt = getPrompt(sourceText, targetLanguage, readingLevel);
     
-    const response = await fetch(apiUrl, {
-      method: "POST",
-      headers: {
-        "x-api-key": anthropicKey,
-        "anthropic-version": "2023-06-01",
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: "claude-3-haiku-20240307",
-        max_tokens: 4000,
-        messages: [
-          { 
-            role: "user", 
-            content: prompt
-          }
-        ]
-      })
-    });
+    console.log("Sending request to Claude API...");
+    console.log("API URL:", apiUrl);
     
-    if (!response.ok) {
-      const responseText = await response.text();
-      console.error(`API error (status ${response.status}):`, responseText);
+    try {
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "x-api-key": anthropicKey,
+          "anthropic-version": "2023-06-01",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: "claude-3-haiku-20240307",
+          max_tokens: 4000,
+          messages: [
+            { 
+              role: "user", 
+              content: prompt
+            }
+          ]
+        })
+      });
+      
+      console.log("Response received, status:", response.status);
+      
+      if (!response.ok) {
+        const responseText = await response.text();
+        console.error(`API error (status ${response.status}):`, responseText);
+        return null;
+      }
+      
+      const data = await response.json();
+      console.log("Response parsed successfully");
+      
+      if (data.error) {
+        console.error("Claude API error:", data.error);
+        return null;
+      }
+      
+      if (!data.content || data.content.length === 0) {
+        console.error("No content in Claude API response");
+        return null;
+      }
+      
+      // Get the processed text
+      const processedText = data.content[0].text.trim();
+      console.log("Processed text received, length:", processedText.length);
+      console.log("Processed text sample:", processedText.substring(0, 100) + "...");
+      
+      // Remove any potential intro sentence like "Here are simplified sentences in Russian:"
+      const cleanedText = processedText.replace(/^[^\.!?]*(?:[\.!?]|:)\s*/i, '');
+      
+      return cleanedText;
+    } catch (apiError) {
+      console.error("Error making API request:", apiError);
+      console.error("Error details:", apiError.message);
+      console.error("Error stack:", apiError.stack);
       return null;
     }
-    
-    const data = await response.json();
-    console.log("Response received from Claude API for processing");
-    
-    if (data.error) {
-      console.error("Claude API error:", data.error);
-      return null;
-    }
-    
-    if (!data.content || data.content.length === 0) {
-      console.error("No content in Claude API response");
-      return null;
-    }
-    
-    // Get the processed text
-    const processedText = data.content[0].text.trim();
-    console.log("Processed text received:", processedText.substring(0, 100) + "...");
-    
-    // Remove any potential intro sentence like "Here are simplified sentences in Russian:"
-    const cleanedText = processedText.replace(/^[^\.!?]*(?:[\.!?]|:)\s*/i, '');
-    
-    return cleanedText;
   } catch (error) {
     console.error("Error processing source text:", error);
+    console.error("Error details:", error.message);
+    console.error("Error stack:", error.stack);
     return null;
   }
 };

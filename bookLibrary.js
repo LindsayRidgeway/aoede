@@ -1,4 +1,4 @@
-// Import each book's content from separate files
+// Import the original book content for now to maintain backward compatibility
 import { montecristo } from './books/montecristo';
 import { prideandprejudice } from './books/prideandprejudice';
 import { sherlockholmes } from './books/sherlockholmes';
