@@ -13,9 +13,11 @@ import { dracula } from './books/dracula';
 import { wizardofoz } from './books/wizardofoz';
 import { littlewomen } from './books/littlewomen';
 import { odyssey } from './books/odyssey';
+/*
 import { iliad } from './books/iliad';
 import { treasureisland } from './books/treasureisland';
 import { tomsawyer } from './books/tomsawyer';
+*/
 
 // Book library with titles and metadata
 export const bookLibrary = [
@@ -117,6 +119,7 @@ export const bookLibrary = [
     author: "Homer",
     content: odyssey
   },
+/*
   {
     id: "iliad",
     titleKey: "iliad",
@@ -138,6 +141,7 @@ export const bookLibrary = [
     author: "Mark Twain",
     content: tomsawyer
   }
+*/
 ];
 
 // Function to get book by ID
