@@ -16,6 +16,12 @@ import { odyssey } from './books/odyssey';
 import { iliad } from './books/iliad';
 import { treasureisland } from './books/treasureisland';
 import { tomsawyer } from './books/tomsawyer';
+import { callofthewild } from './books/callofthewild';
+import { torah } from './books/torah';
+import { republic } from './books/republic';
+import { zarathustra } from './books/zarathustra';
+import { lesmiserables } from './books/lesmiserables';
+import { ladywiththepet } from './books/ladywiththepet';
 
 // Book library with titles and metadata
 export const bookLibrary = [
@@ -137,6 +143,48 @@ export const bookLibrary = [
     defaultTitle: "The Adventures of Tom Sawyer",
     author: "Mark Twain",
     content: tomsawyer
+  },
+  {
+    id: "callofthewild",
+    titleKey: "callOfTheWild",
+    defaultTitle: "The Call of the Wild",
+    author: "Jack London",
+    content: callofthewild
+  },
+  {
+    id: "torah",
+    titleKey: "torah",
+    defaultTitle: "The Torah",
+    author: "Traditional",
+    content: torah
+  },
+  {
+    id: "republic",
+    titleKey: "republic",
+    defaultTitle: "The Republic",
+    author: "Plato",
+    content: republic
+  },
+  {
+    id: "zarathustra",
+    titleKey: "thusSpokeZarathustra",
+    defaultTitle: "Thus Spoke Zarathustra",
+    author: "Friedrich Nietzsche",
+    content: zarathustra
+  },
+  {
+    id: "lesmiserables",
+    titleKey: "lesMiserables",
+    defaultTitle: "Les Misérables",
+    author: "Victor Hugo",
+    content: lesmiserables
+  },
+  {
+    id: "ladywiththepet",
+    titleKey: "ladyWithTheDog",
+    defaultTitle: "The Lady with the Dog",
+    author: "Anton Chekhov",
+    content: ladywiththepet
   }
 ];
 
