@@ -1,12 +1,25 @@
-import Constants from "expo-constants";
+import { translateBookTitles } from './bookLibrary';
 
-const userLang = navigator.language.split('-')[0] || "en";
-const googleKey = Constants.expoConfig?.extra?.EXPO_PUBLIC_GOOGLE_API_KEY;
+// Get user language from browser
+const userLang = (typeof navigator !== 'undefined' && navigator.language) 
+  ? navigator.language.split('-')[0] 
+  : "en";
+
+// Try to safely import and use expo-constants
+let googleKey = '';
+try {
+  const Constants = require('expo-constants');
+  if (Constants && Constants.expoConfig && Constants.expoConfig.extra) {
+    googleKey = Constants.expoConfig.extra.EXPO_PUBLIC_GOOGLE_API_KEY || '';
+  }
+} catch (error) {
+  console.log('Could not load Constants from expo-constants:', error);
+}
 
 const labels = [
-  "Aoede", "Source Material", "Enter a book title or genre", "Listen", "Next Sentence",
+  "Aoede", "Source Material", "Select a book", "Listen", "Next Sentence",
   "Load Book", "Show Foreign Sentence", "Show Translation", "Reading Speed",
-  "Study Language", "Enter study language", "Stop"
+  "Study Language", "Enter study language", "Stop", "Book Selection"
 ];
 
 // Enhanced Google Translate API Integration with retry & error handling
@@ -105,7 +118,7 @@ export const translateLabels = async (setUiText) => {
       setUiText({
         appName: "Aoede",
         sourceMaterial: "Source Material",
-        enterBook: "Enter a book title or genre",
+        enterBook: "Select a book",
         listen: "Listen",
         stop: "Stop",
         next: "Next Sentence",
@@ -114,14 +127,19 @@ export const translateLabels = async (setUiText) => {
         showTranslation: "Show Translation",
         readingSpeed: "Reading Speed",
         studyLanguage: "Study Language",
-        enterLanguage: "Enter study language"
+        enterLanguage: "Enter study language",
+        bookSelection: "Book Selection"
       });
+      
+      // Also load the English book titles
+      const bookTitles = await translateBookTitles((text) => text);
+      setUiText(prev => ({ ...prev, ...bookTitles }));
       return;
     }
     
     const translatedLabels = await Promise.all(labels.map(label => translateText(label, "en", userLang)));
 
-    setUiText({
+    const uiTextBase = {
       appName: translatedLabels[0],
       sourceMaterial: translatedLabels[1],
       enterBook: translatedLabels[2],
@@ -133,8 +151,20 @@ export const translateLabels = async (setUiText) => {
       readingSpeed: translatedLabels[8],
       studyLanguage: translatedLabels[9],
       enterLanguage: translatedLabels[10],
-      stop: translatedLabels[11]
-    });
+      stop: translatedLabels[11],
+      bookSelection: translatedLabels[12]
+    };
+    
+    // Set the base UI text first
+    setUiText(uiTextBase);
+    
+    // Then translate book titles and add them to UI text
+    const bookTitles = await translateBookTitles((text, sourceLang, targetLang) => 
+      translateText(text, sourceLang || "en", targetLang || userLang)
+    );
+    
+    // Update the UI text with book titles
+    setUiText(prev => ({ ...prev, ...bookTitles }));
   } catch (error) {
     console.error("Failed to translate UI labels:", error);
     
@@ -142,7 +172,7 @@ export const translateLabels = async (setUiText) => {
     setUiText({
       appName: "Aoede",
       sourceMaterial: "Source Material",
-      enterBook: "Enter a book title or genre",
+      enterBook: "Select a book",
       listen: "Listen",
       stop: "Stop",
       next: "Next Sentence",
@@ -151,7 +181,8 @@ export const translateLabels = async (setUiText) => {
       showTranslation: "Show Translation",
       readingSpeed: "Reading Speed",
       studyLanguage: "Study Language",
-      enterLanguage: "Enter study language"
+      enterLanguage: "Enter study language",
+      bookSelection: "Book Selection"
     });
   }
 };

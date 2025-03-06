@@ -4,13 +4,12 @@ import { MainUI } from './UI';
 import ListeningSpeed from './listeningSpeed';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { translateLabels } from './translateLabels';
-import { updateUserQuery } from './updateUserQuery';
 import { loadContent } from './contentLoader';
 import { toggleSpeak, processNextSentence } from './audioControls';
 
 export default function App() {
   const [uiText, setUiText] = useState({});
-  const [userQuery, setUserQuery] = useState("");  
+  const [selectedBook, setSelectedBook] = useState("");  
   const [studyLangSentence, setStudyLangSentence] = useState(""); 
   const [nativeLangSentence, setNativeLangSentence] = useState(""); 
   const [showText, setShowText] = useState(true);
@@ -32,11 +31,11 @@ export default function App() {
         
         // Load stored settings
         try {
-          const storedUserQuery = await AsyncStorage.getItem("userQuery");
+          const storedSelectedBook = await AsyncStorage.getItem("selectedBook");
           const storedSpeechRate = await AsyncStorage.getItem("speechRate");
           
-          if (storedUserQuery !== null) {
-            setUserQuery(storedUserQuery);
+          if (storedSelectedBook !== null) {
+            setSelectedBook(storedSelectedBook);
           }
           
           if (storedSpeechRate !== null) {
@@ -74,10 +73,20 @@ export default function App() {
     );
   };
   
+  // Handle book selection change
+  const handleBookChange = async (bookId) => {
+    setSelectedBook(bookId);
+    try {
+      await AsyncStorage.setItem("selectedBook", bookId);
+    } catch (error) {
+      console.error("Error saving selectedBook:", error);
+    }
+  };
+  
   // Handle load book button click
   const handleLoadBook = async () => {
     await loadContent(
-      userQuery,
+      selectedBook,
       studyLanguage,
       setLoadingBook,
       setSentences,
@@ -91,8 +100,8 @@ export default function App() {
   return (
     <MainUI
       uiText={uiText}
-      userQuery={userQuery}  
-      setUserQuery={(query) => updateUserQuery(query, setUserQuery)}
+      selectedBook={selectedBook}
+      setSelectedBook={handleBookChange}
       loadBook={handleLoadBook}
       sentence={studyLangSentence}
       translatedSentence={nativeLangSentence}

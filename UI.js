@@ -1,15 +1,16 @@
-import React, { useEffect } from 'react';
-import { Text, View, TouchableOpacity, TextInput, Switch } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Text, View, TouchableOpacity, TextInput, Switch, Picker } from 'react-native';
 import Slider from '@react-native-community/slider';
 import { styles } from './styles';  
 import ListeningSpeed from './listeningSpeed';
+import { bookLibrary } from './bookLibrary';
 
 export function MainUI({
   studyLanguage,
   setStudyLanguage,
   uiText,
-  userQuery,
-  setUserQuery,
+  selectedBook,
+  setSelectedBook,
   loadBook,
   sentence,
   translatedSentence,
@@ -44,6 +45,12 @@ export function MainUI({
   // Only show controls if content is loaded
   const showControls = sentence && sentence.length > 0;
 
+  // Get translated book titles from uiText for dropdown
+  const getBookTitle = (book) => {
+    const translatedTitle = uiText[book.titleKey];
+    return translatedTitle || book.defaultTitle;
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.header}>{uiText.appName || "Aoede"}</Text>
@@ -63,22 +70,33 @@ export function MainUI({
           />
         </View>
 
-        <View style={styles.sourceRow}>
-          <View style={styles.sourceInputWrapper}>
-            <Text style={styles.smallLabel}>{uiText.sourceMaterial || "Source Material"}:</Text>
-            <TextInput
-              style={styles.input}
-              placeholder={uiText.enterBook || "Enter a book title or genre"}
-              value={userQuery}
-              onChangeText={setUserQuery}
-            />
+        <View style={styles.bookSelectionRow}>
+          <Text style={styles.smallLabel}>{uiText.bookSelection || "Book Selection"}:</Text>
+          <View style={styles.pickerContainer}>
+            <Picker
+              selectedValue={selectedBook}
+              style={styles.bookPicker}
+              onValueChange={(itemValue) => setSelectedBook(itemValue)}
+              enabled={!loadingBook}
+            >
+              {[
+                <Picker.Item key="prompt" label={uiText.enterBook || "Select a book"} value="" />,
+                ...bookLibrary.map(book => (
+                  <Picker.Item 
+                    key={book.id} 
+                    label={getBookTitle(book)} 
+                    value={book.id} 
+                  />
+                ))
+              ]}
+            </Picker>
           </View>
           <TouchableOpacity 
-            style={[styles.loadButton, loadingBook ? styles.disabledButton : null]} 
+            style={[styles.loadButton, loadingBook ? styles.disabledButton : null, !selectedBook ? styles.disabledButton : null]} 
             onPress={loadBook} 
-            disabled={loadingBook}
+            disabled={loadingBook || !selectedBook}
           >
-            <Text style={styles.buttonText}>Load</Text>
+            <Text style={styles.buttonText}>{uiText.loadBook || "Load Book"}</Text>
           </TouchableOpacity>
         </View>
       </View>

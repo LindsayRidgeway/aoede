@@ -30,12 +30,32 @@ export const styles = StyleSheet.create({
   studyLangRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10
+    marginBottom: 15
+  },
+  bookSelectionRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between'
   },
   sourceRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between'
+  },
+  pickerContainer: {
+    flex: 1,
+    height: 40,
+    borderColor: '#ddd',
+    borderWidth: 1,
+    borderRadius: 5,
+    marginRight: 10,
+    backgroundColor: '#fff',
+    justifyContent: 'center',
+    overflow: 'hidden'
+  },
+  bookPicker: {
+    width: '100%',
+    height: 40
   },
   sourceInputWrapper: {
     flex: 1,
@@ -85,7 +105,8 @@ export const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 5,
     alignItems: 'center',
-    width: 80,
+    justifyContent: 'center',
+    minWidth: 120,
     height: 40
   },
   buttonText: {

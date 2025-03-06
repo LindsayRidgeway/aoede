@@ -1,91 +1,55 @@
-import Constants from "expo-constants";
+import { getBookById } from './bookLibrary';
+import Constants from 'expo-constants';
 
-// Get API keys from app.json
-const anthropicKey = Constants.expoConfig?.extra?.EXPO_PUBLIC_ANTHROPIC_API_KEY;
-const googleKey = Constants.expoConfig?.extra?.EXPO_PUBLIC_GOOGLE_API_KEY;
-const CORS_PROXY = Constants.expoConfig?.extra?.EXPO_PUBLIC_CORS_PROXY || "";
+// Get API keys using both old and new Expo Constants paths for compatibility
+const getConstantValue = (key) => {
+  // Try the new path (expoConfig.extra) first - Expo SDK 46+
+  if (Constants?.expoConfig?.extra && Constants.expoConfig.extra[key] !== undefined) {
+    return Constants.expoConfig.extra[key];
+  }
+  
+  // Fallback to old path (manifest.extra) - before Expo SDK 46
+  if (Constants?.manifest?.extra && Constants.manifest.extra[key] !== undefined) {
+    return Constants.manifest.extra[key];
+  }
+  
+  // For Expo Go and other environments - check extra at top level
+  if (Constants?.extra && Constants.extra[key] !== undefined) {
+    return Constants.extra[key];
+  }
+  
+  // Check the direct path in Constants as last resort
+  if (Constants && Constants[key] !== undefined) {
+    return Constants[key];
+  }
+  
+  return null;
+};
 
-// Step 1: Fetch the source text
-export const fetchSourceText = async (title) => {
+// Get API keys from Expo Constants
+const anthropicKey = getConstantValue('EXPO_PUBLIC_ANTHROPIC_API_KEY');
+const googleKey = getConstantValue('EXPO_PUBLIC_GOOGLE_API_KEY');
+const CORS_PROXY = getConstantValue('EXPO_PUBLIC_CORS_PROXY') || '';
+
+// Log API key status for debugging
+console.log('Anthropic API key available:', !!anthropicKey);
+console.log('Google API key available:', !!googleKey);
+
+// Fetch the source text by book ID
+export const fetchSourceText = async (bookId) => {
   try {
-    if (!anthropicKey) {
-      console.error("Missing Anthropic API key");
+    console.log(`Fetching book with ID: "${bookId}"`);
+    
+    // Get the book from our library
+    const book = getBookById(bookId);
+    
+    if (!book) {
+      console.error(`Book with ID ${bookId} not found`);
       return null;
     }
     
-    console.log(`Using CORS proxy: ${CORS_PROXY}`);
-    const apiUrl = `${CORS_PROXY}https://api.anthropic.com/v1/messages`;
-    
-    const response = await fetch(apiUrl, {
-      method: "POST",
-      headers: {
-        "x-api-key": anthropicKey,
-        "anthropic-version": "2023-06-01",
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: "claude-3-haiku-20240307",
-        max_tokens: 2000,
-        messages: [
-          { 
-            role: "user", 
-            content: `Please provide EXACTLY the first 10 sentences from the beginning of "${title}" in its original language. I need the EXACT opening sentences that appear in the published work, in sequential order, starting with the very first sentence.
-
-IMPORTANT:
-1. Start with the VERY FIRST sentence of the book/story
-2. Provide EXACTLY 10 consecutive sentences in their original order
-3. DO NOT skip any sentences or paragraphs
-4. DO NOT include any intro sentences, explanations, or commentary
-5. DO NOT summarize or paraphrase - I need the EXACT text
-6. DO NOT include chapter headings, title, or any text that isn't part of the narrative
-
-Format your response exactly as follows:
-
-ORIGINAL_TEXT:
-[First sentence of the work]
-[Second sentence of the work]
-[Third sentence of the work]
-...and so on for exactly 10 sentences
-
-LANGUAGE: [language code]
-
-Remember: I need the literal beginning of the text, starting with the first actual sentence.`
-          }
-        ]
-      })
-    });
-    
-    if (!response.ok) {
-      const responseText = await response.text();
-      console.error(`API error (status ${response.status}):`, responseText);
-      return null;
-    }
-    
-    const data = await response.json();
-    console.log("Response received from Claude API for source text");
-    
-    if (data.error) {
-      console.error("Claude API error:", data.error);
-      return null;
-    }
-    
-    if (!data.content || data.content.length === 0) {
-      console.error("No content in Claude API response");
-      return null;
-    }
-    
-    // Get the response text
-    const fullResponse = data.content[0].text.trim();
-    console.log("Source text response received:", fullResponse.substring(0, 100) + "...");
-    
-    // Extract the original text
-    const originalTextMatch = fullResponse.match(/ORIGINAL_TEXT:\s*([\s\S]*?)(?=\s*LANGUAGE:|$)/);
-    if (originalTextMatch && originalTextMatch[1]) {
-      return originalTextMatch[1].trim();
-    }
-    
-    // If we couldn't extract the original text, return the whole response
-    return fullResponse;
+    console.log(`Found book: "${book.defaultTitle}" by ${book.author}`);
+    return book.content;
   } catch (error) {
     console.error("Error fetching source text:", error);
     return null;
@@ -96,12 +60,14 @@ Remember: I need the literal beginning of the text, starting with the first actu
 export const processSourceText = async (sourceText, targetLanguage) => {
   try {
     if (!anthropicKey) {
-      console.error("Missing Anthropic API key");
+      console.error("Missing Anthropic API key. Please check your app.json configuration.");
       return null;
     }
     
     const apiUrl = `${CORS_PROXY}https://api.anthropic.com/v1/messages`;
     const ageGroup = 6; // Hardcoded to 6 as requested
+    
+    console.log("Sending text to Claude API for processing");
     
     const response = await fetch(apiUrl, {
       method: "POST",

@@ -2,18 +2,18 @@ import { fetchSourceText, processSourceText } from './apiServices';
 import { parseIntoSentences, translateSentences, detectLanguageCode } from './textProcessing';
 
 // Load book handler
-export const loadContent = async (userQuery, studyLanguage, setLoadingBook, setSentences, setStudyLangSentence, 
+export const loadContent = async (bookId, studyLanguage, setLoadingBook, setSentences, setStudyLangSentence, 
   setNativeLangSentence, setSourceLanguage, setCurrentSentenceIndex) => {
   
-  if (!userQuery || !studyLanguage) return false;
+  if (!bookId || !studyLanguage) return false;
   
   setLoadingBook(true);
   
   try {
-    console.log(`Loading content for query: "${userQuery}" in language: "${studyLanguage}"`);
+    console.log(`Loading content for book ID: "${bookId}" in language: "${studyLanguage}"`);
     
     // Step 1: Get the original sentences from the source material
-    const sourceText = await fetchSourceText(userQuery);
+    const sourceText = await fetchSourceText(bookId);
     console.log("Source text fetched successfully");
     
     if (!sourceText || sourceText.length === 0) {
@@ -24,8 +24,11 @@ export const loadContent = async (userQuery, studyLanguage, setLoadingBook, setS
       return false;
     }
     
+    // Clean up the response - remove any potential explanatory text
+    const cleanSourceText = sourceText.replace(/^[^A-Za-z0-9\u00C0-\u017F]+/g, '').trim();
+    
     // Step 2: Process the text - translate to study language and simplify
-    const processedText = await processSourceText(sourceText, studyLanguage);
+    const processedText = await processSourceText(cleanSourceText, studyLanguage);
     console.log("Text processed successfully");
     
     if (!processedText || processedText.length === 0) {
