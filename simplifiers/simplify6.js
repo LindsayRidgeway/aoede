@@ -1,4 +1,4 @@
-// simplify6.js - Simplification prompt for 6-year-old reading level
+// simplify6.js - Improved simplification prompt for 6-year-old reading level
 
 const getSimplificationPrompt = (sourceText, targetLanguage, ageGroup = 6) => {
   return `Here are some consecutive sentences from a book that I need simplified:
@@ -14,14 +14,15 @@ CRITICAL REQUIREMENTS:
 4. Preserve the narrative flow and order of events exactly as they appear
 
 Guidelines for simplification:
-1. Replace complex vocabulary with simpler words
-2. Break down sentences longer than 10-12 words into multiple shorter sentences
-3. Use vocabulary a ${ageGroup}-year-old would know
-4. Eliminate abstract concepts
-5. Focus on concrete, visual descriptions
-6. Split sentences with multiple clauses into separate sentences
-7. Target sentence length: 4-8 words, maximum 10 words
-8. Each simplified sentence must be clear and comprehensible to a ${ageGroup}-year-old
+1. Maximum sentence length: 6 words. This is a strict requirement.
+2. Use only basic vocabulary a 6-year-old would know
+3. Replace ALL complex words with simple alternatives
+4. Use only basic grammar (subject-verb-object structure)
+5. Avoid abstract concepts completely
+6. Use very concrete, literal descriptions
+7. Use present tense when possible
+8. Repeat character names instead of using pronouns if there's any ambiguity
+9. Break complex scenes into simple, step-by-step actions
 
 Please aim to create about 25-30 simplified sentences total from these original sentences.
 

@@ -5,7 +5,7 @@ const getSimplificationPrompt = (sourceText, targetLanguage, ageGroup = 12) => {
 
 ${sourceText}
 
-Please translate these sentences into ${targetLanguage} if they're not already in that language, and then simplify them so that a ${ageGroup}-year-old native speaker of ${targetLanguage} could understand them.
+Please translate these sentences into ${targetLanguage} if they're not already in that language, and then simplify them for a ${ageGroup}-year-old native speaker of ${targetLanguage}.
 
 CRITICAL REQUIREMENTS:
 1. Maintain the EXACT SAME SEQUENCE of content and events as the original text
@@ -14,14 +14,13 @@ CRITICAL REQUIREMENTS:
 4. Preserve the narrative flow and order of events exactly as they appear
 
 Guidelines for simplification:
-1. Replace very complex vocabulary with more accessible words
-2. Break down sentences longer than 15-18 words into multiple shorter sentences
-3. Use vocabulary appropriate for a ${ageGroup}-year-old with a good reading level
-4. Maintain some abstract concepts but explain them clearly when needed
-5. Use more varied sentence structures appropriate for middle-school readers
-6. Split very complex sentences with multiple clauses but maintain some compound sentences
-7. Target sentence length: 8-15 words, maximum 18 words
-8. Each simplified sentence must be clear and comprehensible to a ${ageGroup}-year-old
+1. Maximum sentence length: 12 words. Split longer sentences into multiple shorter ones.
+2. Use vocabulary that a 12-year-old native speaker would understand
+3. Simplify complex concepts but retain the core meaning
+4. You can use more nuanced language than for younger readers
+5. Some figurative language is acceptable if it's clear
+6. Maintain the original tone and style where possible
+7. Can include some more complex sentence structures as long as they're clear
 
 Please aim to create about 25-30 simplified sentences total from these original sentences.
 
