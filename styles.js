@@ -32,7 +32,42 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 15
   },
-  // New styles for Reading Level
+  // New styles for Search Mode
+  searchModeRow: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginBottom: 10
+  },
+  searchModeToggle: {
+    padding: 6,
+    backgroundColor: '#e8f4fd',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#bde0fd'
+  },
+  searchModeText: {
+    fontSize: 12,
+    color: '#4a90e2'
+  },
+  // Styles for free-form search
+  bookSearchRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between'
+  },
+  searchInputContainer: {
+    flex: 1,
+    marginRight: 10
+  },
+  searchInput: {
+    height: 40,
+    borderColor: '#ddd',
+    borderWidth: 1,
+    borderRadius: 5,
+    paddingHorizontal: 10,
+    backgroundColor: '#fff'
+  },
+  // Reading Level styles
   readingLevelRow: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -1,4 +1,4 @@
-import { translateBookTitles } from './bookLibrary';
+import { popularBooks } from './gptBookService';
 
 // Get user language from browser
 const userLang = (typeof navigator !== 'undefined' && navigator.language) 
@@ -19,7 +19,8 @@ try {
 const labels = [
   "Aoede", "Source Material", "Select a book", "Listen", "Next Sentence",
   "Load Book", "Show Foreign Sentence", "Show Translation", "Reading Speed",
-  "Study Language", "Enter study language", "Stop", "Book Selection", "Reading Level"
+  "Study Language", "Enter study language", "Stop", "Book Selection", "Reading Level",
+  "Switch to Search", "Switch to Book List", "Book Search", "Enter book title or description", "Search"
 ];
 
 // Enhanced Google Translate API Integration with retry & error handling
@@ -129,11 +130,20 @@ export const translateLabels = async (setUiText) => {
         studyLanguage: "Study Language",
         enterLanguage: "Enter study language",
         bookSelection: "Book Selection",
-        readingLevel: "Reading Level"
+        readingLevel: "Reading Level",
+        switchToSearch: "Switch to Search",
+        switchToDropdown: "Switch to Book List",
+        bookSearch: "Book Search",
+        enterBookSearch: "Enter book title or description",
+        searchButton: "Search"
       });
       
       // Also load the English book titles
-      const bookTitles = await translateBookTitles((text) => text);
+      const bookTitles = {};
+      popularBooks.forEach(book => {
+        bookTitles[book.id] = book.title;
+      });
+      
       setUiText(prev => ({ ...prev, ...bookTitles }));
       return;
     }
@@ -154,19 +164,31 @@ export const translateLabels = async (setUiText) => {
       enterLanguage: translatedLabels[10],
       stop: translatedLabels[11],
       bookSelection: translatedLabels[12],
-      readingLevel: translatedLabels[13]
+      readingLevel: translatedLabels[13],
+      switchToSearch: translatedLabels[14],
+      switchToDropdown: translatedLabels[15],
+      bookSearch: translatedLabels[16],
+      enterBookSearch: translatedLabels[17],
+      searchButton: translatedLabels[18]
     };
     
     // Set the base UI text first
     setUiText(uiTextBase);
     
-    // Then translate book titles and add them to UI text
-    const bookTitles = await translateBookTitles((text, sourceLang, targetLang) => 
-      translateText(text, sourceLang || "en", targetLang || userLang)
-    );
+    // Then translate book titles
+    const translatedTitles = {};
+    for (const book of popularBooks) {
+      try {
+        const translatedTitle = await translateText(book.title, "en", userLang);
+        translatedTitles[book.id] = translatedTitle || book.title;
+      } catch (error) {
+        console.error(`Error translating title for ${book.id}:`, error);
+        translatedTitles[book.id] = book.title;
+      }
+    }
     
     // Update the UI text with book titles
-    setUiText(prev => ({ ...prev, ...bookTitles }));
+    setUiText(prev => ({ ...prev, ...translatedTitles }));
   } catch (error) {
     console.error("Failed to translate UI labels:", error);
     
@@ -185,7 +207,12 @@ export const translateLabels = async (setUiText) => {
       studyLanguage: "Study Language",
       enterLanguage: "Enter study language",
       bookSelection: "Book Selection",
-      readingLevel: "Reading Level"
+      readingLevel: "Reading Level",
+      switchToSearch: "Switch to Search",
+      switchToDropdown: "Switch to Book List",
+      bookSearch: "Book Search",
+      enterBookSearch: "Enter book title or description",
+      searchButton: "Search"
     });
   }
 };

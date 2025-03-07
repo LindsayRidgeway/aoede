@@ -1,4 +1,3 @@
-import { getBookById } from './bookLibrary';
 import Constants from 'expo-constants';
 
 // Import all simplification prompts statically
@@ -42,50 +41,6 @@ const CORS_PROXY = getConstantValue('EXPO_PUBLIC_CORS_PROXY') || '';
 console.log('Anthropic API key available:', !!anthropicKey);
 console.log('Google API key available:', !!googleKey);
 
-// Fetch the source text by book ID
-export const fetchSourceText = async (bookId) => {
-  try {
-    console.log(`Fetching book with ID: "${bookId}"`);
-    
-    // Get the book from our library (now supports both JS and text files)
-    const book = await getBookById(bookId);
-    
-    if (!book) {
-      console.error(`Book with ID ${bookId} not found`);
-      return null;
-    }
-    
-    console.log(`Found book: "${book.defaultTitle}" by ${book.author}`);
-    
-    if (!book.content) {
-      console.error(`Book content is missing for "${book.defaultTitle}"`);
-      return null;
-    }
-    
-    // Format handling for one-sentence-per-line text files
-    let contentToUse = book.content;
-    
-    // If the content looks like it's from a text file with sentences on separate lines
-    if (typeof contentToUse === 'string' && contentToUse.includes('\n')) {
-      console.log('Content appears to be from a text file with one sentence per line');
-      // Convert to a single string for processing
-      contentToUse = contentToUse.split('\n')
-                                 .filter(line => line.trim().length > 0)
-                                 .join(' ');
-    }
-    
-    // Take a sample of the content to avoid overwhelming the API
-    const contentSample = contentToUse.substring(0, 2000);
-    console.log(`Content sample length: ${contentSample.length}`);
-    console.log(`Content sample (first 100 chars): "${contentSample.substring(0, 100)}..."`);
-    
-    return contentSample;
-  } catch (error) {
-    console.error("Error fetching source text:", error);
-    return null;
-  }
-};
-
 // Function to get the appropriate simplification prompt based on reading level
 export const getPromptForLevel = (readingLevel) => {
   // Default to level 6 if not specified or invalid
@@ -104,7 +59,7 @@ export const getPromptForLevel = (readingLevel) => {
   return promptMap[level] || getSimplificationPrompt6;
 };
 
-// Step 2: Process the source text - translate and simplify
+// Process the source text - translate and simplify
 export const processSourceText = async (sourceText, targetLanguage, readingLevel = 6) => {
   try {
     if (!anthropicKey) {
