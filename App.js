@@ -6,6 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { fetchBookContent, popularBooks } from './gptBookService';
 import { processSourceText, translateBatch } from './apiServices';
 import { translateSentences, detectLanguageCode } from './textProcessing';
+import BatchProcessor from './batchProcessor';
 
 // Direct translation method using Google Translate
 const directTranslate = async (text, sourceLang, targetLang) => {
@@ -65,7 +66,8 @@ export default function App() {
     switchToDropdown: "Switch to Book List",
     bookSearch: "Book Search",
     enterBookSearch: "Enter book title or description",
-    searchButton: "Search"
+    searchButton: "Search",
+    loadingMore: "Loading more sentences..."
   };
   
   const [uiText, setUiText] = useState(defaultUiText);
@@ -79,12 +81,14 @@ export default function App() {
   const [studyLanguage, setStudyLanguage] = useState("");
   const [listeningSpeed, setListeningSpeed] = useState(1.0);
   const [loadingBook, setLoadingBook] = useState(false);
+  const [loadingMoreSentences, setLoadingMoreSentences] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
   const [sentences, setSentences] = useState([]);
   const [sourceLanguage, setSourceLanguage] = useState("en");
   const [readingLevel, setReadingLevel] = useState(6);
   const [searchMode, setSearchMode] = useState('dropdown'); // 'dropdown' or 'search'
+  const [currentBookData, setCurrentBookData] = useState(null); // Store fetched book data
   
   // Initialize the app
   useEffect(() => {
@@ -187,8 +191,8 @@ export default function App() {
     }
   };
   
-  // Handle next sentence button click
-  const handleNextSentence = () => {
+  // Handle next sentence button click - now with batch loading logic
+  const handleNextSentence = async () => {
     if (sentences.length === 0) return;
     
     // Increment sentence index
@@ -196,15 +200,71 @@ export default function App() {
     
     // Check if we've reached the end of available sentences
     if (nextIndex >= sentences.length) {
-      // Show notification to user that we're at the end
-      Alert.alert("End of Content", "You've reached the end of the available sentences.");
-      return;
+      // Check if we should load more sentences
+      if (BatchProcessor.shouldProcessNextBatch(currentSentenceIndex)) {
+        setLoadingMoreSentences(true);
+        
+        try {
+          // Show notification that we're loading more sentences
+          Alert.alert(
+            uiText.appName || "Aoede", 
+            uiText.loadingMore || "Loading more sentences...",
+            [],
+            { cancelable: false }
+          );
+          
+          // Process next batch of sentences
+          const newBatch = await BatchProcessor.processNextBatch();
+          
+          if (newBatch && newBatch.length > 0) {
+            // Add new sentences and continue
+            setSentences(prevSentences => [...prevSentences, ...newBatch]);
+            setCurrentSentenceIndex(nextIndex);
+            setStudyLangSentence(newBatch[0].original);
+            setNativeLangSentence(newBatch[0].translation);
+          } else {
+            // No more sentences available
+            Alert.alert("End of Content", "You've reached the end of the available sentences.");
+          }
+        } catch (error) {
+          console.error("Error loading more sentences:", error);
+          Alert.alert("Error", "Failed to load more sentences.");
+        } finally {
+          setLoadingMoreSentences(false);
+        }
+        
+        return;
+      } else {
+        // We're at the end and can't load more
+        Alert.alert("End of Content", "You've reached the end of the available sentences.");
+        return;
+      }
     }
     
     // Display the next sentence
     setCurrentSentenceIndex(nextIndex);
     setStudyLangSentence(sentences[nextIndex].original);
     setNativeLangSentence(sentences[nextIndex].translation);
+    
+    // Check if we should start loading more sentences in the background
+    if (BatchProcessor.shouldProcessNextBatch(nextIndex)) {
+      console.log("Starting background loading of next batch");
+      setLoadingMoreSentences(true);
+      
+      try {
+        // Process next batch of sentences in the background
+        const newBatch = await BatchProcessor.processNextBatch();
+        
+        if (newBatch && newBatch.length > 0) {
+          // Add new sentences without changing the current index
+          setSentences(prevSentences => [...prevSentences, ...newBatch]);
+        }
+      } catch (error) {
+        console.error("Error loading more sentences in background:", error);
+      } finally {
+        setLoadingMoreSentences(false);
+      }
+    }
   };
   
   // Handle book selection change
@@ -247,120 +307,22 @@ export default function App() {
     }
   };
   
-  // Direct implementation of loadContent to avoid import issues
-  const loadContent = async (bookIdOrSearch, studyLanguage, isCustomSearch = false) => {
-    if (!bookIdOrSearch || !studyLanguage) {
-      Alert.alert("Required Information", "Please select a book and specify a study language.");
-      return false;
-    }
-    
-    setLoadingBook(true);
-    
-    try {
-      console.log(`Loading content for: "${bookIdOrSearch}" in ${studyLanguage} with reading level: ${readingLevel}`);
-      
-      // Step 1: Get the original sentences from GPT-4o
-      const isSearchQuery = searchMode === 'search';
-      const bookData = await fetchBookContent(bookIdOrSearch, 200, isSearchQuery);
-      console.log(`Book data fetched successfully: ${bookData.title}, ${bookData.sentences.length} sentences`);
-      
-      if (!bookData || !bookData.sentences || bookData.sentences.length === 0) {
-        console.error("Failed to fetch book content or no sentences returned");
-        setStudyLangSentence("Error loading content.");
-        setNativeLangSentence("Error loading content.");
-        setLoadingBook(false);
-        return false;
-      }
-      
-      // Join sentences into a single text for processing
-      const sourceText = bookData.sentences.join(' ');
-      
-      // Step 2: Process the text - translate to study language and simplify
-      const processedText = await processSourceText(sourceText, studyLanguage, readingLevel);
-      console.log("Text processed successfully");
-      
-      if (!processedText || processedText.length === 0) {
-        console.error("Failed to process source text or no content returned");
-        setStudyLangSentence("Error processing content.");
-        setNativeLangSentence("Error processing content.");
-        setLoadingBook(false);
-        return false;
-      }
-      
-      // Step 3: Parse the processed text into sentences
-      const simplifiedSentences = processedText.split(/(?<=[.!?])\s+/);
-      console.log(`Extracted ${simplifiedSentences.length} simplified sentences`);
-      
-      if (simplifiedSentences.length === 0) {
-        console.error("Failed to parse sentences");
-        setStudyLangSentence("Error parsing sentences.");
-        setNativeLangSentence("Error parsing sentences.");
-        setLoadingBook(false);
-        return false;
-      }
-      
-      // Step 4: Translate each sentence to native language using Google Translate
-      const translatedSentences = await translateSentences(simplifiedSentences, studyLanguage, userLanguage);
-      console.log(`Translated ${translatedSentences.length} sentences`);
-      
-      if (translatedSentences.length === 0) {
-        console.error("Failed to translate sentences");
-        setStudyLangSentence("Error translating sentences.");
-        setNativeLangSentence("Error translating sentences.");
-        setLoadingBook(false);
-        return false;
-      }
-      
-      // Create paired sentences
-      const pairedSentences = [];
-      const maxLength = Math.min(simplifiedSentences.length, translatedSentences.length);
-      
-      for (let i = 0; i < maxLength; i++) {
-        pairedSentences.push({
-          original: simplifiedSentences[i],
-          translation: translatedSentences[i]
-        });
-      }
-      
-      // Set state with the paired sentences
-      setSentences(pairedSentences);
-      setSourceLanguage(detectLanguageCode(studyLanguage));
-      setCurrentSentenceIndex(0);
-      
-      // Display first sentence
-      if (pairedSentences.length > 0) {
-        setStudyLangSentence(pairedSentences[0].original);
-        setNativeLangSentence(pairedSentences[0].translation);
-        
-        // Log the first few sentences for debugging
-        const sampleSize = Math.min(3, pairedSentences.length);
-        for (let i = 0; i < sampleSize; i++) {
-          console.log(`Sentence ${i+1}:`);
-          console.log(`Original: ${pairedSentences[i].original}`);
-          console.log(`Translation: ${pairedSentences[i].translation}`);
-        }
-        
-        return true;
-      } else {
-        console.error("No paired sentences created");
-        setStudyLangSentence("Error creating sentences.");
-        setNativeLangSentence("Error creating sentences.");
-        return false;
-      }
-    } catch (error) {
-      console.error("Error loading book:", error);
-      setStudyLangSentence(`Error: ${error.message || "Unknown error loading content."}`);
-      setNativeLangSentence(`Error: ${error.message || "Unknown error loading content."}`);
-      return false;
-    } finally {
-      setLoadingBook(false);
-    }
+  // Handle new batch of sentences
+  const handleNewBatchReady = (newBatch) => {
+    // Add new sentences to the current set
+    setSentences(prevSentences => [...prevSentences, ...newBatch]);
   };
   
-  // Handle load book button click
-  const handleLoadBook = () => {
+  // Handle load book button click - using batch processor
+  const handleLoadBook = async () => {
     console.log("Load button clicked");
     console.log(`Search mode: ${searchMode}`);
+    
+    // Reset previous sentences and state
+    setSentences([]);
+    setCurrentSentenceIndex(0);
+    setStudyLangSentence("");
+    setNativeLangSentence("");
     
     // Determine what to load based on search mode
     const contentToLoad = searchMode === 'search' ? customSearch : selectedBook;
@@ -385,10 +347,70 @@ export default function App() {
       return;
     }
     
-    console.log("Starting content loading...");
+    setLoadingBook(true);
     
-    // Call the directly implemented loadContent function
-    loadContent(contentToLoad, studyLanguage, searchMode === 'search');
+    try {
+      console.log("Starting content loading...");
+      
+      // Step 1: Get the original sentences from GPT-4o
+      const isSearchQuery = searchMode === 'search';
+      const bookData = await fetchBookContent(contentToLoad, 500, isSearchQuery);
+      console.log(`Book data fetched successfully: ${bookData.title}, ${bookData.sentences.length} sentences`);
+      
+      // Store book data for later use
+      setCurrentBookData(bookData);
+      
+      if (!bookData || !bookData.sentences || bookData.sentences.length === 0) {
+        console.error("Failed to fetch book content or no sentences returned");
+        setStudyLangSentence("Error loading content.");
+        setNativeLangSentence("Error loading content.");
+        setLoadingBook(false);
+        return;
+      }
+      
+      // Set source language from study language
+      setSourceLanguage(detectLanguageCode(studyLanguage));
+      
+      // Step 2: Initialize the batch processor
+      BatchProcessor.reset();
+      const firstBatch = await BatchProcessor.initialize(
+        bookData,
+        studyLanguage,
+        userLanguage,
+        readingLevel,
+        handleNewBatchReady
+      );
+      
+      if (!firstBatch || firstBatch.length === 0) {
+        console.error("Failed to process first batch of sentences");
+        setStudyLangSentence("Error processing content.");
+        setNativeLangSentence("Error processing content.");
+        return;
+      }
+      
+      // Set sentences and display the first one
+      setSentences(firstBatch);
+      setCurrentSentenceIndex(0);
+      setStudyLangSentence(firstBatch[0].original);
+      setNativeLangSentence(firstBatch[0].translation);
+      
+      console.log(`First batch loaded with ${firstBatch.length} sentences`);
+      
+      // Log the first few sentences for debugging
+      const sampleSize = Math.min(3, firstBatch.length);
+      for (let i = 0; i < sampleSize; i++) {
+        console.log(`Sentence ${i+1}:`);
+        console.log(`Original: ${firstBatch[i].original}`);
+        console.log(`Translation: ${firstBatch[i].translation}`);
+      }
+      
+    } catch (error) {
+      console.error("Error loading book:", error);
+      setStudyLangSentence(`Error: ${error.message || "Unknown error loading content."}`);
+      setNativeLangSentence(`Error: ${error.message || "Unknown error loading content."}`);
+    } finally {
+      setLoadingBook(false);
+    }
   };
   
   return (
@@ -410,7 +432,7 @@ export default function App() {
       speakSentence={handleToggleSpeak}
       nextSentence={handleNextSentence}
       isSpeaking={isSpeaking}
-      loadingBook={loadingBook}
+      loadingBook={loadingBook || loadingMoreSentences}
       listeningSpeed={listeningSpeed}
       setListeningSpeed={setListeningSpeed}
       studyLanguage={studyLanguage}

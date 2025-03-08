@@ -3,7 +3,7 @@ import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
 // Number of sentences to request
-const DEFAULT_SENTENCE_COUNT = 200; // Increased from 100 to get more content
+const DEFAULT_SENTENCE_COUNT = 500; // Significantly increased to get many more sentences
 
 // Get API key using both old and new Expo Constants paths for compatibility
 const getConstantValue = (key) => {
@@ -88,6 +88,16 @@ const fetchWithProxy = async (searchQuery, sentenceCount) => {
   
   const apiUrl = `${CORS_PROXY}https://api.openai.com/v1/chat/completions`;
   
+  const promptContent = `You are a literature search engine for public domain works. When given a book title or description, provide the matching public domain text.
+
+Format your response EXACTLY as follows:
+
+TITLE: [book title] | LANGUAGE: [language]
+
+[Text of the book with one sentence per line]
+
+I need the first ${sentenceCount} sentences - provide as many as possible up to that limit. Include ONLY the raw text without any commentary, introduction, or explanation. Do not limit the amount of text provided - include as much as possible within the token limit.`;
+
   const response = await fetch(apiUrl, {
     method: 'POST',
     headers: {
@@ -99,15 +109,15 @@ const fetchWithProxy = async (searchQuery, sentenceCount) => {
       messages: [
         {
           role: 'system',
-          content: `You are a literature search engine for public domain works. When given a book title or description, you find the matching public domain text and return ONLY the first ${sentenceCount} sentences with no additional commentary. For each sentence, include it on a new line. Include the title and language at the beginning in the format "TITLE: [book title] | LANGUAGE: [language]". If no matching text is found, respond with "No books found matching that query."`
+          content: promptContent
         },
         {
           role: 'user',
-          content: `Find a public domain work matching this description: "${searchQuery}". I need the first ${sentenceCount} sentences - please include as many sentences as possible up to that limit.`
+          content: `Find the complete text of "${searchQuery}". Include as many sentences as possible.`
         }
       ],
-      max_tokens: 8000, // Increased from 4000 to get more content
-      temperature: 0.2, // Lower temperature for more precise responses
+      max_tokens: 16000, // Maximum token limit allowed
+      temperature: 0.0, // Set to 0 for most deterministic response
     })
   });
   
@@ -142,6 +152,16 @@ const fetchWithProxy = async (searchQuery, sentenceCount) => {
 const fetchDirectFromOpenAI = async (searchQuery, sentenceCount) => {
   console.log('Using direct API access for OpenAI request');
   
+  const promptContent = `You are a literature search engine for public domain works. When given a book title or description, provide the matching public domain text.
+
+Format your response EXACTLY as follows:
+
+TITLE: [book title] | LANGUAGE: [language]
+
+[Text of the book with one sentence per line]
+
+I need the first ${sentenceCount} sentences - provide as many as possible up to that limit. Include ONLY the raw text without any commentary, introduction, or explanation. Do not limit the amount of text provided - include as much as possible within the token limit.`;
+
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -153,15 +173,15 @@ const fetchDirectFromOpenAI = async (searchQuery, sentenceCount) => {
       messages: [
         {
           role: 'system',
-          content: `You are a literature search engine for public domain works. When given a book title or description, you find the matching public domain text and return ONLY the first ${sentenceCount} sentences with no additional commentary. For each sentence, include it on a new line. Include the title and language at the beginning in the format "TITLE: [book title] | LANGUAGE: [language]". If no matching text is found, respond with "No books found matching that query."`
+          content: promptContent
         },
         {
           role: 'user',
-          content: `Find a public domain work matching this description: "${searchQuery}". I need the first ${sentenceCount} sentences - please include as many sentences as possible up to that limit.`
+          content: `Find the complete text of "${searchQuery}". Include as many sentences as possible.`
         }
       ],
-      max_tokens: 8000, // Increased from 4000 to get more content
-      temperature: 0.2, // Lower temperature for more precise responses
+      max_tokens: 16000, // Maximum token limit allowed
+      temperature: 0.0, // Set to 0 for most deterministic response
     })
   });
   
@@ -203,25 +223,35 @@ const processBookText = (text) => {
     language = 'Unknown';
   }
   
-  // Split the text into sentences (improved method to catch more sentence patterns)
-  let sentences = [];
+  // Split content by newlines to get sentences (since we asked for one sentence per line)
+  let sentences = content.split('\n')
+    .map(line => line.trim())
+    .filter(line => line.length > 0);
   
-  // First, try to split by newlines (if they're already one per line)
-  if (content.includes('\n')) {
-    sentences = content.split('\n')
-      .map(line => line.trim())
-      .filter(line => line.length > 0);
-  }
-  
-  // If we didn't get any sentences from newlines, try to split by sentence endings
-  if (sentences.length === 0) {
-    const sentenceRegex = /(?<=[.!?]['"]?)(?:\s+|$)/g;
-    sentences = content.split(sentenceRegex)
-      .map(s => s.trim())
-      .filter(s => s.length > 0);
+  // If we didn't get many sentences from newlines, try to split by sentence endings
+  if (sentences.length < 20) {
+    console.log("Few sentences detected with newline method, trying alternative method");
+    
+    // More robust sentence splitting regex
+    const sentenceRegex = /[^.!?]*[.!?](?:\s|$)/g;
+    const sentenceMatches = content.match(sentenceRegex) || [];
+    
+    if (sentenceMatches.length > sentences.length) {
+      sentences = sentenceMatches
+        .map(s => s.trim())
+        .filter(s => s.length > 0);
+    }
   }
   
   console.log(`Extracted ${sentences.length} sentences from text`);
+  
+  // Print samples of the first few sentences for debugging
+  if (sentences.length > 0) {
+    console.log("First 3 sentences:");
+    for (let i = 0; i < Math.min(3, sentences.length); i++) {
+      console.log(`${i+1}: ${sentences[i].substring(0, 50)}...`);
+    }
+  }
   
   return {
     title,
@@ -230,7 +260,7 @@ const processBookText = (text) => {
   };
 };
 
-// List of popular books to show in dropdown
+// List of popular books to show in dropdown (Torah and Lady with the Dog added back)
 export const popularBooks = [
   { id: "montecristo", title: "The Count of Monte Cristo", author: "Alexandre Dumas" },
   { id: "prideandprejudice", title: "Pride and Prejudice", author: "Jane Austen" },
@@ -250,9 +280,13 @@ export const popularBooks = [
   { id: "treasureisland", title: "Treasure Island", author: "Robert Louis Stevenson" },
   { id: "tomsawyer", title: "The Adventures of Tom Sawyer", author: "Mark Twain" },
   { id: "callofthewild", title: "The Call of the Wild", author: "Jack London" },
-  { id: "torah", title: "The Torah", author: "Traditional" },
+  { id: "torah", title: "Torah", author: "Traditional" },
   { id: "republic", title: "The Republic", author: "Plato" },
   { id: "zarathustra", title: "Thus Spoke Zarathustra", author: "Friedrich Nietzsche" },
   { id: "lesmiserables", title: "Les Misérables", author: "Victor Hugo" },
-  { id: "ladywiththepet", title: "The Lady with the Dog", author: "Anton Chekhov" }
+  { id: "ladywiththepet", title: "The Lady with the Dog", author: "Anton Chekhov" },
+  // Additional popular classics
+  { id: "annakarenina", title: "Anna Karenina", author: "Leo Tolstoy" },
+  { id: "janeyre", title: "Jane Eyre", author: "Charlotte Brontë" },
+  { id: "metamorphosis", title: "The Metamorphosis", author: "Franz Kafka" }
 ];

@@ -248,6 +248,7 @@ export const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 5,
     alignItems: 'center',
+    justifyContent: 'center',
     width: '45%'
   },
   speedControlContainer: {
@@ -278,5 +279,15 @@ export const styles = StyleSheet.create({
   toggleLabel: {
     fontSize: 14,
     marginRight: 10
+  },
+  // Loading indicator styles
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+  loadingText: {
+    marginLeft: 5,
+    fontSize: 14
   }
 });

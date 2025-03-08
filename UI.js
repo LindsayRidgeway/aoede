@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Text, View, TouchableOpacity, TextInput, Switch, Picker } from 'react-native';
+import { Text, View, TouchableOpacity, TextInput, Switch, Picker, ActivityIndicator } from 'react-native';
 import Slider from '@react-native-community/slider';
 import { styles } from './styles';  
 import ListeningSpeed from './listeningSpeed';
@@ -215,7 +215,14 @@ export function MainUI({
                 onPress={nextSentence} 
                 disabled={loadingBook}
               >
-                <Text style={styles.buttonText}>{uiText.next || "Next Sentence"}</Text>
+                {loadingBook ? (
+                  <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="small" color="#ffffff" />
+                    <Text style={[styles.buttonText, styles.loadingText]}>{uiText.loadingMore || "Loading..."}</Text>
+                  </View>
+                ) : (
+                  <Text style={styles.buttonText}>{uiText.next || "Next Sentence"}</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>
