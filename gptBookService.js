@@ -3,7 +3,7 @@ import Constants from 'expo-constants';
 import { Platform } from 'react-native';
 
 // Number of sentences to request
-const DEFAULT_SENTENCE_COUNT = 100;
+const DEFAULT_SENTENCE_COUNT = 200; // Increased from 100 to get more content
 
 // Get API key using both old and new Expo Constants paths for compatibility
 const getConstantValue = (key) => {
@@ -99,14 +99,15 @@ const fetchWithProxy = async (searchQuery, sentenceCount) => {
       messages: [
         {
           role: 'system',
-          content: `You are a literature search engine for public domain works. When given a book title or description, you find the matching public domain text and return ONLY the first ${sentenceCount} sentences with no additional commentary. Include the title and language at the beginning in the format "TITLE: [book title] | LANGUAGE: [language]". If no matching text is found, respond with "No books found matching that query."`
+          content: `You are a literature search engine for public domain works. When given a book title or description, you find the matching public domain text and return ONLY the first ${sentenceCount} sentences with no additional commentary. For each sentence, include it on a new line. Include the title and language at the beginning in the format "TITLE: [book title] | LANGUAGE: [language]". If no matching text is found, respond with "No books found matching that query."`
         },
         {
           role: 'user',
-          content: `Find a public domain work matching this description: "${searchQuery}"`
+          content: `Find a public domain work matching this description: "${searchQuery}". I need the first ${sentenceCount} sentences - please include as many sentences as possible up to that limit.`
         }
       ],
-      max_tokens: 4000
+      max_tokens: 8000, // Increased from 4000 to get more content
+      temperature: 0.2, // Lower temperature for more precise responses
     })
   });
   
@@ -152,14 +153,15 @@ const fetchDirectFromOpenAI = async (searchQuery, sentenceCount) => {
       messages: [
         {
           role: 'system',
-          content: `You are a literature search engine for public domain works. When given a book title or description, you find the matching public domain text and return ONLY the first ${sentenceCount} sentences with no additional commentary. Include the title and language at the beginning in the format "TITLE: [book title] | LANGUAGE: [language]". If no matching text is found, respond with "No books found matching that query."`
+          content: `You are a literature search engine for public domain works. When given a book title or description, you find the matching public domain text and return ONLY the first ${sentenceCount} sentences with no additional commentary. For each sentence, include it on a new line. Include the title and language at the beginning in the format "TITLE: [book title] | LANGUAGE: [language]". If no matching text is found, respond with "No books found matching that query."`
         },
         {
           role: 'user',
-          content: `Find a public domain work matching this description: "${searchQuery}"`
+          content: `Find a public domain work matching this description: "${searchQuery}". I need the first ${sentenceCount} sentences - please include as many sentences as possible up to that limit.`
         }
       ],
-      max_tokens: 4000
+      max_tokens: 8000, // Increased from 4000 to get more content
+      temperature: 0.2, // Lower temperature for more precise responses
     })
   });
   
@@ -201,19 +203,30 @@ const processBookText = (text) => {
     language = 'Unknown';
   }
   
-  // Split the text into sentences
-  const sentenceRegex = /(?:[.!?]+["']?(?=\s|$)|\n+)/g;
-  const allSentences = content.split(sentenceRegex);
+  // Split the text into sentences (improved method to catch more sentence patterns)
+  let sentences = [];
   
-  // Filter and clean up sentences
-  const cleanSentences = allSentences
-    .map(s => s.trim())
-    .filter(s => s.length > 0);
+  // First, try to split by newlines (if they're already one per line)
+  if (content.includes('\n')) {
+    sentences = content.split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0);
+  }
+  
+  // If we didn't get any sentences from newlines, try to split by sentence endings
+  if (sentences.length === 0) {
+    const sentenceRegex = /(?<=[.!?]['"]?)(?:\s+|$)/g;
+    sentences = content.split(sentenceRegex)
+      .map(s => s.trim())
+      .filter(s => s.length > 0);
+  }
+  
+  console.log(`Extracted ${sentences.length} sentences from text`);
   
   return {
     title,
     language,
-    sentences: cleanSentences
+    sentences: sentences
   };
 };
 

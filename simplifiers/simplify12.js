@@ -22,7 +22,7 @@ Guidelines for simplification:
 6. Maintain the original tone and style where possible
 7. Can include some more complex sentence structures as long as they're clear
 
-Please aim to create about 25-30 simplified sentences total from these original sentences.
+Process the ENTIRE text I've provided, maintaining the full narrative.
 
 VERY IMPORTANT: Format your response by listing ONLY ONE simplified sentence per line. Each sentence must be a complete thought ending with a period, question mark, or exclamation point. DO NOT include any explanations or commentary.`;
 };

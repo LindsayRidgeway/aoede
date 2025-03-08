@@ -21,7 +21,7 @@ Guidelines for translation:
 3. Preserve metaphors, similes, and other figurative language
 4. Only adapt elements that are necessary for linguistic or cultural understanding
 
-Please aim to create about 25-30 translated sentences total from these original sentences.
+Process the ENTIRE text I've provided, maintaining the full narrative.
 
 VERY IMPORTANT: Format your response by listing ONLY ONE translated sentence per line. Each sentence must end with a period, question mark, or exclamation point. DO NOT include any explanations or commentary.`;
 };

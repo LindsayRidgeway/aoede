@@ -26,11 +26,15 @@ const labels = [
 // Enhanced Google Translate API Integration with retry & error handling
 export const translateText = async (text, sourceLang, targetLang) => {
   if (!text) return "";
-  if (sourceLang === targetLang) return text;
-
+  
   // For logging purposes
   const textPreview = text.substring(0, 50) + (text.length > 50 ? "..." : "");
   console.log(`Translating from ${sourceLang} to ${targetLang}: "${textPreview}"`);
+  
+  // If user's language is English and source is English, return original
+  if (sourceLang === 'en' && targetLang === 'en') {
+    return text;
+  }
 
   try {
     if (!googleKey) {
@@ -114,8 +118,12 @@ export const translateText = async (text, sourceLang, targetLang) => {
 
 export const translateLabels = async (setUiText) => {
   try {
+    // Determine the target language for UI
+    const targetLang = userLang;
+    console.log(`Translating UI to language: ${targetLang}`);
+    
     // If user's language is English, no need to translate
-    if (userLang === 'en') {
+    if (targetLang === 'en') {
       setUiText({
         appName: "Aoede",
         sourceMaterial: "Source Material",
@@ -148,7 +156,9 @@ export const translateLabels = async (setUiText) => {
       return;
     }
     
-    const translatedLabels = await Promise.all(labels.map(label => translateText(label, "en", userLang)));
+    // For non-English UI, translate all labels
+    console.log(`Translating ${labels.length} UI labels to ${targetLang}`);
+    const translatedLabels = await Promise.all(labels.map(label => translateText(label, "en", targetLang)));
 
     const uiTextBase = {
       appName: translatedLabels[0],
@@ -176,10 +186,11 @@ export const translateLabels = async (setUiText) => {
     setUiText(uiTextBase);
     
     // Then translate book titles
+    console.log(`Translating ${popularBooks.length} book titles to ${targetLang}`);
     const translatedTitles = {};
     for (const book of popularBooks) {
       try {
-        const translatedTitle = await translateText(book.title, "en", userLang);
+        const translatedTitle = await translateText(book.title, "en", targetLang);
         translatedTitles[book.id] = translatedTitle || book.title;
       } catch (error) {
         console.error(`Error translating title for ${book.id}:`, error);

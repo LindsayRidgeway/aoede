@@ -1,16 +1,74 @@
 import React, { useState, useEffect } from 'react';
-import { Alert } from 'react-native';
+import { Alert, Platform } from 'react-native';
 import { MainUI } from './UI';
 import ListeningSpeed from './listeningSpeed';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { translateLabels } from './translateLabels';
-import { toggleSpeak, processNextSentence } from './audioControls';
-import { fetchBookContent } from './gptBookService';
-import { processSourceText } from './apiServices';
+import { fetchBookContent, popularBooks } from './gptBookService';
+import { processSourceText, translateBatch } from './apiServices';
 import { translateSentences, detectLanguageCode } from './textProcessing';
 
+// Direct translation method using Google Translate
+const directTranslate = async (text, sourceLang, targetLang) => {
+  if (!text || sourceLang === targetLang) return text;
+  
+  try {
+    const response = await fetch(
+      `https://translation.googleapis.com/language/translate/v2?key=AIzaSyDvrAsHGvT7nurWKi3w0879zLWFYtpEgJ0`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          q: text,
+          source: sourceLang,
+          target: targetLang,
+          format: "text"
+        })
+      }
+    );
+    
+    const data = await response.json();
+    
+    if (data.data?.translations?.length > 0) {
+      return data.data.translations[0].translatedText;
+    }
+    
+    return text;
+  } catch (error) {
+    console.error("Translation failed:", error);
+    return text;
+  }
+};
+
 export default function App() {
-  const [uiText, setUiText] = useState({});
+  // Get the user's language from browser or device
+  const userLanguage = (typeof navigator !== 'undefined' && navigator.language) 
+    ? navigator.language.split('-')[0] 
+    : "en";
+  
+  // Basic UI text in English
+  const defaultUiText = {
+    appName: "Aoede",
+    sourceMaterial: "Source Material",
+    enterBook: "Select a book",
+    listen: "Listen",
+    stop: "Stop",
+    next: "Next Sentence",
+    loadBook: "Load Book",
+    showText: "Show Foreign Sentence",
+    showTranslation: "Show Translation",
+    readingSpeed: "Reading Speed",
+    studyLanguage: "Study Language",
+    enterLanguage: "Enter study language",
+    bookSelection: "Book Selection",
+    readingLevel: "Reading Level",
+    switchToSearch: "Switch to Search",
+    switchToDropdown: "Switch to Book List",
+    bookSearch: "Book Search",
+    enterBookSearch: "Enter book title or description",
+    searchButton: "Search"
+  };
+  
+  const [uiText, setUiText] = useState(defaultUiText);
   const [selectedBook, setSelectedBook] = useState("");  
   const [customSearch, setCustomSearch] = useState("");
   const [studyLangSentence, setStudyLangSentence] = useState(""); 
@@ -32,7 +90,10 @@ export default function App() {
   useEffect(() => {
     const initialize = async () => {
       try {
-        translateLabels(setUiText);
+        // Translate UI if not English
+        if (userLanguage !== 'en') {
+          translateUiElements();
+        }
         
         // Load stored settings
         try {
@@ -76,21 +137,74 @@ export default function App() {
     initialize();
   }, []);
   
+  // Direct translation of UI elements
+  const translateUiElements = async () => {
+    if (userLanguage === 'en') return;
+    
+    try {
+      console.log(`Translating UI to ${userLanguage}`);
+      
+      // Translate basic UI elements
+      const translatedElements = {};
+      for (const [key, value] of Object.entries(defaultUiText)) {
+        try {
+          const translated = await directTranslate(value, 'en', userLanguage);
+          translatedElements[key] = translated;
+        } catch (error) {
+          console.error(`Error translating ${key}:`, error);
+          translatedElements[key] = value;
+        }
+      }
+      
+      // Translate book titles
+      const translatedBooks = {};
+      for (const book of popularBooks) {
+        try {
+          const translatedTitle = await directTranslate(book.title, 'en', userLanguage);
+          translatedBooks[book.id] = translatedTitle;
+        } catch (error) {
+          console.error(`Error translating book title ${book.id}:`, error);
+          translatedBooks[book.id] = book.title;
+        }
+      }
+      
+      // Set translated text
+      setUiText({...translatedElements, ...translatedBooks});
+      
+    } catch (error) {
+      console.error("Error translating UI:", error);
+    }
+  };
+  
   // Handle speak button click
   const handleToggleSpeak = () => {
-    toggleSpeak(isSpeaking, setIsSpeaking, studyLangSentence, listeningSpeed);
+    if (isSpeaking) {
+      ListeningSpeed.stopSpeaking();
+      setIsSpeaking(false);
+    } else {
+      ListeningSpeed.speakSentenceWithPauses(studyLangSentence, listeningSpeed, () => setIsSpeaking(false));
+      setIsSpeaking(true);
+    }
   };
   
   // Handle next sentence button click
   const handleNextSentence = () => {
-    processNextSentence(
-      sentences, 
-      currentSentenceIndex, 
-      setCurrentSentenceIndex,
-      setStudyLangSentence, 
-      setNativeLangSentence, 
-      Alert.alert
-    );
+    if (sentences.length === 0) return;
+    
+    // Increment sentence index
+    const nextIndex = currentSentenceIndex + 1;
+    
+    // Check if we've reached the end of available sentences
+    if (nextIndex >= sentences.length) {
+      // Show notification to user that we're at the end
+      Alert.alert("End of Content", "You've reached the end of the available sentences.");
+      return;
+    }
+    
+    // Display the next sentence
+    setCurrentSentenceIndex(nextIndex);
+    setStudyLangSentence(sentences[nextIndex].original);
+    setNativeLangSentence(sentences[nextIndex].translation);
   };
   
   // Handle book selection change
@@ -147,8 +261,8 @@ export default function App() {
       
       // Step 1: Get the original sentences from GPT-4o
       const isSearchQuery = searchMode === 'search';
-      const bookData = await fetchBookContent(bookIdOrSearch, 100, isSearchQuery);
-      console.log("Book data fetched successfully:", bookData.title);
+      const bookData = await fetchBookContent(bookIdOrSearch, 200, isSearchQuery);
+      console.log(`Book data fetched successfully: ${bookData.title}, ${bookData.sentences.length} sentences`);
       
       if (!bookData || !bookData.sentences || bookData.sentences.length === 0) {
         console.error("Failed to fetch book content or no sentences returned");
@@ -186,7 +300,7 @@ export default function App() {
       }
       
       // Step 4: Translate each sentence to native language using Google Translate
-      const translatedSentences = await translateSentences(simplifiedSentences, studyLanguage, navigator.language.split('-')[0] || "en");
+      const translatedSentences = await translateSentences(simplifiedSentences, studyLanguage, userLanguage);
       console.log(`Translated ${translatedSentences.length} sentences`);
       
       if (translatedSentences.length === 0) {
@@ -274,7 +388,7 @@ export default function App() {
     console.log("Starting content loading...");
     
     // Call the directly implemented loadContent function
-    loadContent(contentToLoad, studyLanguage);
+    loadContent(contentToLoad, studyLanguage, searchMode === 'search');
   };
   
   return (

@@ -24,7 +24,7 @@ Guidelines for simplification:
 8. Repeat character names instead of using pronouns if there's any ambiguity
 9. Break complex scenes into simple, step-by-step actions
 
-Please aim to create about 25-30 simplified sentences total from these original sentences.
+Process the ENTIRE text I've provided, maintaining the full narrative.
 
 VERY IMPORTANT: Format your response by listing ONLY ONE simplified sentence per line. Each sentence must be a complete thought ending with a period, question mark, or exclamation point. DO NOT include any explanations or commentary.`;
 };

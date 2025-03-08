@@ -22,7 +22,7 @@ Guidelines for simplification:
 6. Use simple verb tenses when possible
 7. Maintain the emotion and tone of the original where possible
 
-Please aim to create about 25-30 simplified sentences total from these original sentences.
+Process the ENTIRE text I've provided, maintaining the full narrative.
 
 VERY IMPORTANT: Format your response by listing ONLY ONE simplified sentence per line. Each sentence must be a complete thought ending with a period, question mark, or exclamation point. DO NOT include any explanations or commentary.`;
 };
