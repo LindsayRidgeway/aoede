@@ -72,6 +72,9 @@ export function MainUI({
     loadBook();
   };
 
+  // Determine if we should show the loading notice (only for initial book load, not next sentence)
+  const showLoadingNotice = loadingBook && !sentence;
+
   return (
     <View style={styles.container}>
       <Text style={styles.header}>{uiText.appName || "Aoede"}</Text>
@@ -194,8 +197,8 @@ export function MainUI({
           </View>
         )}
         
-        {/* Loading wait notice */}
-        {loadingBook && (
+        {/* Loading wait notice - only for initial book loading, not for next sentence */}
+        {showLoadingNotice && (
           <View style={styles.loadingNoticeContainer}>
             <ActivityIndicator size="small" color="#4a90e2" style={styles.loadingSpinner} />
             <Text style={styles.loadingNoticeText}>
@@ -225,14 +228,12 @@ export function MainUI({
                 onPress={nextSentence} 
                 disabled={loadingBook}
               >
-                {loadingBook ? (
-                  <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="small" color="#ffffff" />
-                    <Text style={[styles.buttonText, styles.loadingText]}>{uiText.loadingMore || "Loading..."}</Text>
-                  </View>
-                ) : (
-                  <Text style={styles.buttonText}>{uiText.next || "Next Sentence"}</Text>
-                )}
+                <View style={styles.nextButtonContent}>
+                  {loadingBook && <ActivityIndicator size="small" color="#ffffff" style={styles.buttonSpinner} />}
+                  <Text style={[styles.buttonText, loadingBook ? styles.buttonTextWithSpinner : null]}>
+                    {uiText.next || "Next Sentence"}
+                  </Text>
+                </View>
               </TouchableOpacity>
             </View>
           </View>

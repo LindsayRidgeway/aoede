@@ -270,15 +270,17 @@ export const styles = StyleSheet.create({
     fontSize: 14,
     marginRight: 10
   },
-  // Loading indicator styles
-  loadingContainer: {
+  // Next button with spinner styles
+  nextButtonContent: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center'
   },
-  loadingText: {
-    marginLeft: 5,
-    fontSize: 14
+  buttonSpinner: {
+    marginRight: 8
+  },
+  buttonTextWithSpinner: {
+    opacity: 0.7
   },
   // Loading notice styles
   loadingNoticeContainer: {
