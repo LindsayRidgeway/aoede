@@ -2,14 +2,17 @@
 
 import { processSourceText } from './apiServices';
 import { translateSentences, detectLanguageCode } from './textProcessing';
+import { Alert } from 'react-native';
 
 // Configuration for sentence batching
 const BATCH_SIZE = 10; // Number of sentences to process at once
+const MIN_SENTENCES_THRESHOLD = 5; // When to trigger loading more sentences
 const MAX_BATCHES = 10; // Maximum number of batches to load (prevent excessive API usage)
 
 class BatchProcessor {
   constructor() {
     this.bookId = null;
+    this.isSearchQuery = false;
     this.studyLanguage = null;
     this.userLanguage = null;
     this.readingLevel = 6;
@@ -18,6 +21,7 @@ class BatchProcessor {
     this.currentBatchIndex = 0;
     this.isProcessing = false;
     this.allSentencesProcessed = false;
+    this.onNewBatchReady = null; // Callback function
     this.processedSentenceHashes = new Set(); // Track processed sentences to avoid duplicates
   }
 
@@ -36,7 +40,7 @@ class BatchProcessor {
   }
 
   // Initialize with book content and settings
-  initialize(bookData, studyLanguage, userLanguage, readingLevel) {
+  initialize(bookData, studyLanguage, userLanguage, readingLevel, onNewBatchReady) {
     this.rawSentences = bookData.sentences || [];
     this.studyLanguage = studyLanguage;
     this.userLanguage = userLanguage;
@@ -45,6 +49,7 @@ class BatchProcessor {
     this.currentBatchIndex = 0;
     this.isProcessing = false;
     this.allSentencesProcessed = false;
+    this.onNewBatchReady = onNewBatchReady;
     this.processedSentenceHashes = new Set(); // Reset the hash set
     
     console.log(`BatchProcessor initialized with ${this.rawSentences.length} raw sentences`);
@@ -53,18 +58,23 @@ class BatchProcessor {
     return this.processNextBatch();
   }
   
-  // Check if there are more sentences to process
-  hasMoreSentences() {
+  // Check if we need to process more sentences
+  shouldProcessNextBatch(currentSentenceIndex) {
+    const totalProcessedSentences = this.getTotalProcessedSentences();
+    const remainingSentences = totalProcessedSentences - currentSentenceIndex;
+    
     return (
+      !this.isProcessing && 
       !this.allSentencesProcessed && 
+      remainingSentences <= MIN_SENTENCES_THRESHOLD &&
       this.currentBatchIndex < MAX_BATCHES &&
       this.currentBatchIndex * BATCH_SIZE < this.rawSentences.length
     );
   }
   
-  // Get all processed sentences
-  getAllProcessedSentences() {
-    return this.processedBatches.flat();
+  // Get the total number of processed sentences across all batches
+  getTotalProcessedSentences() {
+    return this.processedBatches.reduce((total, batch) => total + batch.length, 0);
   }
   
   // Process the next batch of sentences
@@ -174,6 +184,12 @@ class BatchProcessor {
         this.allSentencesProcessed = true;
       }
       
+      // If a callback was provided, notify that new sentences are ready
+      // Only notify if we have paired sentences to avoid empty batches
+      if (this.onNewBatchReady && pairedSentences.length > 0) {
+        this.onNewBatchReady(pairedSentences);
+      }
+      
       return pairedSentences;
     } catch (error) {
       console.error(`Error processing batch ${this.currentBatchIndex + 1}:`, error);
@@ -181,6 +197,11 @@ class BatchProcessor {
     } finally {
       this.isProcessing = false;
     }
+  }
+  
+  // Get all processed sentences as a flat array
+  getAllProcessedSentences() {
+    return this.processedBatches.flat();
   }
   
   // Reset the processor
