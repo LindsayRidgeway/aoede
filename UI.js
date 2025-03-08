@@ -31,7 +31,8 @@ export function MainUI({
   readingLevel,
   setReadingLevel,
   searchMode,
-  setSearchMode
+  setSearchMode,
+  isAtEndOfBook
 }) {
   // Initialize listening speed from storage when component mounts
   useEffect(() => {
@@ -71,9 +72,6 @@ export function MainUI({
     // Call the passed loadBook function from props
     loadBook();
   };
-
-  // Determine if we should show the loading notice (only for initial book load, not next sentence)
-  const showLoadingNotice = loadingBook && !sentence;
 
   return (
     <View style={styles.container}>
@@ -197,8 +195,8 @@ export function MainUI({
           </View>
         )}
         
-        {/* Loading wait notice - only for initial book loading, not for next sentence */}
-        {showLoadingNotice && (
+        {/* Loading wait notice */}
+        {loadingBook && !sentence && (
           <View style={styles.loadingNoticeContainer}>
             <ActivityIndicator size="small" color="#4a90e2" style={styles.loadingSpinner} />
             <Text style={styles.loadingNoticeText}>
@@ -224,16 +222,23 @@ export function MainUI({
                 <Text style={styles.buttonText}>{isSpeaking ? (uiText.stop || "Stop") : (uiText.listen || "Listen")}</Text>
               </TouchableOpacity>
               <TouchableOpacity 
-                style={[styles.controlButton, loadingBook ? styles.disabledButton : null]} 
+                style={[
+                  styles.controlButton, 
+                  (loadingBook || isAtEndOfBook) ? styles.disabledButton : null
+                ]} 
                 onPress={nextSentence} 
-                disabled={loadingBook}
+                disabled={loadingBook || isAtEndOfBook}
               >
-                <View style={styles.nextButtonContent}>
-                  {loadingBook && <ActivityIndicator size="small" color="#ffffff" style={styles.buttonSpinner} />}
-                  <Text style={[styles.buttonText, loadingBook ? styles.buttonTextWithSpinner : null]}>
-                    {uiText.next || "Next Sentence"}
-                  </Text>
-                </View>
+                {loadingBook ? (
+                  <View style={styles.nextButtonContent}>
+                    <ActivityIndicator size="small" color="#ffffff" style={styles.buttonSpinner} />
+                    <Text style={[styles.buttonText, styles.buttonTextWithSpinner]}>
+                      {uiText.next || "Next Sentence"}
+                    </Text>
+                  </View>
+                ) : (
+                  <Text style={styles.buttonText}>{uiText.next || "Next Sentence"}</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>

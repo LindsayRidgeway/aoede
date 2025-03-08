@@ -93,6 +93,7 @@ export default function App() {
   const [searchMode, setSearchMode] = useState('dropdown'); // 'dropdown' or 'search'
   const [currentBookData, setCurrentBookData] = useState(null); // Store fetched book data
   const [isLoadingInitialBatch, setIsLoadingInitialBatch] = useState(false); // Distinguish initial vs next batch loading
+  const [isAtEndOfBook, setIsAtEndOfBook] = useState(false); // Track if we've reached the end of all available sentences
   
   // Initialize the app
   useEffect(() => {
@@ -202,12 +203,13 @@ export default function App() {
     setNativeLangSentence("");
     setSentences([]);
     setCurrentSentenceIndex(0);
+    setIsAtEndOfBook(false); // Reset end flag
     
     // Reset BatchProcessor too
     BatchProcessor.reset();
   };
   
-  // Handle next sentence button click - with simplified end-of-book handling
+  // Handle next sentence button click - with improved end-of-book handling
   const handleNextSentence = async () => {
     console.log("Next sentence button clicked");
     
@@ -246,8 +248,8 @@ export default function App() {
             setStudyLangSentence(uiText.endOfBook || "You have read all the sentences that I retrieved for that book. To continue studying, please use Load Book again.");
             setNativeLangSentence("");
             
-            // Reset sentences to force Next Sentence button to be disabled
-            setSentences([]);
+            // Set a specific flag to indicate we're at the end
+            setIsAtEndOfBook(true);
           }
         } catch (error) {
           console.error("Error loading more sentences:", error);
@@ -264,8 +266,8 @@ export default function App() {
         setStudyLangSentence(uiText.endOfBook || "You have read all the sentences that I retrieved for that book. To continue studying, please use Load Book again.");
         setNativeLangSentence("");
         
-        // Reset sentences to force Next Sentence button to be disabled
-        setSentences([]);
+        // Set a specific flag to indicate we're at the end
+        setIsAtEndOfBook(true);
         return;
       }
     }
@@ -355,6 +357,7 @@ export default function App() {
     
     // Reset previous sentences and state
     clearContent(); // Use the common clear function
+    setIsAtEndOfBook(false); // Ensure flag is reset
     
     // Determine what to load based on search mode
     const contentToLoad = searchMode === 'search' ? customSearch : selectedBook;
@@ -493,6 +496,7 @@ export default function App() {
       setReadingLevel={handleReadingLevelChange}
       searchMode={searchMode}
       setSearchMode={handleSearchModeChange}
+      isAtEndOfBook={isAtEndOfBook}
     />
   );
 }
