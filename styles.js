@@ -222,21 +222,50 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     width: '45%'
   },
-  speedControlContainer: {
+  // Speed Control with Inline Circles
+  speedControlRow: {
     width: '80%',
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 5,
-    marginTop: 2
+    marginTop: 10,
+    marginBottom: 5
   },
   speedLabel: {
-    fontSize: 12,
+    fontSize: 14,
+    fontWeight: '500',
     marginRight: 10,
     color: '#555'
   },
-  speedSlider: {
-    width: 120,
-    height: 30
+  speedCircleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  speedCircle: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#f0f0f0',
+    borderWidth: 1,
+    borderColor: '#aaa',
+    marginLeft: 5,
+    // 3D effect for popped out appearance
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 1,
+    elevation: 2
+  },
+  speedCircleActive: {
+    backgroundColor: '#4a90e2',
+    borderColor: '#3a80d2',
+    // 3D effect for pressed in appearance
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.1,
+    shadowRadius: 1,
+    elevation: 1,
+    // Slight inset effect
+    transform: [{ scale: 0.9 }]
   },
   toggleContainer: {
     width: '80%',
@@ -280,47 +309,5 @@ export const styles = StyleSheet.create({
     color: '#666',
     fontSize: 14,
     fontStyle: 'italic'
-  },
-  
-  // New styles for speed buttons
-  speedControlPanel: {
-    width: '80%',
-    marginBottom: 10,
-    marginTop: 5
-  },
-  speedLabelHeader: {
-    fontSize: 14,
-    fontWeight: '500',
-    marginBottom: 5,
-    color: '#555'
-  },
-  speedButtonsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap', 
-    justifyContent: 'space-between',
-    marginBottom: 5
-  },
-  speedButton: {
-    width: '13%', 
-    height: 30,
-    borderRadius: 5,
-    backgroundColor: '#f0f0f0',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    marginVertical: 3
-  },
-  speedButtonActive: {
-    backgroundColor: '#4a90e2',
-    borderColor: '#3a80d2'
-  },
-  speedButtonText: {
-    fontSize: 12,
-    color: '#555'
-  },
-  speedButtonTextActive: {
-    color: '#fff',
-    fontWeight: '500'
   }
 });
