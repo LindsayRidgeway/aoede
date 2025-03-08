@@ -62,12 +62,9 @@ export default function App() {
     enterLanguage: "Enter study language",
     bookSelection: "Book Selection",
     readingLevel: "Reading Level",
-    switchToSearch: "Switch to Search",
-    switchToDropdown: "Switch to Book List",
-    bookSearch: "Book Search",
-    enterBookSearch: "Enter book title or description",
-    searchButton: "Search",
-    loadingMore: "Loading more sentences...",
+    other: "Other",
+    custom: "Custom",
+    enterCustomBook: "Enter a book title or genre",
     pleaseWait: "Please wait. This may take several minutes...",
     endOfBook: "You have read all the sentences that I retrieved for that book. To continue studying, please use Load Book again.",
     continue: "Continue"
@@ -90,7 +87,6 @@ export default function App() {
   const [sentences, setSentences] = useState([]);
   const [sourceLanguage, setSourceLanguage] = useState("en");
   const [readingLevel, setReadingLevel] = useState(6);
-  const [searchMode, setSearchMode] = useState('dropdown'); // 'dropdown' or 'search'
   const [currentBookData, setCurrentBookData] = useState(null); // Store fetched book data
   const [isLoadingInitialBatch, setIsLoadingInitialBatch] = useState(false); // Distinguish initial vs next batch loading
   const [isAtEndOfBook, setIsAtEndOfBook] = useState(false); // Track if we've reached the end of all available sentences
@@ -109,7 +105,6 @@ export default function App() {
           const storedSelectedBook = await AsyncStorage.getItem("selectedBook");
           const storedSpeechRate = await AsyncStorage.getItem("speechRate");
           const storedReadingLevel = await AsyncStorage.getItem("readingLevel");
-          const storedSearchMode = await AsyncStorage.getItem("searchMode");
           const storedCustomSearch = await AsyncStorage.getItem("customSearch");
           
           if (storedSelectedBook !== null) {
@@ -122,10 +117,6 @@ export default function App() {
           
           if (storedReadingLevel !== null) {
             setReadingLevel(parseInt(storedReadingLevel, 10));
-          }
-          
-          if (storedSearchMode !== null) {
-            setSearchMode(storedSearchMode);
           }
           
           if (storedCustomSearch !== null) {
@@ -320,16 +311,6 @@ export default function App() {
     }
   };
   
-  // Handle search mode change
-  const handleSearchModeChange = async (mode) => {
-    setSearchMode(mode);
-    try {
-      await AsyncStorage.setItem("searchMode", mode);
-    } catch (error) {
-      console.error("Error saving searchMode:", error);
-    }
-  };
-  
   // Handle reading level change
   const handleReadingLevelChange = async (level) => {
     setReadingLevel(level);
@@ -353,23 +334,31 @@ export default function App() {
   // Handle load book button click - using batch processor
   const handleLoadBook = async () => {
     console.log("Load button clicked");
-    console.log(`Search mode: ${searchMode}`);
     
     // Reset previous sentences and state
     clearContent(); // Use the common clear function
     setIsAtEndOfBook(false); // Ensure flag is reset
     
-    // Determine what to load based on search mode
-    const contentToLoad = searchMode === 'search' ? customSearch : selectedBook;
+    // Determine what to load based on selected book
+    let contentToLoad;
+    if (selectedBook === "other") {
+      // Use custom search text for "Other" option
+      contentToLoad = customSearch;
+      console.log(`Using custom search: "${contentToLoad}"`);
+    } else {
+      // Use the selected book
+      contentToLoad = selectedBook;
+      console.log(`Using selected book: "${contentToLoad}"`);
+    }
     
-    console.log(`Content to load: "${contentToLoad}"`);
     console.log(`Study language: "${studyLanguage}"`);
     console.log(`Reading level: ${readingLevel}`);
     
     if (!contentToLoad) {
-      const message = searchMode === 'search' 
-        ? "Please enter a book title or description to search." 
-        : "Please select a book from the dropdown.";
+      let message = "Please select a book from the dropdown.";
+      if (selectedBook === "other" && !customSearch) {
+        message = "Please enter a book title or genre in the custom field.";
+      }
       
       console.log(`Validation error: ${message}`);
       Alert.alert("Selection Required", message);
@@ -389,7 +378,7 @@ export default function App() {
       console.log("Starting content loading...");
       
       // Step 1: Get the original sentences from GPT-4o
-      const isSearchQuery = searchMode === 'search';
+      const isSearchQuery = selectedBook === "other";
       const bookData = await fetchBookContent(contentToLoad, 500, isSearchQuery);
       console.log(`Book data fetched successfully: ${bookData.title}, ${bookData.sentences.length} sentences`);
       
@@ -494,8 +483,6 @@ export default function App() {
       totalSentences={sentences.length}
       readingLevel={readingLevel}
       setReadingLevel={handleReadingLevelChange}
-      searchMode={searchMode}
-      setSearchMode={handleSearchModeChange}
       isAtEndOfBook={isAtEndOfBook}
     />
   );

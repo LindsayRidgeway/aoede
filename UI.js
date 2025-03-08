@@ -59,13 +59,6 @@ export function MainUI({
     return translatedTitle || book.title;
   };
 
-  // Toggle between dropdown selection and free-form search
-  const toggleSearchMode = () => {
-    const newMode = searchMode === 'dropdown' ? 'search' : 'dropdown';
-    console.log(`Toggling search mode to: ${newMode}`);
-    setSearchMode(newMode);
-  };
-
   // Handle Load Book button click with console logs
   const handleLoadButtonClick = () => {
     console.log("Load button clicked in UI");
@@ -118,80 +111,53 @@ export function MainUI({
           </View>
         </View>
 
-        {/* Toggle between search modes */}
-        <View style={styles.searchModeRow}>
-          <TouchableOpacity
-            style={styles.searchModeToggle}
-            onPress={toggleSearchMode}
+        {/* Book Selection Row with improved UI */}
+        <View style={styles.bookSelectionRow}>
+          <Text style={styles.smallLabel}>{uiText.bookSelection || "Book Selection"}:</Text>
+          <View style={styles.pickerContainer}>
+            <Picker
+              selectedValue={selectedBook}
+              style={styles.bookPicker}
+              onValueChange={(itemValue) => setSelectedBook(itemValue)}
+              enabled={!loadingBook}
+            >
+              {[
+                <Picker.Item key="prompt" label={uiText.enterBook || "Select a book"} value="" />,
+                ...popularBooks.map(book => (
+                  <Picker.Item 
+                    key={book.id} 
+                    label={getBookTitle(book)} 
+                    value={book.id} 
+                  />
+                )),
+                <Picker.Item key="other" label={uiText.other || "Other"} value="other" />
+              ]}
+            </Picker>
+          </View>
+          <TouchableOpacity 
+            style={[
+              styles.loadButton, 
+              loadingBook ? styles.disabledButton : null, 
+              (!selectedBook || (selectedBook === "other" && !customSearch)) ? styles.disabledButton : null
+            ]} 
+            onPress={handleLoadButtonClick} 
+            disabled={loadingBook || !selectedBook || (selectedBook === "other" && !customSearch)}
           >
-            <Text style={styles.searchModeText}>
-              {searchMode === 'dropdown' 
-                ? (uiText.switchToSearch || "Switch to Search") 
-                : (uiText.switchToDropdown || "Switch to Book List")}
-            </Text>
+            <Text style={styles.buttonText}>{uiText.loadBook || "Load Book"}</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Book Selection UI - changes based on search mode */}
-        {searchMode === 'dropdown' ? (
-          /* Dropdown selection */
-          <View style={styles.bookSelectionRow}>
-            <Text style={styles.smallLabel}>{uiText.bookSelection || "Book Selection"}:</Text>
-            <View style={styles.pickerContainer}>
-              <Picker
-                selectedValue={selectedBook}
-                style={styles.bookPicker}
-                onValueChange={(itemValue) => setSelectedBook(itemValue)}
-                enabled={!loadingBook}
-              >
-                {[
-                  <Picker.Item key="prompt" label={uiText.enterBook || "Select a book"} value="" />,
-                  ...popularBooks.map(book => (
-                    <Picker.Item 
-                      key={book.id} 
-                      label={getBookTitle(book)} 
-                      value={book.id} 
-                    />
-                  ))
-                ]}
-              </Picker>
-            </View>
-            <TouchableOpacity 
-              style={[
-                styles.loadButton, 
-                loadingBook ? styles.disabledButton : null, 
-                !selectedBook ? styles.disabledButton : null
-              ]} 
-              onPress={handleLoadButtonClick} 
-              disabled={loadingBook || !selectedBook}
-            >
-              <Text style={styles.buttonText}>{uiText.loadBook || "Load Book"}</Text>
-            </TouchableOpacity>
-          </View>
-        ) : (
-          /* Free-form search */
-          <View style={styles.bookSearchRow}>
-            <Text style={styles.smallLabel}>{uiText.bookSearch || "Book Search"}:</Text>
-            <View style={styles.searchInputContainer}>
-              <TextInput
-                style={styles.searchInput}
-                placeholder={uiText.enterBookSearch || "Enter book title or description"}
-                value={customSearch}
-                onChangeText={setCustomSearch}
-                editable={!loadingBook}
-              />
-            </View>
-            <TouchableOpacity 
-              style={[
-                styles.loadButton, 
-                loadingBook ? styles.disabledButton : null, 
-                !customSearch ? styles.disabledButton : null
-              ]} 
-              onPress={handleLoadButtonClick} 
-              disabled={loadingBook || !customSearch?.trim()}
-            >
-              <Text style={styles.buttonText}>{uiText.searchButton || "Search"}</Text>
-            </TouchableOpacity>
+        {/* Custom Search field - only shown when "Other" is selected */}
+        {selectedBook === "other" && (
+          <View style={styles.customSearchRow}>
+            <Text style={styles.smallLabel}>{uiText.custom || "Custom"}:</Text>
+            <TextInput
+              style={styles.customInput}
+              placeholder={uiText.enterCustomBook || "Enter a book title or genre"}
+              value={customSearch}
+              onChangeText={setCustomSearch}
+              editable={!loadingBook}
+            />
           </View>
         )}
         

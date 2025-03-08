@@ -32,34 +32,15 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 15
   },
-  // New styles for Search Mode
-  searchModeRow: {
+  // Custom Search Row styles
+  customSearchRow: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    alignItems: 'center',
+    marginTop: 10,
     marginBottom: 10
   },
-  searchModeToggle: {
-    padding: 6,
-    backgroundColor: '#e8f4fd',
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#bde0fd'
-  },
-  searchModeText: {
-    fontSize: 12,
-    color: '#4a90e2'
-  },
-  // Styles for free-form search
-  bookSearchRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between'
-  },
-  searchInputContainer: {
+  customInput: {
     flex: 1,
-    marginRight: 10
-  },
-  searchInput: {
     height: 40,
     borderColor: '#ddd',
     borderWidth: 1,
