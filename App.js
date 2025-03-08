@@ -68,7 +68,9 @@ export default function App() {
     enterBookSearch: "Enter book title or description",
     searchButton: "Search",
     loadingMore: "Loading more sentences...",
-    pleaseWait: "Please wait. This may take several minutes..."
+    pleaseWait: "Please wait. This may take several minutes...",
+    endOfBook: "You have read all the sentences that I retrieved for that book. To continue studying, please use Load Book again.",
+    continue: "Continue"
   };
   
   const [uiText, setUiText] = useState(defaultUiText);
@@ -193,8 +195,22 @@ export default function App() {
     }
   };
   
-  // Handle next sentence button click - now with batch loading logic
+  // Clear content area
+  const clearContent = () => {
+    console.log("Clearing content area");
+    setStudyLangSentence("");
+    setNativeLangSentence("");
+    setSentences([]);
+    setCurrentSentenceIndex(0);
+    
+    // Reset BatchProcessor too
+    BatchProcessor.reset();
+  };
+  
+  // Handle next sentence button click - with simplified end-of-book handling
   const handleNextSentence = async () => {
+    console.log("Next sentence button clicked");
+    
     if (sentences.length === 0) return;
     
     // Increment sentence index
@@ -202,8 +218,11 @@ export default function App() {
     
     // Check if we've reached the end of available sentences
     if (nextIndex >= sentences.length) {
+      console.log("Reached end of current sentences batch");
+      
       // Check if we should load more sentences
       if (BatchProcessor.shouldProcessNextBatch(currentSentenceIndex)) {
+        console.log("Attempting to load more sentences");
         setLoadingMoreSentences(true);
         
         try {
@@ -211,6 +230,8 @@ export default function App() {
           const newBatch = await BatchProcessor.processNextBatch();
           
           if (newBatch && newBatch.length > 0) {
+            console.log(`Loaded new batch with ${newBatch.length} sentences`);
+            
             // Add new sentences and continue
             setSentences(prevSentences => [...prevSentences, ...newBatch]);
             
@@ -220,25 +241,37 @@ export default function App() {
             setStudyLangSentence(newBatch[0].original);
             setNativeLangSentence(newBatch[0].translation);
           } else {
-            // No more sentences available
-            Alert.alert("End of Content", "You've reached the end of the available sentences.");
+            console.log("No more sentences available");
+            // No more sentences available - directly display end of book message
+            setStudyLangSentence(uiText.endOfBook || "You have read all the sentences that I retrieved for that book. To continue studying, please use Load Book again.");
+            setNativeLangSentence("");
+            
+            // Reset sentences to force Next Sentence button to be disabled
+            setSentences([]);
           }
         } catch (error) {
           console.error("Error loading more sentences:", error);
-          Alert.alert("Error", "Failed to load more sentences.");
+          setStudyLangSentence("Error loading more sentences.");
+          setNativeLangSentence("Please try again.");
         } finally {
           setLoadingMoreSentences(false);
         }
         
         return;
       } else {
-        // We're at the end and can't load more
-        Alert.alert("End of Content", "You've reached the end of the available sentences.");
+        console.log("No more sentences can be loaded");
+        // We're at the end and can't load more - directly display end of book message
+        setStudyLangSentence(uiText.endOfBook || "You have read all the sentences that I retrieved for that book. To continue studying, please use Load Book again.");
+        setNativeLangSentence("");
+        
+        // Reset sentences to force Next Sentence button to be disabled
+        setSentences([]);
         return;
       }
     }
     
     // Display the next sentence
+    console.log(`Moving to sentence index ${nextIndex}`);
     setCurrentSentenceIndex(nextIndex);
     setStudyLangSentence(sentences[nextIndex].original);
     setNativeLangSentence(sentences[nextIndex].translation);
@@ -321,10 +354,7 @@ export default function App() {
     console.log(`Search mode: ${searchMode}`);
     
     // Reset previous sentences and state
-    setSentences([]);
-    setCurrentSentenceIndex(0);
-    setStudyLangSentence("");
-    setNativeLangSentence("");
+    clearContent(); // Use the common clear function
     
     // Determine what to load based on search mode
     const contentToLoad = searchMode === 'search' ? customSearch : selectedBook;
