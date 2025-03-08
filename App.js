@@ -86,6 +86,7 @@ export default function App() {
   const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
   const [sentences, setSentences] = useState([]);
   const [sourceLanguage, setSourceLanguage] = useState("en");
+  const [loadedFromCache, setLoadedFromCache] = useState(false);
   const [readingLevel, setReadingLevel] = useState(6);
   const [searchMode, setSearchMode] = useState('dropdown'); // 'dropdown' or 'search'
   const [currentBookData, setCurrentBookData] = useState(null); // Store fetched book data
@@ -323,6 +324,7 @@ export default function App() {
     setCurrentSentenceIndex(0);
     setStudyLangSentence("");
     setNativeLangSentence("");
+    setLoadedFromCache(false);
     
     // Determine what to load based on search mode
     const contentToLoad = searchMode === 'search' ? customSearch : selectedBook;
@@ -354,8 +356,31 @@ export default function App() {
       
       // Step 1: Get the original sentences from GPT-4o
       const isSearchQuery = searchMode === 'search';
-      const bookData = await fetchBookContent(contentToLoad, 500, isSearchQuery);
-      console.log(`Book data fetched successfully: ${bookData.title}, ${bookData.sentences.length} sentences`);
+      
+      // Check if the book is in the cache first (for non-search queries)
+      let bookData;
+      
+      if (!isSearchQuery) {
+        // Import BookCacheManager only when needed
+        const BookCacheManager = (await import('./bookCache')).default;
+        const isCached = await BookCacheManager.isBookCached(contentToLoad);
+        
+        if (isCached) {
+          console.log(`Book ${contentToLoad} found in cache, retrieving...`);
+          bookData = await BookCacheManager.getBookFromCache(contentToLoad);
+          
+          if (bookData && bookData.sentences && bookData.sentences.length > 0) {
+            console.log(`Retrieved ${bookData.sentences.length} sentences for "${bookData.title}" from cache`);
+            setLoadedFromCache(true);
+          }
+        }
+      }
+      
+      // If not retrieved from cache, fetch from API
+      if (!bookData) {
+        bookData = await fetchBookContent(contentToLoad, 500, isSearchQuery);
+        console.log(`Book data fetched successfully: ${bookData.title}, ${bookData.sentences.length} sentences`);
+      }
       
       // Store book data for later use
       setCurrentBookData(bookData);
@@ -443,6 +468,7 @@ export default function App() {
       setReadingLevel={handleReadingLevelChange}
       searchMode={searchMode}
       setSearchMode={handleSearchModeChange}
+      loadedFromCache={loadedFromCache}
     />
   );
 }

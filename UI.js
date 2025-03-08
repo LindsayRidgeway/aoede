@@ -31,7 +31,8 @@ export function MainUI({
   readingLevel,
   setReadingLevel,
   searchMode,
-  setSearchMode
+  setSearchMode,
+  loadedFromCache
 }) {
   // Initialize listening speed from storage when component mounts
   useEffect(() => {
@@ -75,6 +76,7 @@ export function MainUI({
   return (
     <View style={styles.container}>
       <Text style={styles.header}>{uiText.appName || "Aoede"}</Text>
+      {loadedFromCache && <Text style={styles.cachedIndicator}>✓ Loaded from cache</Text>}
 
       {/* Input container is always visible */}
       <View style={styles.inputContainer}>
@@ -253,11 +255,6 @@ export function MainUI({
           </View>
           
           <View style={styles.contentContainer}>
-            {totalSentences > 0 && (
-              <Text style={styles.sentenceCounter}>
-                {`Sentence ${currentSentenceIndex + 1} of ${totalSentences}`}
-              </Text>
-            )}
             {showText && (
               <View style={styles.sentenceWrapper}>
                 <Text style={styles.foreignSentence}>{sentence}</Text>

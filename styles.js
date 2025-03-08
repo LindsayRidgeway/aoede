@@ -289,5 +289,14 @@ export const styles = StyleSheet.create({
   loadingText: {
     marginLeft: 5,
     fontSize: 14
+  },
+  // Cache indicator style
+  cachedIndicator: {
+    color: '#4CAF50',
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginTop: -10,
+    marginBottom: 10,
+    textAlign: 'center'
   }
 });

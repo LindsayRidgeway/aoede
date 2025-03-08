@@ -39,15 +39,37 @@ const CORS_PROXY = getConstantValue('EXPO_PUBLIC_CORS_PROXY') || "https://thingp
 console.log('OpenAI API key available:', !!OPENAI_API_KEY);
 console.log('CORS Proxy available:', !!CORS_PROXY);
 
+// Import the book cache manager
+import BookCacheManager from './bookCache';
+
 // Function to fetch book content by ID (from dropdown) or by custom search
 export const fetchBookContent = async (bookIdOrSearch, sentenceCount = DEFAULT_SENTENCE_COUNT, isCustomSearch = false) => {
   let searchQuery;
+  let bookId = null;
   
   if (isCustomSearch) {
     // Use the provided text directly as search query
     searchQuery = bookIdOrSearch;
     console.log(`Searching for book: "${searchQuery}" with ${sentenceCount} sentences`);
   } else {
+    // This is a predefined book, check the cache first
+    bookId = bookIdOrSearch;
+    
+    // Check if the book is in the cache
+    const isCached = await BookCacheManager.isBookCached(bookId);
+    if (isCached) {
+      console.log(`Book ${bookId} found in cache, retrieving...`);
+      const cachedBook = await BookCacheManager.getBookFromCache(bookId);
+      
+      if (cachedBook && cachedBook.sentences && cachedBook.sentences.length > 0) {
+        console.log(`Retrieved ${cachedBook.sentences.length} sentences for "${cachedBook.title}" from cache`);
+        return cachedBook;
+      }
+      
+      // If cache retrieval failed, continue with API call
+      console.log('Cache retrieval failed or incomplete, fetching from API...');
+    }
+    
     // Look up the book title from the popularBooks array
     const book = popularBooks.find(book => book.id === bookIdOrSearch);
     if (!book) {
@@ -58,12 +80,22 @@ export const fetchBookContent = async (bookIdOrSearch, sentenceCount = DEFAULT_S
   }
   
   try {
+    let bookData;
+    
     // Use proxy for web, direct call for mobile
     if (Platform.OS === 'web') {
-      return await fetchWithProxy(searchQuery, sentenceCount);
+      bookData = await fetchWithProxy(searchQuery, sentenceCount);
     } else {
-      return await fetchDirectFromOpenAI(searchQuery, sentenceCount);
+      bookData = await fetchDirectFromOpenAI(searchQuery, sentenceCount);
     }
+    
+    // If this is a predefined book (not a custom search), add it to the cache
+    if (!isCustomSearch && bookId && bookData && bookData.sentences && bookData.sentences.length > 0) {
+      console.log(`Adding book "${bookData.title}" to cache...`);
+      await BookCacheManager.addBookToCache(bookId, bookData);
+    }
+    
+    return bookData;
   } catch (error) {
     console.error('Error fetching book content:', error);
     
@@ -71,7 +103,15 @@ export const fetchBookContent = async (bookIdOrSearch, sentenceCount = DEFAULT_S
     if (Platform.OS === 'web') {
       try {
         console.log('Proxy failed, trying direct API access...');
-        return await fetchDirectFromOpenAI(searchQuery, sentenceCount);
+        const bookData = await fetchDirectFromOpenAI(searchQuery, sentenceCount);
+        
+        // If this is a predefined book (not a custom search), add it to the cache
+        if (!isCustomSearch && bookId && bookData && bookData.sentences && bookData.sentences.length > 0) {
+          console.log(`Adding book "${bookData.title}" to cache...`);
+          await BookCacheManager.addBookToCache(bookId, bookData);
+        }
+        
+        return bookData;
       } catch (directError) {
         console.error('Direct fetch also failed:', directError);
         throw directError;
