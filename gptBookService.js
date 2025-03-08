@@ -325,7 +325,7 @@ export const popularBooks = [
   { id: "zarathustra", title: "Thus Spoke Zarathustra", author: "Friedrich Nietzsche" },
   { id: "lesmiserables", title: "Les Misérables", author: "Victor Hugo" },
   { id: "ladywiththepet", title: "The Lady with the Dog", author: "Anton Chekhov" },
-  // Additional popular classics
+  { id: "littleprince", title: "The Little Prince", author: "Antoine de Saint-Exupéry" },
   { id: "annakarenina", title: "Anna Karenina", author: "Leo Tolstoy" },
   { id: "janeyre", title: "Jane Eyre", author: "Charlotte Brontë" },
   { id: "metamorphosis", title: "The Metamorphosis", author: "Franz Kafka" }
