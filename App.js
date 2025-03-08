@@ -90,6 +90,7 @@ export default function App() {
   const [readingLevel, setReadingLevel] = useState(6);
   const [searchMode, setSearchMode] = useState('dropdown'); // 'dropdown' or 'search'
   const [currentBookData, setCurrentBookData] = useState(null); // Store fetched book data
+  const [isLoadingInitialBatch, setIsLoadingInitialBatch] = useState(false); // Distinguish initial vs next batch loading
   
   // Initialize the app
   useEffect(() => {
@@ -192,7 +193,7 @@ export default function App() {
     }
   };
   
-  // Handle next sentence button click - now with batch loading logic
+  // Handle next sentence button click - now with improved batch loading logic
   const handleNextSentence = async () => {
     if (sentences.length === 0) return;
     
@@ -206,21 +207,16 @@ export default function App() {
         setLoadingMoreSentences(true);
         
         try {
-          // Show notification that we're loading more sentences
-          Alert.alert(
-            uiText.appName || "Aoede", 
-            uiText.loadingMore || "Loading more sentences...",
-            [],
-            { cancelable: false }
-          );
-          
           // Process next batch of sentences
           const newBatch = await BatchProcessor.processNextBatch();
           
           if (newBatch && newBatch.length > 0) {
-            // Add new sentences and continue
+            // Add new sentences - add them to the end of the current list
             setSentences(prevSentences => [...prevSentences, ...newBatch]);
-            setCurrentSentenceIndex(nextIndex);
+            
+            // Move to the first sentence of the new batch
+            const newIndex = sentences.length; // Index of first item in new batch
+            setCurrentSentenceIndex(newIndex);
             setStudyLangSentence(newBatch[0].original);
             setNativeLangSentence(newBatch[0].translation);
           } else {
@@ -248,7 +244,9 @@ export default function App() {
     setNativeLangSentence(sentences[nextIndex].translation);
     
     // Check if we should start loading more sentences in the background
-    if (BatchProcessor.shouldProcessNextBatch(nextIndex)) {
+    // Only do this if we're not already loading and we're approaching the end
+    const remainingSentences = sentences.length - nextIndex;
+    if (remainingSentences <= 5 && !loadingMoreSentences && BatchProcessor.shouldProcessNextBatch(nextIndex)) {
       console.log("Starting background loading of next batch");
       setLoadingMoreSentences(true);
       
@@ -259,6 +257,7 @@ export default function App() {
         if (newBatch && newBatch.length > 0) {
           // Add new sentences without changing the current index
           setSentences(prevSentences => [...prevSentences, ...newBatch]);
+          console.log(`Added ${newBatch.length} new sentences in background`);
         }
       } catch (error) {
         console.error("Error loading more sentences in background:", error);
@@ -310,8 +309,12 @@ export default function App() {
   
   // Handle new batch of sentences
   const handleNewBatchReady = (newBatch) => {
-    // Add new sentences to the current set
-    setSentences(prevSentences => [...prevSentences, ...newBatch]);
+    // Only add new batch to sentences if we're loading the initial batch
+    // For subsequent batches, they are added directly in handleNextSentence
+    if (isLoadingInitialBatch && newBatch.length > 0) {
+      setSentences(prevSentences => [...prevSentences, ...newBatch]);
+      console.log(`Added ${newBatch.length} sentences from initial batch`);
+    }
   };
   
   // Handle load book button click - using batch processor
@@ -349,6 +352,7 @@ export default function App() {
     }
     
     setLoadingBook(true);
+    setIsLoadingInitialBatch(true);
     
     try {
       console.log("Starting content loading...");
@@ -366,6 +370,7 @@ export default function App() {
         setStudyLangSentence("Error loading content.");
         setNativeLangSentence("Error loading content.");
         setLoadingBook(false);
+        setIsLoadingInitialBatch(false);
         return;
       }
       
@@ -386,6 +391,8 @@ export default function App() {
         console.error("Failed to process first batch of sentences");
         setStudyLangSentence("Error processing content.");
         setNativeLangSentence("Error processing content.");
+        setLoadingBook(false);
+        setIsLoadingInitialBatch(false);
         return;
       }
       
@@ -411,6 +418,7 @@ export default function App() {
       setNativeLangSentence(`Error: ${error.message || "Unknown error loading content."}`);
     } finally {
       setLoadingBook(false);
+      setIsLoadingInitialBatch(false);
     }
   };
   

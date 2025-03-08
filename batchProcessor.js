@@ -22,6 +22,21 @@ class BatchProcessor {
     this.isProcessing = false;
     this.allSentencesProcessed = false;
     this.onNewBatchReady = null; // Callback function
+    this.processedSentenceHashes = new Set(); // Track processed sentences to avoid duplicates
+  }
+
+  // Generate a simple hash for a sentence to track duplicates
+  generateSentenceHash(sentence) {
+    // Use first 20 chars + last 20 chars + length as a simple hash
+    const start = sentence.substring(0, 20);
+    const end = sentence.substring(Math.max(0, sentence.length - 20));
+    return `${start}|${end}|${sentence.length}`;
+  }
+
+  // Check if a sentence has already been processed
+  isDuplicateSentence(sentence) {
+    const hash = this.generateSentenceHash(sentence);
+    return this.processedSentenceHashes.has(hash);
   }
 
   // Initialize with book content and settings
@@ -35,6 +50,7 @@ class BatchProcessor {
     this.isProcessing = false;
     this.allSentencesProcessed = false;
     this.onNewBatchReady = onNewBatchReady;
+    this.processedSentenceHashes = new Set(); // Reset the hash set
     
     console.log(`BatchProcessor initialized with ${this.rawSentences.length} raw sentences`);
     
@@ -118,6 +134,11 @@ class BatchProcessor {
       
       console.log(`Extracted ${simplifiedSentences.length} simplified sentences from batch ${this.currentBatchIndex + 1}`);
       
+      // Clean up simplified sentences - remove "Simplified:" prefix if present
+      simplifiedSentences = simplifiedSentences.map(sentence => {
+        return sentence.replace(/^Simplified:\s*/i, '');
+      });
+      
       // Translate each sentence to native language
       const translatedSentences = await translateSentences(
         simplifiedSentences, 
@@ -127,19 +148,32 @@ class BatchProcessor {
       
       console.log(`Translated ${translatedSentences.length} sentences`);
       
-      // Create paired sentences
+      // Create paired sentences, filtering out duplicates
       const pairedSentences = [];
       const maxLength = Math.min(simplifiedSentences.length, translatedSentences.length);
       
       for (let i = 0; i < maxLength; i++) {
-        pairedSentences.push({
-          original: simplifiedSentences[i],
-          translation: translatedSentences[i]
-        });
+        const original = simplifiedSentences[i];
+        const hash = this.generateSentenceHash(original);
+        
+        // Only add if it's not a duplicate
+        if (!this.processedSentenceHashes.has(hash)) {
+          pairedSentences.push({
+            original: original,
+            translation: translatedSentences[i]
+          });
+          
+          // Add to processed set
+          this.processedSentenceHashes.add(hash);
+        }
       }
       
+      console.log(`Added ${pairedSentences.length} unique sentences to batch`);
+      
       // Store the processed batch
-      this.processedBatches.push(pairedSentences);
+      if (pairedSentences.length > 0) {
+        this.processedBatches.push(pairedSentences);
+      }
       
       // Increment batch index for next time
       this.currentBatchIndex++;
@@ -151,7 +185,8 @@ class BatchProcessor {
       }
       
       // If a callback was provided, notify that new sentences are ready
-      if (this.onNewBatchReady) {
+      // Only notify if we have paired sentences to avoid empty batches
+      if (this.onNewBatchReady && pairedSentences.length > 0) {
         this.onNewBatchReady(pairedSentences);
       }
       
@@ -176,6 +211,7 @@ class BatchProcessor {
     this.currentBatchIndex = 0;
     this.isProcessing = false;
     this.allSentencesProcessed = false;
+    this.processedSentenceHashes = new Set();
   }
 }
 
