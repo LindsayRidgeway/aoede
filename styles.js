@@ -280,5 +280,47 @@ export const styles = StyleSheet.create({
     color: '#666',
     fontSize: 14,
     fontStyle: 'italic'
+  },
+  
+  // New styles for speed buttons
+  speedControlPanel: {
+    width: '80%',
+    marginBottom: 10,
+    marginTop: 5
+  },
+  speedLabelHeader: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginBottom: 5,
+    color: '#555'
+  },
+  speedButtonsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap', 
+    justifyContent: 'space-between',
+    marginBottom: 5
+  },
+  speedButton: {
+    width: '13%', 
+    height: 30,
+    borderRadius: 5,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    marginVertical: 3
+  },
+  speedButtonActive: {
+    backgroundColor: '#4a90e2',
+    borderColor: '#3a80d2'
+  },
+  speedButtonText: {
+    fontSize: 12,
+    color: '#555'
+  },
+  speedButtonTextActive: {
+    color: '#fff',
+    fontWeight: '500'
   }
 });

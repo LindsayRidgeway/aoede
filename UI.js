@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { Text, View, TouchableOpacity, TextInput, Switch, Picker, ActivityIndicator } from 'react-native';
-import Slider from '@react-native-community/slider';
 import { styles } from './styles';  
 import ListeningSpeed from './listeningSpeed';
 import { popularBooks } from './gptBookService';
@@ -43,6 +42,17 @@ export function MainUI({
       }
     });
   }, []);
+
+  // Speed options for radio buttons
+  const speedOptions = [
+    { label: "0.5x", value: 0.5 },
+    { label: "0.75x", value: 0.75 },
+    { label: "1.0x", value: 1.0 },
+    { label: "1.25x", value: 1.25 },
+    { label: "1.5x", value: 1.5 },
+    { label: "1.75x", value: 1.75 },
+    { label: "2.0x", value: 2.0 }
+  ];
 
   const updateListeningSpeed = async (speed) => {
     setListeningSpeed(speed);
@@ -209,18 +219,30 @@ export function MainUI({
             </View>
           </View>
           
-          <View style={styles.speedControlContainer}>
-            <Text style={styles.speedLabel}>{uiText.readingSpeed || "Listening Speed"}:</Text>
-            <Slider 
-              style={styles.speedSlider}
-              minimumValue={0.5}
-              maximumValue={2.0}
-              value={listeningSpeed}
-              onValueChange={updateListeningSpeed}
-              minimumTrackTintColor="#1fb28a"
-              maximumTrackTintColor="#d3d3d3"
-              thumbTintColor="#b9e4c9"
-            />
+          {/* Speed Control with Radio Buttons */}
+          <View style={styles.speedControlPanel}>
+            <Text style={styles.speedLabelHeader}>{uiText.readingSpeed || "Listening Speed"}:</Text>
+            <View style={styles.speedButtonsContainer}>
+              {speedOptions.map((option) => (
+                <TouchableOpacity
+                  key={option.value}
+                  style={[
+                    styles.speedButton,
+                    Math.abs(listeningSpeed - option.value) < 0.1 ? styles.speedButtonActive : null
+                  ]}
+                  onPress={() => updateListeningSpeed(option.value)}
+                >
+                  <Text
+                    style={[
+                      styles.speedButtonText,
+                      Math.abs(listeningSpeed - option.value) < 0.1 ? styles.speedButtonTextActive : null
+                    ]}
+                  >
+                    {option.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
 
           <View style={styles.toggleContainer}>
