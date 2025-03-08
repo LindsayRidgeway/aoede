@@ -31,8 +31,7 @@ export function MainUI({
   readingLevel,
   setReadingLevel,
   searchMode,
-  setSearchMode,
-  loadedFromCache
+  setSearchMode
 }) {
   // Initialize listening speed from storage when component mounts
   useEffect(() => {
@@ -76,7 +75,6 @@ export function MainUI({
   return (
     <View style={styles.container}>
       <Text style={styles.header}>{uiText.appName || "Aoede"}</Text>
-      {loadedFromCache && <Text style={styles.cachedIndicator}>✓ Loaded from cache</Text>}
 
       {/* Input container is always visible */}
       <View style={styles.inputContainer}>
@@ -193,6 +191,16 @@ export function MainUI({
             >
               <Text style={styles.buttonText}>{uiText.searchButton || "Search"}</Text>
             </TouchableOpacity>
+          </View>
+        )}
+        
+        {/* Loading wait notice */}
+        {loadingBook && (
+          <View style={styles.loadingNoticeContainer}>
+            <ActivityIndicator size="small" color="#4a90e2" style={styles.loadingSpinner} />
+            <Text style={styles.loadingNoticeText}>
+              {uiText.pleaseWait || "Please wait. This may take several minutes..."}
+            </Text>
           </View>
         )}
       </View>

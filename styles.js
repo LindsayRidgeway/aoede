@@ -201,16 +201,6 @@ export const styles = StyleSheet.create({
   navigationContainer: {
     marginBottom: 10
   },
-  sentenceCounter: {
-    fontSize: 12,
-    color: '#888',
-    textAlign: 'center',
-    marginBottom: 5
-  },
-  navigationSlider: {
-    width: '100%',
-    height: 30
-  },
   sentenceWrapper: {
     marginBottom: 8
   },
@@ -290,13 +280,22 @@ export const styles = StyleSheet.create({
     marginLeft: 5,
     fontSize: 14
   },
-  // Cache indicator style
-  cachedIndicator: {
-    color: '#4CAF50',
+  // Loading notice styles
+  loadingNoticeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 15,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#e0e0e0'
+  },
+  loadingSpinner: {
+    marginRight: 10
+  },
+  loadingNoticeText: {
+    color: '#666',
     fontSize: 14,
-    fontWeight: 'bold',
-    marginTop: -10,
-    marginBottom: 10,
-    textAlign: 'center'
+    fontStyle: 'italic'
   }
 });
