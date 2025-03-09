@@ -76,7 +76,8 @@ class BatchProcessor {
   
   // Process the next batch of sentences
   async processNextBatch() {
-    if (this.isProcessing || !BookPipe.hasMoreSentences()) {
+    if (this.isProcessing) {
+      console.log("Already processing a batch, skipping request");
       return null;
     }
     
@@ -85,20 +86,20 @@ class BatchProcessor {
     
     try {
       // Get the next batch of raw sentences from the book pipe
-      const batchSentences = BookPipe.getNextBatch(BATCH_SIZE);
+      const rawSentences = await BookPipe.getNextBatch(BATCH_SIZE);
       
-      if (!batchSentences || batchSentences.length === 0) {
+      if (!rawSentences || rawSentences.length === 0) {
         console.log('No more sentences available from the book pipe');
         this.isProcessing = false;
         return null;
       }
       
-      console.log(`Processing ${batchSentences.length} sentences in next batch`);
+      console.log(`Processing ${rawSentences.length} sentences in next batch`);
       
-      // Join sentences for processing
-      const sourceText = batchSentences.join(' ');
+      // Join sentences for processing with Claude API
+      const sourceText = rawSentences.join(' ');
       
-      // Process the text using Claude API
+      // Process the text using Claude API for simplification
       const processedText = await processSourceText(sourceText, this.studyLanguage, this.readingLevel);
       
       if (!processedText || processedText.length === 0) {
@@ -114,7 +115,7 @@ class BatchProcessor {
       
       // If that didn't work well, try to split by sentence endings
       if (simplifiedSentences.length < 3) {
-        const sentenceRegex = /[^.!?]*[.!?](?:\s|$)/g;
+        const sentenceRegex = /[^.!?]+[.!?]+(?:\s|$)/g;
         const sentenceMatches = processedText.match(sentenceRegex) || [];
         
         if (sentenceMatches.length > simplifiedSentences.length) {
