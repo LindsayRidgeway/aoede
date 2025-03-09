@@ -140,19 +140,20 @@ export function MainUI({
             onPress={handleLoadButtonClick} 
             disabled={loadingBook || !selectedBook}
           >
-            <Text style={styles.buttonText}>{uiText.loadBook || "Load Book"}</Text>
+            {loadingBook ? (
+              <View style={styles.nextButtonContent}>
+                <ActivityIndicator size="small" color="#ffffff" style={styles.buttonSpinner} />
+                <Text style={[styles.buttonText, styles.buttonTextWithSpinner]}>
+                  {uiText.loadBook || "Load Book"}
+                </Text>
+              </View>
+            ) : (
+              <Text style={styles.buttonText}>{uiText.loadBook || "Load Book"}</Text>
+            )}
           </TouchableOpacity>
         </View>
         
-        {/* Loading wait notice */}
-        {loadingBook && !sentence && (
-          <View style={styles.loadingNoticeContainer}>
-            <ActivityIndicator size="small" color="#4a90e2" style={styles.loadingSpinner} />
-            <Text style={styles.loadingNoticeText}>
-              {uiText.pleaseWait || "Please wait. This may take several minutes..."}
-            </Text>
-          </View>
-        )}
+        {/* We've removed the loading wait notice text and will just use the button spinner */}
       </View>
 
       {showControls && (
