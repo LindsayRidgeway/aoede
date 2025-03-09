@@ -13,7 +13,7 @@
  */
 
 export const bookSources = [
-  // English classics
+    /*
   { 
     id: "montecristo", 
     title: "The Count of Monte Cristo", 
@@ -21,7 +21,8 @@ export const bookSources = [
     url: "https://www.gutenberg.org/files/1184/1184-h/1184-h.htm#linkC2HCH0001",
     language: "en",
     format: "text"
-  },
+    },
+    */
   { 
     id: "prideandprejudice", 
     title: "Pride and Prejudice", 
@@ -38,6 +39,7 @@ export const bookSources = [
     language: "en",
     format: "text"
   },
+    /*
   { 
     id: "warandpeace", 
     title: "War and Peace", 
@@ -45,7 +47,8 @@ export const bookSources = [
     url: "https://www.gutenberg.org/files/2600/2600-h/2600-h.htm#link2H_4_0001",
     language: "en",
     format: "text"
-  },
+    },
+    */
   { 
     id: "aliceinwonderland", 
     title: "Alice's Adventures in Wonderland", 
@@ -54,6 +57,7 @@ export const bookSources = [
     language: "en",
     format: "text"
   },
+    /*
   { 
     id: "mobydick", 
     title: "Moby Dick", 
@@ -61,7 +65,8 @@ export const bookSources = [
     url: "https://www.gutenberg.org/files/2701/2701-h/2701-h.htm#link2HCH0001",
     language: "en",
     format: "text"
-  },
+    },
+    */
   { 
     id: "frankenstein", 
     title: "Frankenstein", 
@@ -70,6 +75,7 @@ export const bookSources = [
     language: "en",
     format: "text"
   },
+    /*
   { 
     id: "donquixote", 
     title: "Don Quixote", 
@@ -77,7 +83,8 @@ export const bookSources = [
     url: "https://www.gutenberg.org/files/5921/5921-h/5921-h.htm#ch1",
     language: "en",
     format: "text"
-  },
+    },
+    */
   { 
     id: "taleoftwocities", 
     title: "A Tale of Two Cities", 
@@ -110,6 +117,7 @@ export const bookSources = [
     language: "en",
     format: "text"
   },
+    /*
   { 
     id: "littlewomen", 
     title: "Little Women", 
@@ -117,7 +125,8 @@ export const bookSources = [
     url: "https://www.gutenberg.org/files/514/514-h/514-h.htm#part01",
     language: "en",
     format: "text"
-  },
+    },
+    */
   { 
     id: "odyssey", 
     title: "The Odyssey", 
@@ -158,14 +167,17 @@ export const bookSources = [
     language: "en",
     format: "text"
   },
+    /*
   { 
     id: "bible", 
-    title: "Bible", 
+    title: "The Bible", 
     author: "Traditional",
     url: "https://www.gutenberg.org/cache/epub/10/pg10-images.html#The_First_Book_of_Moses_Called_Genesis",
     language: "en",
     format: "text"
-  },
+    },
+    */
+    /*
   { 
     id: "republic", 
     title: "The Republic", 
@@ -173,7 +185,8 @@ export const bookSources = [
     url: "https://www.gutenberg.org/files/1497/1497-h/1497-h.htm#link2H_4_0002",
     language: "en",
     format: "text"
-  },
+    },
+    */
   { 
     id: "zarathustra", 
     title: "Thus Spoke Zarathustra", 
@@ -182,6 +195,7 @@ export const bookSources = [
     language: "en",
     format: "text"
   },
+    /*
   { 
     id: "lesmiserables", 
     title: "Les Misérables", 
@@ -189,7 +203,8 @@ export const bookSources = [
     url: "https://www.gutenberg.org/files/135/135-h/135-h.htm#link2H_PREF",
     language: "en",
     format: "text"
-  },
+    },
+    */
   { 
     id: "ladywiththepet", 
     title: "The Lady with the Dog", 
@@ -206,6 +221,7 @@ export const bookSources = [
     language: "fr",
     format: "text"
   },
+    /*
   { 
     id: "annakarenina", 
     title: "Anna Karenina", 
@@ -213,7 +229,8 @@ export const bookSources = [
     url: "https://www.gutenberg.org/files/1399/1399-h/1399-h.htm#chap01",
     language: "en",
     format: "text"
-  },
+    },
+    */
 ];
 
 // Helper function to get book source by ID
