@@ -43,8 +43,8 @@ export function MainUI({
     });
   }, []);
 
-  // Speed options for circle buttons
-  const speedOptions = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0];
+  // Speed options for circle buttons - only 5 speeds, removing the two slowest
+  const speedOptions = [1.0, 1.25, 1.5, 1.75, 2.0];
 
   const updateListeningSpeed = async (speed) => {
     setListeningSpeed(speed);
@@ -211,7 +211,7 @@ export function MainUI({
             </View>
           </View>
           
-          {/* Speed Control with Inline Circle Buttons */}
+          {/* Speed Control with Inline Circle Buttons - Only 5 speeds */}
           <View style={styles.speedControlRow}>
             <Text style={styles.speedLabel}>{uiText.readingSpeed || "Listening Speed"}:</Text>
             <View style={styles.speedCircleContainer}>
