@@ -194,9 +194,41 @@ class BookPipe {
       if (match) {
         console.log(`Found fragment #${fragmentId} using ${matchPattern} at position ${match.index}`);
         
+        // Look specifically for headings near the anchor to include
+        let titleText = '';
+        
+        // Search for headings after the anchor - common pattern in books
+        const headingAfterAnchorPattern = new RegExp(`${match[0]}[\\s\\S]*?<h\\d[^>]*>([^<]+)</h\\d>`, 'i');
+        const headingAfterMatch = headingAfterAnchorPattern.exec(html);
+        
+        if (headingAfterMatch && headingAfterMatch[1]) {
+          titleText = headingAfterMatch[1].trim() + '. ';
+          console.log(`Found title after anchor: "${titleText}"`);
+        }
+        
+        // Also check for headings that contain the anchor
+        const headingWithAnchorPattern = new RegExp(`<h\\d[^>]*>[^<]*?<a[^>]*?\\s(?:name|id)\\s*=\\s*["']?${fragmentId}["']?[^>]*?>[^<]*?</a>[^<]*?</h\\d>`, 'i');
+        const headingWithAnchorMatch = headingWithAnchorPattern.exec(html);
+        
+        if (headingWithAnchorMatch && !titleText) {
+          // Extract the heading text
+          const headingText = headingWithAnchorMatch[0].replace(/<[^>]*>/g, ' ').trim() + '. ';
+          titleText = headingText;
+          console.log(`Found title containing anchor: "${titleText}"`);
+        }
+        
         // Get content from the match position onwards
-        const contentAfterFragment = html.substring(match.index);
-        return this.extractText(contentAfterFragment);
+        let contentAfterFragment = html.substring(match.index);
+        
+        // Prepend the title if we found one
+        const extractedText = this.extractText(contentAfterFragment);
+        
+        // If we found a title but it's not already in the extracted text, prepend it
+        if (titleText && !extractedText.startsWith(titleText)) {
+          return titleText + extractedText;
+        }
+        
+        return extractedText;
       }
       
       // Try looking for a chapter/section heading containing the fragment ID
@@ -217,9 +249,19 @@ class BookPipe {
         for (const pattern of chapterHeadings) {
           const headingMatch = pattern.exec(html);
           if (headingMatch) {
-            console.log(`Found chapter heading at position ${headingMatch.index}`);
+            // Get the heading text and prepend it to the content
+            const headingText = headingMatch[0].replace(/<[^>]*>/g, ' ').trim() + '. ';
+            console.log(`Found chapter heading: "${headingText}" at position ${headingMatch.index}`);
+            
             const contentAfterHeading = html.substring(headingMatch.index);
-            return this.extractText(contentAfterHeading);
+            const extractedText = this.extractText(contentAfterHeading);
+            
+            // Ensure the heading is included at the beginning
+            if (!extractedText.startsWith(headingText)) {
+              return headingText + extractedText;
+            }
+            
+            return extractedText;
           }
         }
       }
@@ -228,9 +270,19 @@ class BookPipe {
       const fragmentTextPattern = new RegExp(`<h\\d[^>]*>[^<]*?${fragmentId}[^<]*?<\/h\\d>`, 'i');
       const fragmentTextMatch = fragmentTextPattern.exec(html);
       if (fragmentTextMatch) {
-        console.log(`Found fragment text in heading at position ${fragmentTextMatch.index}`);
+        // Extract the heading text
+        const headingText = fragmentTextMatch[0].replace(/<[^>]*>/g, ' ').trim() + '. ';
+        console.log(`Found fragment text in heading: "${headingText}" at position ${fragmentTextMatch.index}`);
+        
         const contentAfterText = html.substring(fragmentTextMatch.index);
-        return this.extractText(contentAfterText);
+        const extractedText = this.extractText(contentAfterText);
+        
+        // Ensure the heading is included
+        if (!extractedText.startsWith(headingText)) {
+          return headingText + extractedText;
+        }
+        
+        return extractedText;
       }
       
       // Last resort: if the fragment is a file name (common in Gutenberg URLs), 
@@ -239,10 +291,20 @@ class BookPipe {
         const firstHeadingPattern = /<\/head>.*?(<h\d[^>]*>.*?<\/h\d>)/is;
         const firstHeadingMatch = firstHeadingPattern.exec(html);
         if (firstHeadingMatch && firstHeadingMatch[1]) {
-          console.log(`Found first heading after HTML head section`);
+          // Extract the heading text
+          const headingText = firstHeadingMatch[1].replace(/<[^>]*>/g, ' ').trim() + '. ';
+          console.log(`Found first heading after HTML head: "${headingText}"`);
+          
           const headingIndex = html.indexOf(firstHeadingMatch[1]);
           const contentAfterHeading = html.substring(headingIndex);
-          return this.extractText(contentAfterHeading);
+          const extractedText = this.extractText(contentAfterHeading);
+          
+          // Ensure the heading is included
+          if (!extractedText.startsWith(headingText)) {
+            return headingText + extractedText;
+          }
+          
+          return extractedText;
         }
       }
       
