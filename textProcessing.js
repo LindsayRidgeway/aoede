@@ -7,7 +7,7 @@ export const parseIntoSentences = (text) => {
   // First, remove any obvious HTML tags that might have survived
   text = text.replace(/<[^>]*>/g, ' ');
   
-  // Split by newlines first (Claude usually puts one sentence per line)
+  // Split by newlines first
   let lines = text.split('\n')
                  .map(line => line.trim())
                  .filter(line => line.length > 0);
@@ -15,52 +15,46 @@ export const parseIntoSentences = (text) => {
   // Initialize an array for the final sentences
   let sentences = [];
   
-  // Define a more robust sentence-splitting regex
-  // This handles periods, exclamation marks, question marks followed by space or end of string
+  // Define a simple sentence-splitting regex
   const sentenceRegex = /[^.!?]+[.!?]+(?:\s|$)/g;
   
-  // Handle case where we have few or no newlines - use regex directly on text
-  if (lines.length < 3) {
-    const matches = text.match(sentenceRegex);
+  // Apply regex to each line
+  for (let line of lines) {
+    const matches = line.match(sentenceRegex);
+    
     if (matches && matches.length > 0) {
-      sentences = matches.map(s => s.trim()).filter(s => s.length > 0);
-    }
-  } else {
-    // Process each line - some lines may contain multiple sentences
-    for (let line of lines) {
-      // Try to split by sentence endings
-      const matches = line.match(sentenceRegex);
-      
-      if (matches && matches.length > 0) {
-        sentences.push(...matches.map(s => s.trim()).filter(s => s.length > 0));
-      } else {
-        // If we couldn't split it and it's reasonably long, use the whole line
-        if (line.length > 10) {
-          sentences.push(line);
-        }
-      }
+      sentences.push(...matches);
+    } else if (line.length > 10) {
+      // If we couldn't split it and it's reasonably long, use the whole line
+      sentences.push(line);
     }
   }
   
-  // Ensure each sentence ends with a punctuation mark and filter out very short ones
-  sentences = sentences
-    .map(sentence => {
-      // Clean up the sentence
-      sentence = sentence.trim();
-      
-      // If the sentence doesn't end with a punctuation mark, add a period
-      if (!/[.!?]$/.test(sentence)) {
-        return sentence + '.';
-      }
-      return sentence;
-    })
-    .filter(sentence => {
-      // Remove very short sentences or likely HTML fragments
-      return sentence.length > 10 && 
-             !sentence.includes('©') &&
-             !sentence.includes('®') &&
-             !/^[\d\s.,]+$/.test(sentence); // Filter out sentences that are just numbers
-    });
+  // If we don't have many sentences from line processing, try direct text processing
+  if (sentences.length < 10) {
+    const matches = text.match(sentenceRegex);
+    if (matches && matches.length > sentences.length) {
+      sentences = matches;
+    }
+  }
+  
+  // Ensure each sentence ends with a punctuation mark
+  sentences = sentences.map(sentence => {
+    // Clean up the sentence
+    sentence = sentence.trim();
+    
+    // If the sentence doesn't end with a punctuation mark, add a period
+    if (!/[.!?]$/.test(sentence)) {
+      return sentence + '.';
+    }
+    return sentence;
+  })
+  .filter(sentence => {
+    // Remove very short sentences or likely HTML fragments
+    return sentence.length > 10 && 
+           !sentence.includes('©') &&
+           !sentence.includes('®');
+  });
   
   return sentences;
 };
