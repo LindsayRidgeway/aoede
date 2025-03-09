@@ -1,26 +1,21 @@
-// batchProcessor.js - Handles batch fetching and processing of sentences
+// batchProcessor.js - Handles batch processing of sentences from the BookPipe
 
 import { processSourceText } from './apiServices';
 import { translateSentences, detectLanguageCode } from './textProcessing';
+import BookPipe from './bookPipe';
 import { Alert } from 'react-native';
 
 // Configuration for sentence batching
 const BATCH_SIZE = 10; // Number of sentences to process at once
 const MIN_SENTENCES_THRESHOLD = 5; // When to trigger loading more sentences
-const MAX_BATCHES = 10; // Maximum number of batches to load (prevent excessive API usage)
 
 class BatchProcessor {
   constructor() {
-    this.bookId = null;
-    this.isSearchQuery = false;
     this.studyLanguage = null;
     this.userLanguage = null;
     this.readingLevel = 6;
-    this.rawSentences = []; // All sentences fetched from GPT-4o
     this.processedBatches = []; // Processed and translated sentences
-    this.currentBatchIndex = 0;
     this.isProcessing = false;
-    this.allSentencesProcessed = false;
     this.onNewBatchReady = null; // Callback function
     this.processedSentenceHashes = new Set(); // Track processed sentences to avoid duplicates
   }
@@ -40,22 +35,26 @@ class BatchProcessor {
   }
 
   // Initialize with book content and settings
-  initialize(bookData, studyLanguage, userLanguage, readingLevel, onNewBatchReady) {
-    this.rawSentences = bookData.sentences || [];
+  async initialize(bookId, studyLanguage, userLanguage, readingLevel, onNewBatchReady) {
     this.studyLanguage = studyLanguage;
     this.userLanguage = userLanguage;
     this.readingLevel = readingLevel;
     this.processedBatches = [];
-    this.currentBatchIndex = 0;
     this.isProcessing = false;
-    this.allSentencesProcessed = false;
     this.onNewBatchReady = onNewBatchReady;
     this.processedSentenceHashes = new Set(); // Reset the hash set
     
-    console.log(`BatchProcessor initialized with ${this.rawSentences.length} raw sentences`);
-    
-    // Process first batch immediately
-    return this.processNextBatch();
+    try {
+      // Initialize the book pipe
+      await BookPipe.initialize(bookId);
+      console.log(`BatchProcessor initialized for book: ${BookPipe.bookTitle}`);
+      
+      // Process first batch immediately
+      return this.processNextBatch();
+    } catch (error) {
+      console.error("Error initializing batch processor:", error);
+      throw error;
+    }
   }
   
   // Check if we need to process more sentences
@@ -65,10 +64,8 @@ class BatchProcessor {
     
     return (
       !this.isProcessing && 
-      !this.allSentencesProcessed && 
-      remainingSentences <= MIN_SENTENCES_THRESHOLD &&
-      this.currentBatchIndex < MAX_BATCHES &&
-      this.currentBatchIndex * BATCH_SIZE < this.rawSentences.length
+      BookPipe.hasMoreSentences() && 
+      remainingSentences <= MIN_SENTENCES_THRESHOLD
     );
   }
   
@@ -79,29 +76,24 @@ class BatchProcessor {
   
   // Process the next batch of sentences
   async processNextBatch() {
-    if (this.isProcessing || this.allSentencesProcessed) {
+    if (this.isProcessing || !BookPipe.hasMoreSentences()) {
       return null;
     }
     
     this.isProcessing = true;
-    console.log(`Processing batch ${this.currentBatchIndex + 1}`);
+    console.log("Processing next batch of sentences");
     
     try {
-      // Calculate the start and end indices for this batch
-      const startIdx = this.currentBatchIndex * BATCH_SIZE;
-      const endIdx = Math.min(startIdx + BATCH_SIZE, this.rawSentences.length);
+      // Get the next batch of raw sentences from the book pipe
+      const batchSentences = BookPipe.getNextBatch(BATCH_SIZE);
       
-      // Check if we've processed all sentences
-      if (startIdx >= this.rawSentences.length) {
-        console.log('All sentences have been processed');
-        this.allSentencesProcessed = true;
+      if (!batchSentences || batchSentences.length === 0) {
+        console.log('No more sentences available from the book pipe');
         this.isProcessing = false;
         return null;
       }
       
-      // Get the next batch of raw sentences
-      const batchSentences = this.rawSentences.slice(startIdx, endIdx);
-      console.log(`Processing ${batchSentences.length} sentences in batch ${this.currentBatchIndex + 1}`);
+      console.log(`Processing ${batchSentences.length} sentences in next batch`);
       
       // Join sentences for processing
       const sourceText = batchSentences.join(' ');
@@ -110,7 +102,7 @@ class BatchProcessor {
       const processedText = await processSourceText(sourceText, this.studyLanguage, this.readingLevel);
       
       if (!processedText || processedText.length === 0) {
-        console.error(`Failed to process batch ${this.currentBatchIndex + 1}`);
+        console.error("Failed to process batch");
         this.isProcessing = false;
         return null;
       }
@@ -132,7 +124,7 @@ class BatchProcessor {
         }
       }
       
-      console.log(`Extracted ${simplifiedSentences.length} simplified sentences from batch ${this.currentBatchIndex + 1}`);
+      console.log(`Extracted ${simplifiedSentences.length} simplified sentences`);
       
       // Clean up simplified sentences - remove "Simplified:" prefix if present
       simplifiedSentences = simplifiedSentences.map(sentence => {
@@ -175,15 +167,6 @@ class BatchProcessor {
         this.processedBatches.push(pairedSentences);
       }
       
-      // Increment batch index for next time
-      this.currentBatchIndex++;
-      
-      // Check if we've processed all available sentences
-      if (endIdx >= this.rawSentences.length) {
-        console.log('All available sentences have been processed');
-        this.allSentencesProcessed = true;
-      }
-      
       // If a callback was provided, notify that new sentences are ready
       // Only notify if we have paired sentences to avoid empty batches
       if (this.onNewBatchReady && pairedSentences.length > 0) {
@@ -192,7 +175,7 @@ class BatchProcessor {
       
       return pairedSentences;
     } catch (error) {
-      console.error(`Error processing batch ${this.currentBatchIndex + 1}:`, error);
+      console.error("Error processing batch:", error);
       return null;
     } finally {
       this.isProcessing = false;
@@ -204,14 +187,22 @@ class BatchProcessor {
     return this.processedBatches.flat();
   }
   
+  // Get the total progress of the book
+  getProgress() {
+    return {
+      ...BookPipe.getProgress(),
+      processedBatches: this.processedBatches.length,
+      totalProcessedSentences: this.getTotalProcessedSentences()
+    };
+  }
+  
   // Reset the processor
   reset() {
-    this.rawSentences = [];
     this.processedBatches = [];
-    this.currentBatchIndex = 0;
     this.isProcessing = false;
-    this.allSentencesProcessed = false;
     this.processedSentenceHashes = new Set();
+    // Reset the book pipe as well
+    BookPipe.reset();
   }
 }
 

@@ -1,0 +1,257 @@
+// bookSources.js - Mapping of book titles to their source URLs
+// This file provides direct access to book content without relying on GPT-4o
+
+/**
+ * Book sources data structure
+ * Each entry contains:
+ * - id: Unique identifier for the book (same as used in popularBooks array)
+ * - title: Full title of the book
+ * - author: Author's name
+ * - url: Direct URL to plain text or HTML version of the book
+ * - language: Original language of the text (ISO code, e.g., 'en', 'fr', 'ru')
+ * - format: Format of the content ('text' or 'html')
+ */
+
+export const bookSources = [
+  // English classics
+  { 
+    id: "montecristo", 
+    title: "The Count of Monte Cristo", 
+    author: "Alexandre Dumas",
+    url: "", // URL to plain text version
+    language: "en",
+    format: "text"
+  },
+  { 
+    id: "prideandprejudice", 
+    title: "Pride and Prejudice", 
+    author: "Jane Austen",
+    url: "", // URL to plain text version
+    language: "en",
+    format: "text"
+  },
+  { 
+    id: "sherlockholmes", 
+    title: "The Adventures of Sherlock Holmes", 
+    author: "Arthur Conan Doyle",
+    url: "", // URL to plain text version
+    language: "en",
+    format: "text"
+  },
+  { 
+    id: "warandpeace", 
+    title: "War and Peace", 
+    author: "Leo Tolstoy",
+    url: "", // URL to plain text version
+    language: "en", // This is the English translation
+    format: "text"
+  },
+  { 
+    id: "aliceinwonderland", 
+    title: "Alice's Adventures in Wonderland", 
+    author: "Lewis Carroll",
+    url: "", // URL to plain text version
+    language: "en",
+    format: "text"
+  },
+  { 
+    id: "mobydick", 
+    title: "Moby Dick", 
+    author: "Herman Melville",
+    url: "", // URL to plain text version
+    language: "en",
+    format: "text"
+  },
+  { 
+    id: "frankenstein", 
+    title: "Frankenstein", 
+    author: "Mary Shelley",
+    url: "", // URL to plain text version
+    language: "en",
+    format: "text"
+  },
+  { 
+    id: "donquixote", 
+    title: "Don Quixote", 
+    author: "Miguel de Cervantes",
+    url: "", // URL to plain text version
+    language: "en", // This is the English translation
+    format: "text"
+  },
+  { 
+    id: "taleoftwocities", 
+    title: "A Tale of Two Cities", 
+    author: "Charles Dickens",
+    url: "", // URL to plain text version
+    language: "en",
+    format: "text"
+  },
+  { 
+    id: "greatgatsby", 
+    title: "The Great Gatsby", 
+    author: "F. Scott Fitzgerald",
+    url: "", // URL to plain text version
+    language: "en",
+    format: "text"
+  },
+  { 
+    id: "dracula", 
+    title: "Dracula", 
+    author: "Bram Stoker",
+    url: "", // URL to plain text version
+    language: "en",
+    format: "text"
+  },
+  { 
+    id: "wizardofoz", 
+    title: "The Wonderful Wizard of Oz", 
+    author: "L. Frank Baum",
+    url: "", // URL to plain text version
+    language: "en",
+    format: "text"
+  },
+  { 
+    id: "littlewomen", 
+    title: "Little Women", 
+    author: "Louisa May Alcott",
+    url: "", // URL to plain text version
+    language: "en",
+    format: "text"
+  },
+  { 
+    id: "odyssey", 
+    title: "The Odyssey", 
+    author: "Homer",
+    url: "", // URL to plain text version
+    language: "en", // This is the English translation
+    format: "text"
+  },
+  { 
+    id: "iliad", 
+    title: "The Iliad", 
+    author: "Homer",
+    url: "", // URL to plain text version
+    language: "en", // This is the English translation
+    format: "text"
+  },
+  { 
+    id: "treasureisland", 
+    title: "Treasure Island", 
+    author: "Robert Louis Stevenson",
+    url: "", // URL to plain text version
+    language: "en",
+    format: "text"
+  },
+  { 
+    id: "tomsawyer", 
+    title: "The Adventures of Tom Sawyer", 
+    author: "Mark Twain",
+    url: "", // URL to plain text version
+    language: "en",
+    format: "text"
+  },
+  { 
+    id: "callofthewild", 
+    title: "The Call of the Wild", 
+    author: "Jack London",
+    url: "", // URL to plain text version
+    language: "en",
+    format: "text"
+  },
+  { 
+    id: "torah", 
+    title: "Torah", 
+    author: "Traditional",
+    url: "", // URL to plain text version
+    language: "en", // This is the English translation
+    format: "text"
+  },
+  { 
+    id: "republic", 
+    title: "The Republic", 
+    author: "Plato",
+    url: "", // URL to plain text version
+    language: "en", // This is the English translation
+    format: "text"
+  },
+  { 
+    id: "zarathustra", 
+    title: "Thus Spoke Zarathustra", 
+    author: "Friedrich Nietzsche",
+    url: "", // URL to plain text version
+    language: "en", // This is the English translation
+    format: "text"
+  },
+  { 
+    id: "lesmiserables", 
+    title: "Les Misérables", 
+    author: "Victor Hugo",
+    url: "", // URL to plain text version
+    language: "en", // This is the English translation
+    format: "text"
+  },
+  { 
+    id: "ladywiththepet", 
+    title: "The Lady with the Dog", 
+    author: "Anton Chekhov",
+    url: "", // URL to plain text version
+    language: "en", // This is the English translation
+    format: "text"
+  },
+  { 
+    id: "littleprince", 
+    title: "The Little Prince", 
+    author: "Antoine de Saint-Exupéry",
+    url: "", // URL to plain text version
+    language: "en", // This is the English translation
+    format: "text"
+  },
+  { 
+    id: "annakarenina", 
+    title: "Anna Karenina", 
+    author: "Leo Tolstoy",
+    url: "", // URL to plain text version
+    language: "en", // This is the English translation
+    format: "text"
+  },
+  { 
+    id: "janeyre", 
+    title: "Jane Eyre", 
+    author: "Charlotte Brontë",
+    url: "", // URL to plain text version
+    language: "en",
+    format: "text"
+  },
+  { 
+    id: "metamorphosis", 
+    title: "The Metamorphosis", 
+    author: "Franz Kafka",
+    url: "", // URL to plain text version
+    language: "en", // This is the English translation
+    format: "text"
+  }
+];
+
+// Helper function to get book source by ID
+export const getBookSourceById = (id) => {
+  return bookSources.find(book => book.id === id) || null;
+};
+
+// Function to check if a URL is valid
+export const isValidUrl = (url) => {
+  if (!url) return false;
+  
+  try {
+    new URL(url);
+    return true;
+  } catch (error) {
+    return false;
+  }
+};
+
+// Export the book sources for use in the dropdown
+export const popularBooks = bookSources.map(book => ({
+  id: book.id,
+  title: book.title,
+  author: book.author
+}));

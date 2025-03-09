@@ -3,10 +3,11 @@ import { Alert, Platform } from 'react-native';
 import { MainUI } from './UI';
 import ListeningSpeed from './listeningSpeed';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { fetchBookContent, popularBooks } from './gptBookService';
 import { processSourceText, translateBatch } from './apiServices';
 import { translateSentences, detectLanguageCode } from './textProcessing';
 import BatchProcessor from './batchProcessor';
+import BookPipe from './bookPipe';
+import { bookSources } from './bookSources';
 
 // Direct translation method using Google Translate
 const directTranslate = async (text, sourceLang, targetLang) => {
@@ -62,9 +63,6 @@ export default function App() {
     enterLanguage: "Enter study language",
     bookSelection: "Book Selection",
     readingLevel: "Reading Level",
-    other: "Other",
-    custom: "Custom",
-    enterCustomBook: "Enter a book title or genre",
     pleaseWait: "Please wait. This may take several minutes...",
     endOfBook: "You have read all the sentences that I retrieved for that book. To continue studying, please use Load Book again.",
     continue: "Continue"
@@ -72,7 +70,6 @@ export default function App() {
   
   const [uiText, setUiText] = useState(defaultUiText);
   const [selectedBook, setSelectedBook] = useState("");  
-  const [customSearch, setCustomSearch] = useState("");
   const [studyLangSentence, setStudyLangSentence] = useState(""); 
   const [nativeLangSentence, setNativeLangSentence] = useState(""); 
   const [showText, setShowText] = useState(true);
@@ -87,7 +84,6 @@ export default function App() {
   const [sentences, setSentences] = useState([]);
   const [sourceLanguage, setSourceLanguage] = useState("en");
   const [readingLevel, setReadingLevel] = useState(6);
-  const [currentBookData, setCurrentBookData] = useState(null); // Store fetched book data
   const [isLoadingInitialBatch, setIsLoadingInitialBatch] = useState(false); // Distinguish initial vs next batch loading
   const [isAtEndOfBook, setIsAtEndOfBook] = useState(false); // Track if we've reached the end of all available sentences
   
@@ -105,7 +101,6 @@ export default function App() {
           const storedSelectedBook = await AsyncStorage.getItem("selectedBook");
           const storedSpeechRate = await AsyncStorage.getItem("speechRate");
           const storedReadingLevel = await AsyncStorage.getItem("readingLevel");
-          const storedCustomSearch = await AsyncStorage.getItem("customSearch");
           
           if (storedSelectedBook !== null) {
             setSelectedBook(storedSelectedBook);
@@ -117,10 +112,6 @@ export default function App() {
           
           if (storedReadingLevel !== null) {
             setReadingLevel(parseInt(storedReadingLevel, 10));
-          }
-          
-          if (storedCustomSearch !== null) {
-            setCustomSearch(storedCustomSearch);
           }
         } catch (error) {
           console.error("Error loading stored settings:", error);
@@ -158,7 +149,7 @@ export default function App() {
       
       // Translate book titles
       const translatedBooks = {};
-      for (const book of popularBooks) {
+      for (const book of bookSources) {
         try {
           const translatedTitle = await directTranslate(book.title, 'en', userLanguage);
           translatedBooks[book.id] = translatedTitle;
@@ -301,16 +292,6 @@ export default function App() {
     }
   };
   
-  // Handle custom search change
-  const handleCustomSearchChange = async (text) => {
-    setCustomSearch(text);
-    try {
-      await AsyncStorage.setItem("customSearch", text);
-    } catch (error) {
-      console.error("Error saving customSearch:", error);
-    }
-  };
-  
   // Handle reading level change
   const handleReadingLevelChange = async (level) => {
     setReadingLevel(level);
@@ -339,27 +320,15 @@ export default function App() {
     clearContent(); // Use the common clear function
     setIsAtEndOfBook(false); // Ensure flag is reset
     
-    // Determine what to load based on selected book
-    let contentToLoad;
-    if (selectedBook === "other") {
-      // Use custom search text for "Other" option
-      contentToLoad = customSearch;
-      console.log(`Using custom search: "${contentToLoad}"`);
-    } else {
-      // Use the selected book
-      contentToLoad = selectedBook;
-      console.log(`Using selected book: "${contentToLoad}"`);
-    }
+    // Use the selected book
+    const bookId = selectedBook;
+    console.log(`Using selected book: "${bookId}"`);
     
     console.log(`Study language: "${studyLanguage}"`);
     console.log(`Reading level: ${readingLevel}`);
     
-    if (!contentToLoad) {
+    if (!bookId) {
       let message = "Please select a book from the dropdown.";
-      if (selectedBook === "other" && !customSearch) {
-        message = "Please enter a book title or genre in the custom field.";
-      }
-      
       console.log(`Validation error: ${message}`);
       Alert.alert("Selection Required", message);
       return;
@@ -377,30 +346,12 @@ export default function App() {
     try {
       console.log("Starting content loading...");
       
-      // Step 1: Get the original sentences from GPT-4o
-      const isSearchQuery = selectedBook === "other";
-      const bookData = await fetchBookContent(contentToLoad, 500, isSearchQuery);
-      console.log(`Book data fetched successfully: ${bookData.title}, ${bookData.sentences.length} sentences`);
-      
-      // Store book data for later use
-      setCurrentBookData(bookData);
-      
-      if (!bookData || !bookData.sentences || bookData.sentences.length === 0) {
-        console.error("Failed to fetch book content or no sentences returned");
-        setStudyLangSentence("Error loading content.");
-        setNativeLangSentence("Error loading content.");
-        setLoadingBook(false);
-        setIsLoadingInitialBatch(false);
-        return;
-      }
-      
       // Set source language from study language
       setSourceLanguage(detectLanguageCode(studyLanguage));
       
-      // Step 2: Initialize the batch processor
-      BatchProcessor.reset();
+      // Step 1: Initialize the batch processor with the book ID
       const firstBatch = await BatchProcessor.initialize(
-        bookData,
+        bookId,
         studyLanguage,
         userLanguage,
         readingLevel,
@@ -460,8 +411,6 @@ export default function App() {
       uiText={uiText}
       selectedBook={selectedBook}
       setSelectedBook={handleBookChange}
-      customSearch={customSearch}
-      setCustomSearch={handleCustomSearchChange}
       loadBook={handleLoadBook}
       sentence={studyLangSentence}
       translatedSentence={nativeLangSentence}

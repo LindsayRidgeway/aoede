@@ -35,7 +35,7 @@ const getConstantValue = (key) => {
 // Get API keys from Expo Constants
 const anthropicKey = getConstantValue('EXPO_PUBLIC_ANTHROPIC_API_KEY');
 const googleKey = getConstantValue('EXPO_PUBLIC_GOOGLE_API_KEY');
-const CORS_PROXY = getConstantValue('EXPO_PUBLIC_CORS_PROXY') || '';
+export const CORS_PROXY = getConstantValue('EXPO_PUBLIC_CORS_PROXY') || '';
 
 // Log API key status for debugging
 console.log('Anthropic API key available:', !!anthropicKey);

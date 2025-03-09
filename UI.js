@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Text, View, TouchableOpacity, TextInput, Switch, Picker, ActivityIndicator } from 'react-native';
 import { styles } from './styles';  
 import ListeningSpeed from './listeningSpeed';
-import { popularBooks } from './gptBookService';
+import { bookSources } from './bookSources';
 
 export function MainUI({
   studyLanguage,
@@ -10,8 +10,6 @@ export function MainUI({
   uiText,
   selectedBook,
   setSelectedBook,
-  customSearch,
-  setCustomSearch,
   loadBook,
   sentence,
   translatedSentence,
@@ -29,8 +27,6 @@ export function MainUI({
   totalSentences,
   readingLevel,
   setReadingLevel,
-  searchMode,
-  setSearchMode,
   isAtEndOfBook
 }) {
   // Initialize listening speed from storage when component mounts
@@ -125,14 +121,13 @@ export function MainUI({
             >
               {[
                 <Picker.Item key="prompt" label={uiText.enterBook || "Select a book"} value="" />,
-                ...popularBooks.map(book => (
+                ...bookSources.map(book => (
                   <Picker.Item 
                     key={book.id} 
                     label={getBookTitle(book)} 
                     value={book.id} 
                   />
-                )),
-                <Picker.Item key="other" label={uiText.other || "Other"} value="other" />
+                ))
               ]}
             </Picker>
           </View>
@@ -140,28 +135,14 @@ export function MainUI({
             style={[
               styles.loadButton, 
               loadingBook ? styles.disabledButton : null, 
-              (!selectedBook || (selectedBook === "other" && !customSearch)) ? styles.disabledButton : null
+              !selectedBook ? styles.disabledButton : null
             ]} 
             onPress={handleLoadButtonClick} 
-            disabled={loadingBook || !selectedBook || (selectedBook === "other" && !customSearch)}
+            disabled={loadingBook || !selectedBook}
           >
             <Text style={styles.buttonText}>{uiText.loadBook || "Load Book"}</Text>
           </TouchableOpacity>
         </View>
-
-        {/* Custom Search field - only shown when "Other" is selected */}
-        {selectedBook === "other" && (
-          <View style={styles.customSearchRow}>
-            <Text style={styles.smallLabel}>{uiText.custom || "Custom"}:</Text>
-            <TextInput
-              style={styles.customInput}
-              placeholder={uiText.enterCustomBook || "Enter a book title or genre"}
-              value={customSearch}
-              onChangeText={setCustomSearch}
-              editable={!loadingBook}
-            />
-          </View>
-        )}
         
         {/* Loading wait notice */}
         {loadingBook && !sentence && (

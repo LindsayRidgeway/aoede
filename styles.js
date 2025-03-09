@@ -32,22 +32,6 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 15
   },
-  // Custom Search Row styles
-  customSearchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 10,
-    marginBottom: 10
-  },
-  customInput: {
-    flex: 1,
-    height: 40,
-    borderColor: '#ddd',
-    borderWidth: 1,
-    borderRadius: 5,
-    paddingHorizontal: 10,
-    backgroundColor: '#fff'
-  },
   // Reading Level styles
   readingLevelRow: {
     flexDirection: 'row',
