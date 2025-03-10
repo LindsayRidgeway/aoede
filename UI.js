@@ -1,5 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Text, View, TouchableOpacity, TextInput, Switch, ActivityIndicator, Platform, Alert, Animated } from 'react-native';
+import { 
+  Text, View, TouchableOpacity, TextInput, Switch, 
+  ActivityIndicator, Platform, Alert, Animated, 
+  Modal, FlatList, SafeAreaView 
+} from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { styles } from './styles';  
 import ListeningSpeed from './listeningSpeed';
@@ -32,6 +36,7 @@ export function MainUI({
 }) {
   // State to track the displayed book title
   const [displayBookTitle, setDisplayBookTitle] = useState("");
+  const [showBookModal, setShowBookModal] = useState(false);
   
   // Initialize listening speed from storage when component mounts
   useEffect(() => {
@@ -119,36 +124,14 @@ export function MainUI({
   // This function handles showing the Picker differently based on platform
   const renderBookPicker = () => {
     if (Platform.OS === 'android') {
-      // For Android, create a custom picker-like interface
+      // For Android, create a custom picker-like interface with Modal
       return (
         <View style={styles.androidPickerContainer}>
           <TouchableOpacity
             style={styles.androidPickerButton}
             onPress={() => {
               if (!loadingBook) {
-                // Show a dialog with book options
-                Alert.alert(
-                  uiText.bookSelection || "Book Selection",
-                  uiText.enterBook || "Select a book",
-                  [
-                    // Add prompt item
-                    {
-                      text: uiText.enterBook || "Select a book",
-                      onPress: () => handleBookChange("")
-                    },
-                    // Add all books
-                    ...bookSources.map(book => ({
-                      text: getBookTitle(book),
-                      onPress: () => handleBookChange(book.id)
-                    })),
-                    // Add cancel option
-                    {
-                      text: "Cancel",
-                      style: "cancel"
-                    }
-                  ],
-                  { cancelable: true }
-                );
+                setShowBookModal(true);
               }
             }}
             disabled={loadingBook}
@@ -158,6 +141,45 @@ export function MainUI({
             </Text>
             <Text style={styles.androidPickerIcon}>▼</Text>
           </TouchableOpacity>
+          
+          {/* Book Selection Modal */}
+          <Modal
+            visible={showBookModal}
+            transparent={true}
+            animationType="slide"
+            onRequestClose={() => setShowBookModal(false)}
+          >
+            <SafeAreaView style={styles.modalContainer}>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalHeader}>{uiText.bookSelection || "Book Selection"}</Text>
+                
+                <FlatList
+                  data={[{id: 'prompt', title: uiText.enterBook || "Select a book"}, ...bookSources]}
+                  keyExtractor={item => item.id}
+                  renderItem={({item}) => (
+                    <TouchableOpacity
+                      style={styles.bookItem}
+                      onPress={() => {
+                        handleBookChange(item.id === 'prompt' ? "" : item.id);
+                        setShowBookModal(false);
+                      }}
+                    >
+                      <Text style={styles.bookItemText}>
+                        {item.id === 'prompt' ? item.title : getBookTitle(item)}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                />
+                
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={() => setShowBookModal(false)}
+                >
+                  <Text style={styles.closeButtonText}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </SafeAreaView>
+          </Modal>
         </View>
       );
     }
@@ -231,7 +253,6 @@ export function MainUI({
 
         {/* Book Selection Row with improved UI */}
         <View style={styles.bookSelectionRow}>
-          <Text style={styles.smallLabel}>{uiText.bookSelection || "Book Selection"}:</Text>
           {renderBookPicker()}
           <TouchableOpacity 
             style={[

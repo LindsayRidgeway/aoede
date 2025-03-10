@@ -119,6 +119,49 @@ export const styles = StyleSheet.create({
     color: '#777',
     marginLeft: 8
   },
+  // Modal styles for Android book picker
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    padding: 20
+  },
+  modalContent: {
+    width: '90%',
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 15,
+    maxHeight: '80%'
+  },
+  modalHeader: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    textAlign: 'center'
+  },
+  bookItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee'
+  },
+  bookItemText: {
+    fontSize: 16,
+    color: '#333'
+  },
+  closeButton: {
+    marginTop: 15,
+    padding: 12,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 5,
+    alignItems: 'center'
+  },
+  closeButtonText: {
+    fontSize: 16,
+    color: '#333',
+    fontWeight: '500'
+  },
   sourceInputWrapper: {
     flex: 1,
     marginRight: 10
