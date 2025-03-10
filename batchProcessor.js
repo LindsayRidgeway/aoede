@@ -19,6 +19,7 @@ class BatchProcessor {
     this.isProcessing = false;
     this.onNewBatchReady = null; // Callback function
     this.processedSentenceHashes = new Set(); // Track processed sentences to avoid duplicates
+    this.resumedFromSavedPosition = false; // Flag to indicate if we resumed from a saved position
   }
 
   // Generate a simple hash for a sentence to track duplicates
@@ -44,10 +45,16 @@ class BatchProcessor {
     this.isProcessing = false;
     this.onNewBatchReady = onNewBatchReady;
     this.processedSentenceHashes = new Set(); // Reset the hash set
+    this.resumedFromSavedPosition = false;
     
     try {
       // Initialize the book pipe
-      await BookPipe.initialize(bookId);
+      const bookInfo = await BookPipe.initialize(bookId);
+      
+      // Set flag if we resumed from a saved position
+      if (bookInfo && bookInfo.resumedFromPosition) {
+        this.resumedFromSavedPosition = true;
+      }
       
       // Process first batch immediately
       return await this.processNextBatch();
@@ -173,6 +180,11 @@ class BatchProcessor {
     }
   }
   
+  // Check if we resumed from a saved position
+  didResumeFromSavedPosition() {
+    return this.resumedFromSavedPosition;
+  }
+  
   // Get all processed sentences as a flat array
   getAllProcessedSentences() {
     return this.processedBatches.flat();
@@ -183,7 +195,8 @@ class BatchProcessor {
     return {
       ...BookPipe.getProgress(),
       processedBatches: this.processedBatches.length,
-      totalProcessedSentences: this.getTotalProcessedSentences()
+      totalProcessedSentences: this.getTotalProcessedSentences(),
+      resumedFromSavedPosition: this.resumedFromSavedPosition
     };
   }
   
@@ -192,6 +205,7 @@ class BatchProcessor {
     this.processedBatches = [];
     this.isProcessing = false;
     this.processedSentenceHashes = new Set();
+    this.resumedFromSavedPosition = false;
     // Reset the book pipe as well
     BookPipe.reset();
   }

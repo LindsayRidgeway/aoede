@@ -4,6 +4,7 @@ import { parseIntoSentences } from './textProcessing';
 import { bookSources, getBookSourceById } from './bookSources';
 import { CORS_PROXY } from './apiServices';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 class BookPipe {
   constructor() {
@@ -21,6 +22,7 @@ class BookPipe {
     this.isLoading = false;
     this.error = null;
     this.hasMoreContent = true;  // Flag to indicate if there's more content to process
+    this.savedBookPosition = 0;  // Position in the book where we last saved progress
   }
 
   // Initialize the pipe with a book ID
@@ -49,6 +51,14 @@ class BookPipe {
       // Find the anchor position in the HTML
       await this.findAnchorPosition();
       
+      // Retrieve saved position from storage
+      await this.loadSavedPosition();
+      
+      // If we have a saved position, apply it
+      if (this.savedBookPosition > 0) {
+        this.processedTextOffset = this.savedBookPosition;
+      }
+      
       // Process the first chunk of text
       await this.processNextChunk();
       
@@ -59,7 +69,8 @@ class BookPipe {
         return {
           title: this.bookTitle,
           language: this.bookLanguage,
-          totalSentences: this.sentences.length
+          totalSentences: this.sentences.length,
+          resumedFromPosition: this.savedBookPosition > 0
         };
       } else {
         throw new Error('Failed to extract any sentences from the book');
@@ -69,6 +80,44 @@ class BookPipe {
       throw error;
     } finally {
       this.isLoading = false;
+    }
+  }
+
+  // Load saved book position from AsyncStorage
+  async loadSavedPosition() {
+    try {
+      const storageKey = `book_position_${this.bookId}`;
+      const savedPosition = await AsyncStorage.getItem(storageKey);
+      
+      if (savedPosition) {
+        this.savedBookPosition = parseInt(savedPosition, 10);
+        // Ensure it's a valid number
+        if (isNaN(this.savedBookPosition)) {
+          this.savedBookPosition = 0;
+        }
+      } else {
+        this.savedBookPosition = 0;
+      }
+    } catch (error) {
+      this.savedBookPosition = 0;
+    }
+  }
+
+  // Save current book position to AsyncStorage
+  async saveCurrentPosition() {
+    if (!this.bookId) return;
+    
+    try {
+      const storageKey = `book_position_${this.bookId}`;
+      const currentPosition = this.anchorPosition + this.processedTextOffset;
+      
+      // Save the position only if it's greater than what we've saved before
+      if (currentPosition > this.savedBookPosition) {
+        await AsyncStorage.setItem(storageKey, currentPosition.toString());
+        this.savedBookPosition = currentPosition;
+      }
+    } catch (error) {
+      // Silent error handling
     }
   }
 
@@ -318,6 +367,9 @@ class BookPipe {
       // Update the processed offset
       this.processedTextOffset += (chunkEnd - chunkStart);
       
+      // Save the new position
+      await this.saveCurrentPosition();
+      
       // Return the new sentences
       return newSentences;
     } catch (error) {
@@ -405,7 +457,8 @@ class BookPipe {
       hasMoreContent: this.hasMoreContent,
       percentage: this.sentences.length > 0 
         ? Math.round((this.nextSentenceIndex / this.sentences.length) * 100) 
-        : 0
+        : 0,
+      bytePosition: this.anchorPosition + this.processedTextOffset
     };
   }
 
@@ -425,6 +478,7 @@ class BookPipe {
     this.isLoading = false;
     this.error = null;
     this.hasMoreContent = true;
+    this.savedBookPosition = 0;
   }
 }
 
