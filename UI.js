@@ -30,6 +30,9 @@ export function MainUI({
   setReadingLevel,
   isAtEndOfBook
 }) {
+  // State to track the displayed book title
+  const [displayBookTitle, setDisplayBookTitle] = useState("");
+  
   // Initialize listening speed from storage when component mounts
   useEffect(() => {
     ListeningSpeed.getStoredListeningSpeed().then(setListeningSpeed);
@@ -39,6 +42,18 @@ export function MainUI({
       }
     });
   }, []);
+
+  // Update displayed book title when selection changes
+  useEffect(() => {
+    if (selectedBook) {
+      const book = bookSources.find(b => b.id === selectedBook);
+      if (book) {
+        setDisplayBookTitle(getBookTitle(book));
+      }
+    } else {
+      setDisplayBookTitle(uiText.enterBook || "Select a book");
+    }
+  }, [selectedBook, uiText]);
 
   // Speed options for circle buttons - only 5 speeds
   const speedOptions = [1.0, 1.25, 1.5, 1.75, 2.0];
@@ -89,6 +104,85 @@ export function MainUI({
     animateNextButton();
     nextSentence();
   };
+  
+  // Handle book selection with more robustness for Android
+  const handleBookChange = (itemValue) => {
+    setSelectedBook(itemValue);
+    if (itemValue) {
+      const book = bookSources.find(b => b.id === itemValue);
+      if (book) {
+        setDisplayBookTitle(getBookTitle(book));
+      }
+    }
+  };
+
+  // This function handles showing the Picker differently based on platform
+  const renderBookPicker = () => {
+    if (Platform.OS === 'android') {
+      // For Android, create a custom picker-like interface
+      return (
+        <View style={styles.androidPickerContainer}>
+          <TouchableOpacity
+            style={styles.androidPickerButton}
+            onPress={() => {
+              if (!loadingBook) {
+                // Show a dialog with book options
+                Alert.alert(
+                  uiText.bookSelection || "Book Selection",
+                  uiText.enterBook || "Select a book",
+                  [
+                    // Add prompt item
+                    {
+                      text: uiText.enterBook || "Select a book",
+                      onPress: () => handleBookChange("")
+                    },
+                    // Add all books
+                    ...bookSources.map(book => ({
+                      text: getBookTitle(book),
+                      onPress: () => handleBookChange(book.id)
+                    })),
+                    // Add cancel option
+                    {
+                      text: "Cancel",
+                      style: "cancel"
+                    }
+                  ],
+                  { cancelable: true }
+                );
+              }
+            }}
+            disabled={loadingBook}
+          >
+            <Text style={selectedBook ? styles.androidPickerButtonTextSelected : styles.androidPickerButtonText}>
+              {displayBookTitle}
+            </Text>
+            <Text style={styles.androidPickerIcon}>▼</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+    
+    // For iOS and Web, use the standard Picker
+    return (
+      <View style={styles.pickerContainer}>
+        <Picker
+          selectedValue={selectedBook}
+          style={styles.bookPicker}
+          onValueChange={handleBookChange}
+          enabled={!loadingBook}
+        >
+          <Picker.Item key="prompt" label={uiText.enterBook || "Select a book"} value="" />
+          {bookSources.map(book => (
+            <Picker.Item 
+              key={book.id} 
+              label={getBookTitle(book)} 
+              value={book.id} 
+            />
+          ))}
+        </Picker>
+      </View>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -138,23 +232,7 @@ export function MainUI({
         {/* Book Selection Row with improved UI */}
         <View style={styles.bookSelectionRow}>
           <Text style={styles.smallLabel}>{uiText.bookSelection || "Book Selection"}:</Text>
-          <View style={styles.pickerContainer}>
-            <Picker
-              selectedValue={selectedBook}
-              style={styles.bookPicker}
-              onValueChange={(itemValue) => setSelectedBook(itemValue)}
-              enabled={!loadingBook}
-            >
-              <Picker.Item key="prompt" label={uiText.enterBook || "Select a book"} value="" />
-              {bookSources.map(book => (
-                <Picker.Item 
-                  key={book.id} 
-                  label={getBookTitle(book)} 
-                  value={book.id} 
-                />
-              ))}
-            </Picker>
-          </View>
+          {renderBookPicker()}
           <TouchableOpacity 
             style={[
               styles.loadButton, 

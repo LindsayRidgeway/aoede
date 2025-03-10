@@ -90,6 +90,35 @@ export const styles = StyleSheet.create({
     width: '100%',
     height: 40
   },
+  // Android custom picker styles
+  androidPickerContainer: {
+    flex: 1,
+    marginRight: 10
+  },
+  androidPickerButton: {
+    height: 40,
+    borderColor: '#ddd',
+    borderWidth: 1,
+    borderRadius: 5,
+    backgroundColor: '#fff',
+    paddingHorizontal: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between'
+  },
+  androidPickerButtonText: {
+    color: '#999',
+    fontSize: 15
+  },
+  androidPickerButtonTextSelected: {
+    color: '#333',
+    fontSize: 15
+  },
+  androidPickerIcon: {
+    fontSize: 12,
+    color: '#777',
+    marginLeft: 8
+  },
   sourceInputWrapper: {
     flex: 1,
     marginRight: 10
