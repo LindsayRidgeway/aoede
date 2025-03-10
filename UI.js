@@ -16,6 +16,7 @@ export function MainUI({
   selectedBook,
   setSelectedBook,
   loadBook,
+  rewindBook,
   sentence,
   translatedSentence,
   showText,
@@ -119,6 +120,30 @@ export function MainUI({
         setDisplayBookTitle(getBookTitle(book));
       }
     }
+  };
+
+  // Handle rewind button press with confirmation
+  const handleRewindPress = () => {
+    if (loadingBook) return;
+    
+    // Show confirmation dialog
+    Alert.alert(
+      uiText.rewindConfirmTitle || "Rewind Book",
+      uiText.rewindConfirmMessage || "Are you sure you want to rewind the book to the beginning?",
+      [
+        {
+          text: uiText.cancel || "Cancel",
+          style: "cancel"
+        },
+        {
+          text: uiText.yes || "Yes",
+          onPress: () => {
+            // Call the rewindBook function passed from App.js
+            rewindBook();
+          }
+        }
+      ]
+    );
   };
 
   // This function handles showing the Picker differently based on platform
@@ -315,6 +340,15 @@ export function MainUI({
                 )}
               </TouchableOpacity>
             </View>
+            
+            {/* Rewind Button */}
+            <TouchableOpacity 
+              style={styles.rewindButton} 
+              onPress={handleRewindPress}
+              disabled={loadingBook}
+            >
+              <Text style={styles.rewindButtonText}>↺</Text>
+            </TouchableOpacity>
           </View>
           
           {/* Speed Control with Inline Circle Buttons - Only 5 speeds */}

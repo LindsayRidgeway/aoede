@@ -262,7 +262,8 @@ export const styles = StyleSheet.create({
   controlsContainer: {
     width: '80%',
     alignItems: 'flex-start',
-    marginBottom: 2
+    marginBottom: 2,
+    position: 'relative'  // For positioning the rewind button
   },
   controls: {
     flexDirection: 'row',
@@ -277,6 +278,27 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     width: '45%'
+  },
+  // Rewind button styles
+  rewindButton: {
+    position: 'absolute',
+    right: 0,
+    top: 45,  // Position it just below the Next button
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#f0f0f0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    opacity: 0.7,  // Make it less conspicuous
+    zIndex: 10  // Ensure it appears on top
+  },
+  rewindButtonText: {
+    fontSize: 18,
+    fontWeight: '300',
+    color: '#555'
   },
   // Speed Control with Inline Circles
   speedControlRow: {

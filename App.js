@@ -64,7 +64,13 @@ export default function App() {
     readingLevel: "Reading Level",
     pleaseWait: "Please wait. This may take several minutes...",
     endOfBook: "You have read all the sentences that I retrieved for that book. To continue studying, please use Load Book again.",
-    continue: "Continue"
+    continue: "Continue",
+    rewindConfirmTitle: "Rewind Book",
+    rewindConfirmMessage: "Are you sure you want to rewind the book to the beginning?",
+    cancel: "Cancel",
+    yes: "Yes",
+    error: "Error",
+    rewindFailed: "Failed to rewind the book."
   };
   
   const [uiText, setUiText] = useState(defaultUiText);
@@ -292,6 +298,42 @@ export default function App() {
     }
   };
   
+  // Handle rewind book functionality
+  const handleRewindBook = async () => {
+    if (loadingBook || loadingMoreSentences) {
+      return false;
+    }
+    
+    setLoadingBook(true);
+    
+    try {
+      // Reset the book position in BookPipe
+      const success = await BookPipe.resetBookPosition();
+      
+      if (success) {
+        // Clear the current content
+        clearContent();
+        
+        // Load the book from the beginning
+        return handleLoadBook();
+      } else {
+        Alert.alert(
+          uiText.error || "Error",
+          uiText.rewindFailed || "Failed to rewind the book."
+        );
+        return false;
+      }
+    } catch (error) {
+      Alert.alert(
+        uiText.error || "Error",
+        uiText.rewindFailed || "Failed to rewind the book."
+      );
+      return false;
+    } finally {
+      setLoadingBook(false);
+    }
+  };
+  
   // Handle load book button click - using batch processor
   const handleLoadBook = async () => {
     // Reset previous sentences and state
@@ -304,12 +346,12 @@ export default function App() {
     if (!bookId) {
       let message = "Please select a book from the dropdown.";
       Alert.alert("Selection Required", message);
-      return;
+      return false;
     }
     
     if (!studyLanguage) {
       Alert.alert("Language Required", "Please enter a study language.");
-      return;
+      return false;
     }
     
     setLoadingBook(true);
@@ -333,7 +375,7 @@ export default function App() {
         setNativeLangSentence("Error processing content.");
         setLoadingBook(false);
         setIsLoadingInitialBatch(false);
-        return;
+        return false;
       }
       
       // Set sentences and display the first one
@@ -353,9 +395,12 @@ export default function App() {
         });
       }
       
+      return true;
+      
     } catch (error) {
       setStudyLangSentence(`Error: ${error.message || "Unknown error loading content."}`);
       setNativeLangSentence(`Error: ${error.message || "Unknown error loading content."}`);
+      return false;
     } finally {
       setLoadingBook(false);
       setIsLoadingInitialBatch(false);
@@ -368,6 +413,7 @@ export default function App() {
       selectedBook={selectedBook}
       setSelectedBook={handleBookChange}
       loadBook={handleLoadBook}
+      rewindBook={handleRewindBook}
       sentence={studyLangSentence}
       translatedSentence={nativeLangSentence}
       showText={showText}
