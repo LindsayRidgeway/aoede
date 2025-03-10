@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Text, View, TouchableOpacity, TextInput, Switch, Picker, ActivityIndicator } from 'react-native';
+import { Text, View, TouchableOpacity, TextInput, Switch, ActivityIndicator, Platform, Alert } from 'react-native';
+import { Picker } from '@react-native-picker/picker';
 import { styles } from './styles';  
 import ListeningSpeed from './listeningSpeed';
 import { bookSources } from './bookSources';
@@ -39,7 +40,7 @@ export function MainUI({
     });
   }, []);
 
-  // Speed options for circle buttons - only 5 speeds, removing the two slowest
+  // Speed options for circle buttons - only 5 speeds
   const speedOptions = [1.0, 1.25, 1.5, 1.75, 2.0];
 
   const updateListeningSpeed = async (speed) => {
@@ -119,16 +120,14 @@ export function MainUI({
               onValueChange={(itemValue) => setSelectedBook(itemValue)}
               enabled={!loadingBook}
             >
-              {[
-                <Picker.Item key="prompt" label={uiText.enterBook || "Select a book"} value="" />,
-                ...bookSources.map(book => (
-                  <Picker.Item 
-                    key={book.id} 
-                    label={getBookTitle(book)} 
-                    value={book.id} 
-                  />
-                ))
-              ]}
+              <Picker.Item key="prompt" label={uiText.enterBook || "Select a book"} value="" />
+              {bookSources.map(book => (
+                <Picker.Item 
+                  key={book.id} 
+                  label={getBookTitle(book)} 
+                  value={book.id} 
+                />
+              ))}
             </Picker>
           </View>
           <TouchableOpacity 
