@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from 'react';
-import { Text, View, TouchableOpacity, TextInput, Switch, ActivityIndicator, Platform, Alert } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { Text, View, TouchableOpacity, TextInput, Switch, ActivityIndicator, Platform, Alert, Animated } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { styles } from './styles';  
 import ListeningSpeed from './listeningSpeed';
@@ -63,6 +63,31 @@ export function MainUI({
     console.log("Load button clicked in UI");
     // Call the passed loadBook function from props
     loadBook();
+  };
+  
+  // Animation for Next button
+  const nextButtonAnimation = useRef(new Animated.Value(1)).current;
+  
+  const animateNextButton = () => {
+    // Sequence of animations: shrink then grow
+    Animated.sequence([
+      Animated.timing(nextButtonAnimation, {
+        toValue: 0.95,
+        duration: 100,
+        useNativeDriver: true
+      }),
+      Animated.timing(nextButtonAnimation, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true
+      })
+    ]).start();
+  };
+  
+  // Handle next button with animation
+  const handleNextButtonPress = () => {
+    animateNextButton();
+    nextSentence();
   };
 
   return (
@@ -151,8 +176,6 @@ export function MainUI({
             )}
           </TouchableOpacity>
         </View>
-        
-        {/* We've removed the loading wait notice text and will just use the button spinner */}
       </View>
 
       {showControls && (
@@ -170,12 +193,13 @@ export function MainUI({
               >
                 <Text style={styles.buttonText}>{isSpeaking ? (uiText.stop || "Stop") : (uiText.listen || "Listen")}</Text>
               </TouchableOpacity>
+
               <TouchableOpacity 
                 style={[
                   styles.controlButton, 
                   (loadingBook || isAtEndOfBook) ? styles.disabledButton : null
                 ]} 
-                onPress={nextSentence} 
+                onPress={handleNextButtonPress} 
                 disabled={loadingBook || isAtEndOfBook}
               >
                 {loadingBook ? (
@@ -186,7 +210,9 @@ export function MainUI({
                     </Text>
                   </View>
                 ) : (
-                  <Text style={styles.buttonText}>{uiText.next || "Next Sentence"}</Text>
+                  <Animated.View style={{transform: [{scale: nextButtonAnimation}]}}>
+                    <Text style={styles.buttonText}>{uiText.next || "Next Sentence"}</Text>
+                  </Animated.View>
                 )}
               </TouchableOpacity>
             </View>
