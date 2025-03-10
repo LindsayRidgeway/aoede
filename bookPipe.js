@@ -43,9 +43,6 @@ class BookPipe {
       this.bookLanguage = bookSource.language || 'en';
       this.bookUrl = bookSource.url;
       
-      console.log(`Initializing book pipe for: "${this.bookTitle}"`);
-      console.log(`URL: ${this.bookUrl}`);
-      
       // Fetch the book content
       await this.fetchBookContent();
       
@@ -59,7 +56,6 @@ class BookPipe {
       this.isInitialized = this.sentences.length > 0;
       
       if (this.isInitialized) {
-        console.log(`Book pipe initialized with ${this.sentences.length} sentences initially`);
         return {
           title: this.bookTitle,
           language: this.bookLanguage,
@@ -69,7 +65,6 @@ class BookPipe {
         throw new Error('Failed to extract any sentences from the book');
       }
     } catch (error) {
-      console.error(`Error initializing book pipe: ${error.message}`);
       this.error = error.message;
       throw error;
     } finally {
@@ -113,7 +108,6 @@ class BookPipe {
               }
               
               const proxyUrl = `${currentProxy}${targetUrl}`;
-              console.log(`Try ${retryCount + 1}: Using proxy: ${proxyUrl}`);
               
               response = await fetch(proxyUrl, { 
                 method: 'GET',
@@ -126,10 +120,6 @@ class BookPipe {
               });
             } else {
               // If no proxy is available or they all failed, try a no-cors request as last resort
-              console.log(`Try ${retryCount + 1}: Using no-cors mode as fallback`);
-              
-              // Note: This will result in an opaque response which can't be read directly,
-              // but we'll at least show a different error message
               response = await fetch(this.bookUrl, { 
                 method: 'GET',
                 mode: 'no-cors',
@@ -139,7 +129,6 @@ class BookPipe {
             }
           } else {
             // For native platforms, use direct fetch which shouldn't have CORS issues
-            console.log(`Try ${retryCount + 1}: Direct fetching ${this.bookUrl}`);
             response = await fetch(this.bookUrl);
           }
           
@@ -158,16 +147,13 @@ class BookPipe {
             throw new Error(`Retrieved HTML is too short (${this.htmlContent ? this.htmlContent.length : 0} characters)`);
           }
           
-          console.log(`Successfully fetched HTML, length: ${this.htmlContent.length} characters`);
           success = true;
         } catch (fetchError) {
           retryCount++;
-          console.error(`Fetch attempt ${retryCount} failed: ${fetchError.message}`);
           
           // Wait a bit longer between retries
           if (retryCount < maxRetries) {
             const delay = 1000 * retryCount;
-            console.log(`Waiting ${delay}ms before next attempt...`);
             await new Promise(resolve => setTimeout(resolve, delay));
           } else {
             throw fetchError;
@@ -179,7 +165,6 @@ class BookPipe {
         throw new Error(`Failed to fetch book content after ${maxRetries} attempts`);
       }
     } catch (error) {
-      console.error(`Error fetching book content: ${error.message}`);
       throw error;
     }
   }
@@ -195,10 +180,8 @@ class BookPipe {
       let fragmentId = '';
       if (this.bookUrl.includes('#')) {
         fragmentId = this.bookUrl.split('#')[1];
-        console.log(`Fragment ID in URL: #${fragmentId}`);
       } else {
         // No fragment ID, start from the beginning
-        console.log('No fragment ID in URL, starting from the beginning');
         this.anchorPosition = 0;
         return;
       }
@@ -215,13 +198,11 @@ class BookPipe {
       
       // Try each pattern in order
       let match = null;
-      let matchPattern = null;
       
       // Try name attribute first (most common in older HTML like Gutenberg)
       const nameMatch = namePattern.exec(this.htmlContent);
       if (nameMatch) {
         match = nameMatch;
-        matchPattern = "name attribute";
       }
       
       // Try id attribute if name didn't match
@@ -229,7 +210,6 @@ class BookPipe {
         const idMatch = idPattern.exec(this.htmlContent);
         if (idMatch) {
           match = idMatch;
-          matchPattern = "id attribute";
         }
       }
       
@@ -238,13 +218,11 @@ class BookPipe {
         const elemMatch = elemIdPattern.exec(this.htmlContent);
         if (elemMatch) {
           match = elemMatch;
-          matchPattern = "element id";
         }
       }
       
       if (match) {
         this.anchorPosition = match.index;
-        console.log(`Found fragment #${fragmentId} using ${matchPattern} at position ${this.anchorPosition}`);
         
         // Look specifically for headings near the anchor to include as first content
         let titleText = '';
@@ -255,15 +233,12 @@ class BookPipe {
         
         if (headingAfterMatch && headingAfterMatch[1]) {
           titleText = headingAfterMatch[1].trim() + '. ';
-          console.log(`Found title after anchor: "${titleText}"`);
           
           // Store this title to prepend to the first chunk
           this.titleText = titleText;
         }
       } else {
         // Try looking for a chapter heading
-        console.log(`Fragment anchor not found directly, trying to find chapter heading`);
-        
         // Remove digits and "chap" prefix for numerical comparison
         const chapterNum = fragmentId.replace(/^\D+/g, '');
         
@@ -284,7 +259,6 @@ class BookPipe {
               const headingText = headingMatch[0].replace(/<[^>]*>/g, ' ').trim() + '. ';
               this.titleText = headingText;
               
-              console.log(`Found chapter heading: "${headingText}" at position ${this.anchorPosition}`);
               break;
             }
           }
@@ -295,15 +269,12 @@ class BookPipe {
           const bodyStart = this.htmlContent.indexOf('<body');
           if (bodyStart !== -1) {
             this.anchorPosition = bodyStart;
-            console.log(`No specific anchor found, starting from body tag at position ${this.anchorPosition}`);
           } else {
             this.anchorPosition = 0;
-            console.log(`No anchor found, starting from the beginning of the document`);
           }
         }
       }
     } catch (error) {
-      console.error(`Error finding anchor position: ${error.message}`);
       // Default to start of document
       this.anchorPosition = 0;
     }
@@ -312,7 +283,6 @@ class BookPipe {
   // Process the next chunk of HTML into sentences
   async processNextChunk() {
     if (!this.htmlContent) {
-      console.log('No HTML content to process');
       this.hasMoreContent = false;
       return [];
     }
@@ -324,12 +294,9 @@ class BookPipe {
       
       // Check if we're at the end of the content
       if (chunkStart >= this.htmlContent.length || chunkStart >= chunkEnd) {
-        console.log('Reached the end of the HTML content');
         this.hasMoreContent = false;
         return [];
       }
-      
-      console.log(`Processing chunk from position ${chunkStart} to ${chunkEnd} (${chunkEnd - chunkStart} chars)`);
       
       // Extract the chunk of HTML
       const htmlChunk = this.htmlContent.substring(chunkStart, chunkEnd);
@@ -344,7 +311,6 @@ class BookPipe {
       
       // Parse the text into sentences
       const newSentences = parseIntoSentences(textChunk);
-      console.log(`Extracted ${newSentences.length} sentences from chunk`);
       
       // Add new sentences to our collection
       this.sentences = [...this.sentences, ...newSentences];
@@ -355,7 +321,6 @@ class BookPipe {
       // Return the new sentences
       return newSentences;
     } catch (error) {
-      console.error(`Error processing chunk: ${error.message}`);
       return [];
     }
   }
@@ -390,7 +355,6 @@ class BookPipe {
       
       return text;
     } catch (error) {
-      console.error(`Error in extractText: ${error.message}`);
       // Return a simplified version as fallback
       return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
     }
@@ -407,15 +371,11 @@ class BookPipe {
     
     // If we don't have enough sentences and there's more content, process another chunk
     if (endIdx - startIdx < batchSize && this.hasMoreContent) {
-      console.log(`Only have ${endIdx - startIdx} sentences, need ${batchSize}. Processing more...`);
-      
       // Process another chunk
       const newSentences = await this.processNextChunk();
       
       // Recalculate the end index
       endIdx = Math.min(startIdx + batchSize, this.sentences.length);
-      
-      console.log(`After processing more, now have ${endIdx - startIdx} sentences to return`);
     }
     
     if (startIdx >= this.sentences.length) {

@@ -78,7 +78,6 @@ export const translateSentences = async (sentences, sourceLang, targetLang) => {
       const translations = await translateBatch(batch, sourceLanguageCode, targetLang);
       translatedSentences.push(...translations);
     } catch (error) {
-      console.error(`Error translating batch ${i} to ${i + batchSize}:`, error);
       // If translation fails, use original sentences as fallback
       translatedSentences.push(...batch);
     }

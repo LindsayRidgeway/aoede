@@ -98,7 +98,6 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
     try {
         // Check if we have a Google API key before attempting the API call
         if (!GOOGLE_TTS_API_KEY) {
-            console.error("Missing Google API key for Text-to-Speech");
             if (onFinish) onFinish();
             return;
         }
@@ -135,7 +134,6 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
         
         await sound.playAsync();
     } catch (error) {
-        console.error("Error playing audio:", error);
         if (onFinish) onFinish(); // Call onFinish even on error
     }
 };
@@ -183,7 +181,6 @@ export const detectLanguageCode = async (languageName) => {
   try {
     // Check if we have a Google API key before attempting the API call
     if (!GOOGLE_TRANSLATE_API_KEY) {
-      console.error("Missing Google API key for language detection");
       return "";
     }
 
@@ -226,7 +223,6 @@ export const detectLanguageCode = async (languageName) => {
 
     return detectedLanguageCode;
   } catch (error) {
-    console.error("Error detecting language code:", error);
     return "";
   }
 };

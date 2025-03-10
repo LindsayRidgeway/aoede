@@ -36,7 +36,6 @@ const directTranslate = async (text, sourceLang, targetLang) => {
     
     return text;
   } catch (error) {
-    console.error("Translation failed:", error);
     return text;
   }
 };
@@ -114,14 +113,14 @@ export default function App() {
             setReadingLevel(parseInt(storedReadingLevel, 10));
           }
         } catch (error) {
-          console.error("Error loading stored settings:", error);
+          // Silent error handling
         }
         
         const language = await ListeningSpeed.getStoredStudyLanguage();
         setStudyLanguage(language);
         await ListeningSpeed.detectLanguageCode(language);
       } catch (error) {
-        console.error("Error during initialization:", error);
+        // Silent error handling
       }
     };
     
@@ -133,8 +132,6 @@ export default function App() {
     if (userLanguage === 'en') return;
     
     try {
-      console.log(`Translating UI to ${userLanguage}`);
-      
       // Translate basic UI elements
       const translatedElements = {};
       for (const [key, value] of Object.entries(defaultUiText)) {
@@ -142,7 +139,6 @@ export default function App() {
           const translated = await directTranslate(value, 'en', userLanguage);
           translatedElements[key] = translated;
         } catch (error) {
-          console.error(`Error translating ${key}:`, error);
           translatedElements[key] = value;
         }
       }
@@ -154,7 +150,6 @@ export default function App() {
           const translatedTitle = await directTranslate(book.title, 'en', userLanguage);
           translatedBooks[book.id] = translatedTitle;
         } catch (error) {
-          console.error(`Error translating book title ${book.id}:`, error);
           translatedBooks[book.id] = book.title;
         }
       }
@@ -163,7 +158,7 @@ export default function App() {
       setUiText({...translatedElements, ...translatedBooks});
       
     } catch (error) {
-      console.error("Error translating UI:", error);
+      // Silent error handling
     }
   };
   
@@ -180,7 +175,6 @@ export default function App() {
   
   // Clear content area
   const clearContent = () => {
-    console.log("Clearing content area");
     setStudyLangSentence("");
     setNativeLangSentence("");
     setSentences([]);
@@ -193,8 +187,6 @@ export default function App() {
   
   // Handle next sentence button click - with improved end-of-book handling
   const handleNextSentence = async () => {
-    console.log("Next sentence button clicked");
-    
     if (sentences.length === 0) return;
     
     // Increment sentence index
@@ -202,11 +194,8 @@ export default function App() {
     
     // Check if we've reached the end of available sentences
     if (nextIndex >= sentences.length) {
-      console.log("Reached end of current sentences batch");
-      
       // Check if we should load more sentences
       if (BatchProcessor.shouldProcessNextBatch(currentSentenceIndex)) {
-        console.log("Attempting to load more sentences");
         setLoadingMoreSentences(true);
         
         try {
@@ -214,8 +203,6 @@ export default function App() {
           const newBatch = await BatchProcessor.processNextBatch();
           
           if (newBatch && newBatch.length > 0) {
-            console.log(`Loaded new batch with ${newBatch.length} sentences`);
-            
             // Add new sentences and continue
             setSentences(prevSentences => [...prevSentences, ...newBatch]);
             
@@ -225,7 +212,6 @@ export default function App() {
             setStudyLangSentence(newBatch[0].original);
             setNativeLangSentence(newBatch[0].translation);
           } else {
-            console.log("No more sentences available");
             // No more sentences available - directly display end of book message
             setStudyLangSentence(uiText.endOfBook || "You have read all the sentences that I retrieved for that book. To continue studying, please use Load Book again.");
             setNativeLangSentence("");
@@ -234,7 +220,6 @@ export default function App() {
             setIsAtEndOfBook(true);
           }
         } catch (error) {
-          console.error("Error loading more sentences:", error);
           setStudyLangSentence("Error loading more sentences.");
           setNativeLangSentence("Please try again.");
         } finally {
@@ -243,7 +228,6 @@ export default function App() {
         
         return;
       } else {
-        console.log("No more sentences can be loaded");
         // We're at the end and can't load more - directly display end of book message
         setStudyLangSentence(uiText.endOfBook || "You have read all the sentences that I retrieved for that book. To continue studying, please use Load Book again.");
         setNativeLangSentence("");
@@ -255,14 +239,12 @@ export default function App() {
     }
     
     // Display the next sentence
-    console.log(`Moving to sentence index ${nextIndex}`);
     setCurrentSentenceIndex(nextIndex);
     setStudyLangSentence(sentences[nextIndex].original);
     setNativeLangSentence(sentences[nextIndex].translation);
     
     // Check if we should start loading more sentences in the background
     if (BatchProcessor.shouldProcessNextBatch(nextIndex)) {
-      console.log("Starting background loading of next batch");
       setLoadingMoreSentences(true);
       
       try {
@@ -272,10 +254,9 @@ export default function App() {
         if (newBatch && newBatch.length > 0) {
           // Add new sentences without changing the current index
           setSentences(prevSentences => [...prevSentences, ...newBatch]);
-          console.log(`Added ${newBatch.length} new sentences in background`);
         }
       } catch (error) {
-        console.error("Error loading more sentences in background:", error);
+        // Silent error handling
       } finally {
         setLoadingMoreSentences(false);
       }
@@ -288,7 +269,7 @@ export default function App() {
     try {
       await AsyncStorage.setItem("selectedBook", bookId);
     } catch (error) {
-      console.error("Error saving selectedBook:", error);
+      // Silent error handling
     }
   };
   
@@ -298,7 +279,7 @@ export default function App() {
     try {
       await AsyncStorage.setItem("readingLevel", level.toString());
     } catch (error) {
-      console.error("Error saving readingLevel:", error);
+      // Silent error handling
     }
   };
   
@@ -308,34 +289,25 @@ export default function App() {
     // For subsequent batches, they are added directly in handleNextSentence
     if (isLoadingInitialBatch && newBatch.length > 0) {
       setSentences(prevSentences => [...prevSentences, ...newBatch]);
-      console.log(`Added ${newBatch.length} sentences from initial batch`);
     }
   };
   
   // Handle load book button click - using batch processor
   const handleLoadBook = async () => {
-    console.log("Load button clicked");
-    
     // Reset previous sentences and state
     clearContent(); // Use the common clear function
     setIsAtEndOfBook(false); // Ensure flag is reset
     
     // Use the selected book
     const bookId = selectedBook;
-    console.log(`Using selected book: "${bookId}"`);
-    
-    console.log(`Study language: "${studyLanguage}"`);
-    console.log(`Reading level: ${readingLevel}`);
     
     if (!bookId) {
       let message = "Please select a book from the dropdown.";
-      console.log(`Validation error: ${message}`);
       Alert.alert("Selection Required", message);
       return;
     }
     
     if (!studyLanguage) {
-      console.log("Validation error: No study language specified");
       Alert.alert("Language Required", "Please enter a study language.");
       return;
     }
@@ -344,8 +316,6 @@ export default function App() {
     setIsLoadingInitialBatch(true);
     
     try {
-      console.log("Starting content loading...");
-      
       // Set source language from study language
       setSourceLanguage(detectLanguageCode(studyLanguage));
       
@@ -359,7 +329,6 @@ export default function App() {
       );
       
       if (!firstBatch || firstBatch.length === 0) {
-        console.error("Failed to process first batch of sentences");
         setStudyLangSentence("Error processing content.");
         setNativeLangSentence("Error processing content.");
         setLoadingBook(false);
@@ -373,31 +342,18 @@ export default function App() {
       setStudyLangSentence(firstBatch[0].original);
       setNativeLangSentence(firstBatch[0].translation);
       
-      console.log(`First batch loaded with ${firstBatch.length} sentences`);
-      
-      // Log the first few sentences for debugging
-      const sampleSize = Math.min(3, firstBatch.length);
-      for (let i = 0; i < sampleSize; i++) {
-        console.log(`Sentence ${i+1}:`);
-        console.log(`Original: ${firstBatch[i].original}`);
-        console.log(`Translation: ${firstBatch[i].translation}`);
-      }
-      
       // Start background loading of the second batch if needed
       if (BatchProcessor.shouldProcessNextBatch(0)) {
-        console.log("Starting background loading of second batch");
         BatchProcessor.processNextBatch().then(newBatch => {
           if (newBatch && newBatch.length > 0) {
             setSentences(prevSentences => [...prevSentences, ...newBatch]);
-            console.log(`Added ${newBatch.length} sentences from second batch in background`);
           }
         }).catch(error => {
-          console.error("Error loading second batch in background:", error);
+          // Silent error handling
         });
       }
       
     } catch (error) {
-      console.error("Error loading book:", error);
       setStudyLangSentence(`Error: ${error.message || "Unknown error loading content."}`);
       setNativeLangSentence(`Error: ${error.message || "Unknown error loading content."}`);
     } finally {

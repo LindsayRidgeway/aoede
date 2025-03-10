@@ -1,4 +1,5 @@
 // batchProcessor.js - Handles batch processing of sentences from the BookPipe
+// Simplified version that avoids setImmediate
 
 import { processSourceText } from './apiServices';
 import { translateSentences, detectLanguageCode } from './textProcessing';
@@ -47,12 +48,10 @@ class BatchProcessor {
     try {
       // Initialize the book pipe
       await BookPipe.initialize(bookId);
-      console.log(`BatchProcessor initialized for book: ${BookPipe.bookTitle}`);
       
       // Process first batch immediately
-      return this.processNextBatch();
+      return await this.processNextBatch();
     } catch (error) {
-      console.error("Error initializing batch processor:", error);
       throw error;
     }
   }
@@ -75,26 +74,22 @@ class BatchProcessor {
   }
   
   // Process the next batch of sentences
+  // Android-friendly version that avoids setImmediate
   async processNextBatch() {
     if (this.isProcessing) {
-      console.log("Already processing a batch, skipping request");
       return null;
     }
     
     this.isProcessing = true;
-    console.log("Processing next batch of sentences");
     
     try {
       // Get the next batch of raw sentences from the book pipe
       const rawSentences = await BookPipe.getNextBatch(BATCH_SIZE);
       
       if (!rawSentences || rawSentences.length === 0) {
-        console.log('No more sentences available from the book pipe');
         this.isProcessing = false;
         return null;
       }
-      
-      console.log(`Processing ${rawSentences.length} sentences in next batch`);
       
       // Join sentences for processing with Claude API
       const sourceText = rawSentences.join(' ');
@@ -103,7 +98,6 @@ class BatchProcessor {
       const processedText = await processSourceText(sourceText, this.studyLanguage, this.readingLevel);
       
       if (!processedText || processedText.length === 0) {
-        console.error("Failed to process batch");
         this.isProcessing = false;
         return null;
       }
@@ -125,8 +119,6 @@ class BatchProcessor {
         }
       }
       
-      console.log(`Extracted ${simplifiedSentences.length} simplified sentences`);
-      
       // Clean up simplified sentences - remove "Simplified:" prefix if present
       simplifiedSentences = simplifiedSentences.map(sentence => {
         return sentence.replace(/^Simplified:\s*/i, '');
@@ -138,8 +130,6 @@ class BatchProcessor {
         this.studyLanguage, 
         this.userLanguage
       );
-      
-      console.log(`Translated ${translatedSentences.length} sentences`);
       
       // Create paired sentences, filtering out duplicates
       const pairedSentences = [];
@@ -161,22 +151,22 @@ class BatchProcessor {
         }
       }
       
-      console.log(`Added ${pairedSentences.length} unique sentences to batch`);
-      
       // Store the processed batch
       if (pairedSentences.length > 0) {
         this.processedBatches.push(pairedSentences);
       }
       
-      // If a callback was provided, notify that new sentences are ready
-      // Only notify if we have paired sentences to avoid empty batches
+      // Handle callback directly instead of using setImmediate
       if (this.onNewBatchReady && pairedSentences.length > 0) {
-        this.onNewBatchReady(pairedSentences);
+        try {
+          this.onNewBatchReady(pairedSentences);
+        } catch (callbackError) {
+          // Silent error handling
+        }
       }
       
       return pairedSentences;
     } catch (error) {
-      console.error("Error processing batch:", error);
       return null;
     } finally {
       this.isProcessing = false;
