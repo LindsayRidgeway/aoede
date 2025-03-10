@@ -23,6 +23,7 @@ class BookPipe {
     this.error = null;
     this.hasMoreContent = true;  // Flag to indicate if there's more content to process
     this.savedBookPosition = 0;  // Position in the book where we last saved progress (relative to anchor)
+    this.shouldSavePosition = false; // Flag to prevent auto-saving position when just loading
   }
 
   // Initialize the pipe with a book ID
@@ -34,6 +35,7 @@ class BookPipe {
     this.reset();
     this.bookId = bookId;
     this.isLoading = true;
+    this.shouldSavePosition = false; // Don't save position on initial load
 
     try {
       const bookSource = getBookSourceById(bookId);
@@ -58,23 +60,17 @@ class BookPipe {
       
       console.log(`[BookPipe] Saved position for ${this.bookTitle}: ${this.savedBookPosition} bytes after anchor`);
       
-      // FIXED: Only use the saved position, don't add it to the anchor position
-      const absolutePosition = this.anchorPosition + this.savedBookPosition;
-      console.log(`[BookPipe] Absolute position to start reading: ${absolutePosition} bytes`);
-
-      // If we have a saved position, apply it
-      if (this.savedBookPosition > 0) {
-        this.processedTextOffset = this.savedBookPosition;
-        console.log(`[BookPipe] Starting from saved position: ${this.savedBookPosition} bytes after anchor`);
-      } else {
-        console.log(`[BookPipe] Starting from the beginning (at anchor position)`);
-      }
+      // Set the processedTextOffset to the saved position
+      this.processedTextOffset = this.savedBookPosition;
       
-      // Process the first chunk of text
-      await this.processNextChunk();
+      // Process the first chunk of text starting from the saved position
+      await this.processNextChunk(false); // Do not save position when loading
       
       // If we got sentences, we're ready to go
       this.isInitialized = this.sentences.length > 0;
+      
+      // Always start from the first sentence in the current chunk
+      this.nextSentenceIndex = 0;
       
       if (this.isInitialized) {
         return {
@@ -116,7 +112,7 @@ class BookPipe {
 
   // Save current book position to AsyncStorage
   async saveCurrentPosition() {
-    if (!this.bookId) return;
+    if (!this.bookId || !this.shouldSavePosition) return;
     
     try {
       const storageKey = `book_position_${this.bookId}`;
@@ -141,17 +137,19 @@ class BookPipe {
     try {
       const storageKey = `book_position_${this.bookId}`;
       // Set saved position to 0 (just the anchor position)
+      await AsyncStorage.removeItem(storageKey);
       await AsyncStorage.setItem(storageKey, "0");
       this.savedBookPosition = 0;
       this.processedTextOffset = 0;
       this.sentences = [];
       this.nextSentenceIndex = 0;
       this.hasMoreContent = true;
+      this.shouldSavePosition = false; // Don't save position on rewind
       
       console.log(`[BookPipe] Book position reset to beginning (anchor position)`);
       
       // Process the first chunk from the anchor position
-      await this.processNextChunk();
+      await this.processNextChunk(false); // Don't save position when loading after rewind
       
       return this.sentences.length > 0;
     } catch (error) {
@@ -318,59 +316,15 @@ class BookPipe {
       if (match) {
         this.anchorPosition = match.index;
         console.log(`[BookPipe] Found anchor using ${pattern} at position ${this.anchorPosition}`);
-        
-        // Look specifically for headings near the anchor to include as first content
-        let titleText = '';
-        
-        // Search for headings after the anchor - common pattern in books
-        const headingAfterAnchorPattern = new RegExp(`${match[0]}[\\s\\S]*?<h\\d[^>]*>([^<]+)</h\\d>`, 'i');
-        const headingAfterMatch = headingAfterAnchorPattern.exec(this.htmlContent.substring(this.anchorPosition));
-        
-        if (headingAfterMatch && headingAfterMatch[1]) {
-          titleText = headingAfterMatch[1].trim() + '. ';
-          
-          // Store this title to prepend to the first chunk
-          this.titleText = titleText;
-          console.log(`[BookPipe] Found title after anchor: "${titleText}"`);
-        }
       } else {
-        // Try looking for a chapter heading
-        // Remove digits and "chap" prefix for numerical comparison
-        const chapterNum = fragmentId.replace(/^\D+/g, '');
-        
-        // If we have a chapter number, look for the heading
-        if (chapterNum && !isNaN(parseInt(chapterNum))) {
-          const chapterHeadings = [
-            new RegExp(`<h\\d[^>]*>\\s*Chapter\\s+${chapterNum}\\b[^<]*<\/h\\d>`, 'i'),
-            new RegExp(`<h\\d[^>]*>\\s*CHAPTER\\s+${chapterNum}\\b[^<]*<\/h\\d>`, 'i'),
-            new RegExp(`<h\\d[^>]*>\\s*${chapterNum}\\.\\s*[^<]*<\/h\\d>`, 'i')
-          ];
-          
-          for (const pattern of chapterHeadings) {
-            const headingMatch = pattern.exec(this.htmlContent);
-            if (headingMatch) {
-              this.anchorPosition = headingMatch.index;
-              
-              // Extract heading text
-              const headingText = headingMatch[0].replace(/<[^>]*>/g, ' ').trim() + '. ';
-              this.titleText = headingText;
-              
-              console.log(`[BookPipe] Found chapter heading: "${headingText}" at position ${this.anchorPosition}`);
-              break;
-            }
-          }
-        }
-        
-        // If still not found, use the beginning of the document after head
-        if (this.anchorPosition === 0) {
-          const bodyStart = this.htmlContent.indexOf('<body');
-          if (bodyStart !== -1) {
-            this.anchorPosition = bodyStart;
-            console.log(`[BookPipe] No anchor found, starting at <body> tag at position ${this.anchorPosition}`);
-          } else {
-            this.anchorPosition = 0;
-            console.log(`[BookPipe] No anchor or <body> found, starting at beginning of document`);
-          }
+        // If no anchor found, use the beginning of the document after head
+        const bodyStart = this.htmlContent.indexOf('<body');
+        if (bodyStart !== -1) {
+          this.anchorPosition = bodyStart;
+          console.log(`[BookPipe] No anchor found, starting at <body> tag at position ${this.anchorPosition}`);
+        } else {
+          this.anchorPosition = 0;
+          console.log(`[BookPipe] No anchor or <body> found, starting at beginning of document`);
         }
       }
     } catch (error) {
@@ -381,7 +335,7 @@ class BookPipe {
   }
 
   // Process the next chunk of HTML into sentences
-  async processNextChunk() {
+  async processNextChunk(shouldSave = true) {
     if (!this.htmlContent) {
       this.hasMoreContent = false;
       return [];
@@ -407,12 +361,6 @@ class BookPipe {
       // Extract text from this HTML chunk
       let textChunk = this.extractText(htmlChunk);
       
-      // For the first chunk, prepend the title if we found one
-      if (this.processedTextOffset === 0 && this.titleText) {
-        textChunk = this.titleText + textChunk;
-        console.log(`[BookPipe] Prepended title to first chunk: "${this.titleText}"`);
-      }
-      
       // Parse the text into sentences
       const newSentences = parseIntoSentences(textChunk);
       
@@ -426,8 +374,11 @@ class BookPipe {
       this.processedTextOffset += chunkSize;
       console.log(`[BookPipe] Updated processedTextOffset to ${this.processedTextOffset} bytes after anchor`);
       
-      // Save the new position
-      await this.saveCurrentPosition();
+      // Only save position if instructed to (e.g., after user clicks Next)
+      if (shouldSave) {
+        this.shouldSavePosition = true; // Now it's ok to save position
+        await this.saveCurrentPosition();
+      }
       
       // Return the new sentences
       return newSentences;
@@ -487,8 +438,8 @@ class BookPipe {
     // If we don't have enough sentences and there's more content, process another chunk
     if (endIdx - startIdx < batchSize && this.hasMoreContent) {
       console.log(`[BookPipe] Not enough sentences, processing another chunk`);
-      // Process another chunk
-      const newSentences = await this.processNextChunk();
+      // Process another chunk - only save position if this isn't the initial load
+      const newSentences = await this.processNextChunk(this.shouldSavePosition);
       
       // Recalculate the end index
       endIdx = Math.min(startIdx + batchSize, this.sentences.length);
@@ -508,6 +459,12 @@ class BookPipe {
     console.log(`[BookPipe] Updated nextSentenceIndex to ${this.nextSentenceIndex}`);
     
     return batch;
+  }
+
+  // User actively advanced to next sentence - enable position saving
+  enablePositionSaving() {
+    this.shouldSavePosition = true;
+    console.log(`[BookPipe] Position saving enabled - will save on next chunk processing`);
   }
 
   // Check if there are more sentences available
@@ -539,7 +496,6 @@ class BookPipe {
     this.htmlContent = null;
     this.anchorPosition = 0;
     this.processedTextOffset = 0;
-    this.titleText = null;
     this.sentences = [];
     this.nextSentenceIndex = 0;
     this.isInitialized = false;
@@ -547,6 +503,7 @@ class BookPipe {
     this.error = null;
     this.hasMoreContent = true;
     this.savedBookPosition = 0;
+    this.shouldSavePosition = false;
   }
 }
 

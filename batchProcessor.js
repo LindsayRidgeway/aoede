@@ -38,6 +38,8 @@ class BatchProcessor {
 
   // Initialize with book content and settings
   async initialize(bookId, studyLanguage, userLanguage, readingLevel, onNewBatchReady) {
+    console.log(`[BatchProcessor] Initializing for book: ${bookId}, language: ${studyLanguage}, reading level: ${readingLevel}`);
+    
     this.studyLanguage = studyLanguage;
     this.userLanguage = userLanguage;
     this.readingLevel = readingLevel;
@@ -49,16 +51,20 @@ class BatchProcessor {
     
     try {
       // Initialize the book pipe
+      console.log(`[BatchProcessor] Calling BookPipe.initialize for book: ${bookId}`);
       const bookInfo = await BookPipe.initialize(bookId);
       
       // Set flag if we resumed from a saved position
       if (bookInfo && bookInfo.resumedFromPosition) {
+        console.log(`[BatchProcessor] Resuming from saved position: ${bookInfo.resumedFromPosition}`);
         this.resumedFromSavedPosition = true;
       }
       
       // Process first batch immediately
+      console.log(`[BatchProcessor] Processing first batch for book: ${bookId}`);
       return await this.processNextBatch();
     } catch (error) {
+      console.error(`[BatchProcessor] Error during initialization: ${error.message}`);
       throw error;
     }
   }
@@ -84,27 +90,33 @@ class BatchProcessor {
   // Android-friendly version that avoids setImmediate
   async processNextBatch() {
     if (this.isProcessing) {
+      console.log(`[BatchProcessor] Already processing a batch, will not process another one`);
       return null;
     }
     
     this.isProcessing = true;
+    console.log(`[BatchProcessor] Starting to process next batch`);
     
     try {
       // Get the next batch of raw sentences from the book pipe
+      console.log(`[BatchProcessor] Getting next batch of sentences from BookPipe`);
       const rawSentences = await BookPipe.getNextBatch(BATCH_SIZE);
       
       if (!rawSentences || rawSentences.length === 0) {
+        console.log(`[BatchProcessor] No more sentences available from BookPipe`);
         this.isProcessing = false;
         return null;
       }
       
       // Join sentences for processing with Claude API
       const sourceText = rawSentences.join(' ');
+      console.log(`[BatchProcessor] Processing ${rawSentences.length} sentences with Claude API`);
       
       // Process the text using Claude API for simplification
       const processedText = await processSourceText(sourceText, this.studyLanguage, this.readingLevel);
       
       if (!processedText || processedText.length === 0) {
+        console.log(`[BatchProcessor] Failed to get processed text from Claude API`);
         this.isProcessing = false;
         return null;
       }
@@ -114,8 +126,11 @@ class BatchProcessor {
         .map(line => line.trim())
         .filter(line => line.length > 0);
       
+      console.log(`[BatchProcessor] Initial sentence splitting yielded ${simplifiedSentences.length} sentences`);
+      
       // If that didn't work well, try to split by sentence endings
       if (simplifiedSentences.length < 3) {
+        console.log(`[BatchProcessor] Few sentences detected, trying alternative splitting method`);
         const sentenceRegex = /[^.!?]+[.!?]+(?:\s|$)/g;
         const sentenceMatches = processedText.match(sentenceRegex) || [];
         
@@ -123,6 +138,7 @@ class BatchProcessor {
           simplifiedSentences = sentenceMatches
             .map(s => s.trim())
             .filter(s => s.length > 0);
+          console.log(`[BatchProcessor] Alternative splitting yielded ${simplifiedSentences.length} sentences`);
         }
       }
       
@@ -132,6 +148,7 @@ class BatchProcessor {
       });
       
       // Translate each sentence to native language
+      console.log(`[BatchProcessor] Translating ${simplifiedSentences.length} sentences to ${this.userLanguage}`);
       const translatedSentences = await translateSentences(
         simplifiedSentences, 
         this.studyLanguage, 
@@ -158,6 +175,8 @@ class BatchProcessor {
         }
       }
       
+      console.log(`[BatchProcessor] Created ${pairedSentences.length} paired sentences after filtering duplicates`);
+      
       // Store the processed batch
       if (pairedSentences.length > 0) {
         this.processedBatches.push(pairedSentences);
@@ -166,14 +185,17 @@ class BatchProcessor {
       // Handle callback directly instead of using setImmediate
       if (this.onNewBatchReady && pairedSentences.length > 0) {
         try {
+          console.log(`[BatchProcessor] Calling onNewBatchReady callback with ${pairedSentences.length} sentences`);
           this.onNewBatchReady(pairedSentences);
         } catch (callbackError) {
           // Silent error handling
+          console.error(`[BatchProcessor] Error in callback: ${callbackError.message}`);
         }
       }
       
       return pairedSentences;
     } catch (error) {
+      console.error(`[BatchProcessor] Error processing batch: ${error.message}`);
       return null;
     } finally {
       this.isProcessing = false;

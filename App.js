@@ -195,6 +195,9 @@ export default function App() {
   const handleNextSentence = async () => {
     if (sentences.length === 0) return;
     
+    // Enable position saving in BookPipe when user clicks Next
+    BookPipe.enablePositionSaving();
+    
     // Increment sentence index
     const nextIndex = currentSentenceIndex + 1;
     
@@ -298,7 +301,7 @@ export default function App() {
     }
   };
   
-  // Handle rewind book functionality with explicit steps for debugging
+  // Handle rewind book functionality
   const handleRewindBook = async () => {
     console.log("handleRewindBook called in App.js");
     
@@ -312,25 +315,21 @@ export default function App() {
       // Show loading state
       setLoadingBook(true);
       
-      // 1. First reset the position in AsyncStorage
+      // Important: Force reset the AsyncStorage key to 0
       const storageKey = `book_position_${selectedBook}`;
-      console.log(`Resetting saved position for book ${selectedBook}`);
+      console.log(`Forcibly resetting saved position for book ${selectedBook}`);
+      
+      // CRITICAL: We must await this to ensure it completes before proceeding
+      await AsyncStorage.removeItem(storageKey);
       await AsyncStorage.setItem(storageKey, "0");
       
-      // 2. Reset the internal book pipeline state
-      console.log("Resetting BookPipe state");
+      // Fully reset all internal state
       BookPipe.reset();
-      
-      // 3. Reset the batch processor
-      console.log("Resetting BatchProcessor state");
       BatchProcessor.reset();
-      
-      // 4. Clear UI state
-      console.log("Clearing UI state");
       clearContent();
       
-      // 5. Reload the book from the beginning
-      console.log("Reloading book from beginning");
+      // Now reload the book
+      console.log("Forcibly reloading book from the beginning");
       const success = await handleLoadBook();
       
       console.log(`Book rewind ${success ? 'successful' : 'failed'}`);
