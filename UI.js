@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { 
   Text, View, TouchableOpacity, TextInput, Switch, 
   ActivityIndicator, Platform, Alert, Animated, 
-  Modal, FlatList, SafeAreaView 
+  Modal, FlatList, SafeAreaView
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { styles } from './styles';  
@@ -35,9 +35,15 @@ export function MainUI({
   setReadingLevel,
   isAtEndOfBook
 }) {
+  // Define showControls early to avoid reference errors
+  const showControls = sentence && sentence.length > 0;
+  
   // State to track the displayed book title
   const [displayBookTitle, setDisplayBookTitle] = useState("");
   const [showBookModal, setShowBookModal] = useState(false);
+  
+  // Reference for container where we'll add the rewind button
+  const rewindContainerRef = useRef(null);
   
   // Initialize listening speed from storage when component mounts
   useEffect(() => {
@@ -48,7 +54,55 @@ export function MainUI({
       }
     });
   }, []);
-
+  
+  // Special effect for web only: Add a real HTML button after render
+  useEffect(() => {
+    // Only run this on web and when controls are shown
+    if (Platform.OS === 'web' && showControls) {
+      // Add the rewind button through direct DOM manipulation after component renders
+      const addRewindButton = () => {
+        // Check if we have a container to work with
+        if (!rewindContainerRef.current) return;
+        
+        // Find the container element in the DOM
+        const container = rewindContainerRef.current;
+        
+        // Remove any existing button
+        while (container.firstChild) {
+          container.removeChild(container.firstChild);
+        }
+        
+        // Create a pure HTML button using DOM APIs
+        const button = document.createElement('button');
+        button.textContent = 'Rewind';
+        button.style.backgroundColor = '#4a90e2';
+        button.style.color = 'white';
+        button.style.border = 'none';
+        button.style.borderRadius = '4px';
+        button.style.padding = '6px 10px';
+        button.style.fontSize = '14px';
+        button.style.cursor = 'pointer';
+        button.style.marginTop = '10px';
+        
+        // Add event listener
+        button.addEventListener('click', function() {
+          console.log("Rewind button clicked!");
+          if (window.confirm(uiText.rewindConfirmMessage || "Are you sure you want to rewind the book to the beginning?")) {
+            if (typeof rewindBook === 'function') {
+              rewindBook();
+            }
+          }
+        });
+        
+        // Append to container
+        container.appendChild(button);
+      };
+      
+      // Call after a slight delay to ensure component is fully rendered
+      setTimeout(addRewindButton, 100);
+    }
+  }, [showControls, rewindBook, uiText, loadingBook]);
+  
   // Update displayed book title when selection changes
   useEffect(() => {
     if (selectedBook) {
@@ -60,7 +114,7 @@ export function MainUI({
       setDisplayBookTitle(uiText.enterBook || "Select a book");
     }
   }, [selectedBook, uiText]);
-
+  
   // Speed options for circle buttons - only 5 speeds
   const speedOptions = [1.0, 1.25, 1.5, 1.75, 2.0];
 
@@ -68,10 +122,7 @@ export function MainUI({
     setListeningSpeed(speed);
     await ListeningSpeed.saveListeningSpeed(speed);
   };
-
-  // Only show controls if content is loaded
-  const showControls = sentence && sentence.length > 0;
-
+  
   // Get translated book titles from uiText for dropdown
   const getBookTitle = (book) => {
     // Try to get translated title from uiText
@@ -122,11 +173,15 @@ export function MainUI({
     }
   };
 
-  // Handle rewind button press with confirmation
+  // Handle rewind button press with confirmation (for native only)
   const handleRewindPress = () => {
-    if (loadingBook) return;
+    console.log("Rewind button pressed from native");
+    if (loadingBook) {
+      console.log("Can't rewind while loading");
+      return;
+    }
     
-    // Show confirmation dialog
+    // Show confirmation dialog for native platforms
     Alert.alert(
       uiText.rewindConfirmTitle || "Rewind Book",
       uiText.rewindConfirmMessage || "Are you sure you want to rewind the book to the beginning?",
@@ -138,7 +193,7 @@ export function MainUI({
         {
           text: uiText.yes || "Yes",
           onPress: () => {
-            // Call the rewindBook function passed from App.js
+            console.log("Rewind confirmed on native");
             rewindBook();
           }
         }
@@ -341,14 +396,26 @@ export function MainUI({
               </TouchableOpacity>
             </View>
             
-            {/* Rewind Button */}
-            <TouchableOpacity 
-              style={styles.rewindButton} 
-              onPress={handleRewindPress}
-              disabled={loadingBook}
-            >
-              <Text style={styles.rewindButtonText}>↺</Text>
-            </TouchableOpacity>
+            {/* Container for the DOM-created rewind button (web only) */}
+            {Platform.OS === 'web' ? (
+              <div 
+                ref={rewindContainerRef}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  justifyContent: 'flex-end',
+                  marginTop: '5px'
+                }}
+              />
+            ) : (
+              <TouchableOpacity 
+                style={styles.rewindButton} 
+                onPress={handleRewindPress}
+                disabled={loadingBook}
+              >
+                <Text style={styles.rewindButtonText}>↺</Text>
+              </TouchableOpacity>
+            )}
           </View>
           
           {/* Speed Control with Inline Circle Buttons - Only 5 speeds */}

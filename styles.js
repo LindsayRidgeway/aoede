@@ -279,7 +279,7 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     width: '45%'
   },
-  // Rewind button styles
+  // Rewind button styles for native
   rewindButton: {
     position: 'absolute',
     right: 0,
@@ -292,13 +292,25 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#ddd',
-    opacity: 0.7,  // Make it less conspicuous
-    zIndex: 10  // Ensure it appears on top
+    opacity: 0.7,
+    zIndex: 10
   },
   rewindButtonText: {
     fontSize: 18,
     fontWeight: '300',
     color: '#555'
+  },
+  // Text link for rewind
+  rewindTextLinkContainer: {
+    position: 'absolute',
+    right: 5,
+    top: 50,
+    zIndex: 100
+  },
+  rewindTextLink: {
+    color: '#4a90e2',
+    fontSize: 14,
+    textDecorationLine: 'underline'
   },
   // Speed Control with Inline Circles
   speedControlRow: {

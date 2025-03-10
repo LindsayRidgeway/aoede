@@ -298,44 +298,66 @@ export default function App() {
     }
   };
   
-  // Handle rewind book functionality
+  // Handle rewind book functionality with explicit steps for debugging
   const handleRewindBook = async () => {
+    console.log("handleRewindBook called in App.js");
+    
+    // Prevent rewind during loading operations
     if (loadingBook || loadingMoreSentences) {
+      console.log("Cannot rewind - book is currently loading");
       return false;
     }
     
-    setLoadingBook(true);
-    
     try {
-      // Reset the book position in BookPipe
-      const success = await BookPipe.resetBookPosition();
+      // Show loading state
+      setLoadingBook(true);
       
-      if (success) {
-        // Clear the current content
-        clearContent();
-        
-        // Load the book from the beginning
-        return handleLoadBook();
+      // 1. First reset the position in AsyncStorage
+      const storageKey = `book_position_${selectedBook}`;
+      console.log(`Resetting saved position for book ${selectedBook}`);
+      await AsyncStorage.setItem(storageKey, "0");
+      
+      // 2. Reset the internal book pipeline state
+      console.log("Resetting BookPipe state");
+      BookPipe.reset();
+      
+      // 3. Reset the batch processor
+      console.log("Resetting BatchProcessor state");
+      BatchProcessor.reset();
+      
+      // 4. Clear UI state
+      console.log("Clearing UI state");
+      clearContent();
+      
+      // 5. Reload the book from the beginning
+      console.log("Reloading book from beginning");
+      const success = await handleLoadBook();
+      
+      console.log(`Book rewind ${success ? 'successful' : 'failed'}`);
+      return success;
+    } catch (error) {
+      console.error("Error in handleRewindBook:", error);
+      
+      // Show error message appropriate for the platform
+      if (Platform.OS === 'web') {
+        alert(uiText.rewindFailed || "Failed to rewind the book.");
       } else {
         Alert.alert(
           uiText.error || "Error",
           uiText.rewindFailed || "Failed to rewind the book."
         );
-        return false;
       }
-    } catch (error) {
-      Alert.alert(
-        uiText.error || "Error",
-        uiText.rewindFailed || "Failed to rewind the book."
-      );
       return false;
     } finally {
+      // Ensure loading state is cleared
       setLoadingBook(false);
     }
   };
   
   // Handle load book button click - using batch processor
   const handleLoadBook = async () => {
+    console.log("handleLoadBook called");
+    
     // Reset previous sentences and state
     clearContent(); // Use the common clear function
     setIsAtEndOfBook(false); // Ensure flag is reset
@@ -345,12 +367,20 @@ export default function App() {
     
     if (!bookId) {
       let message = "Please select a book from the dropdown.";
-      Alert.alert("Selection Required", message);
+      if (Platform.OS === 'web') {
+        alert("Selection Required: " + message);
+      } else {
+        Alert.alert("Selection Required", message);
+      }
       return false;
     }
     
     if (!studyLanguage) {
-      Alert.alert("Language Required", "Please enter a study language.");
+      if (Platform.OS === 'web') {
+        alert("Language Required: Please enter a study language.");
+      } else {
+        Alert.alert("Language Required", "Please enter a study language.");
+      }
       return false;
     }
     
@@ -361,6 +391,7 @@ export default function App() {
       // Set source language from study language
       setSourceLanguage(detectLanguageCode(studyLanguage));
       
+      console.log(`Initializing BatchProcessor for ${bookId} in ${studyLanguage}`);
       // Step 1: Initialize the batch processor with the book ID
       const firstBatch = await BatchProcessor.initialize(
         bookId,
@@ -371,6 +402,7 @@ export default function App() {
       );
       
       if (!firstBatch || firstBatch.length === 0) {
+        console.log("Failed to get first batch of sentences");
         setStudyLangSentence("Error processing content.");
         setNativeLangSentence("Error processing content.");
         setLoadingBook(false);
@@ -398,6 +430,7 @@ export default function App() {
       return true;
       
     } catch (error) {
+      console.error("Error in handleLoadBook:", error);
       setStudyLangSentence(`Error: ${error.message || "Unknown error loading content."}`);
       setNativeLangSentence(`Error: ${error.message || "Unknown error loading content."}`);
       return false;
