@@ -248,15 +248,41 @@ class BookReader {
     console.log(`[BookReader] Rewinding book to beginning`);
     console.log(`[BookReader] Current offset before rewind: ${this.tracker.offset}`);
     
-    // Reset tracker offset
-    this.tracker.offset = 0;
-    console.log(`[BookReader] Reset offset to 0`);
-    
-    // Save tracker state with reset offset
-    await this.saveTrackerState();
-    
-    // Reload the book from the beginning
-    return this.handleLoadBook(this.tracker.studyLanguage, this.tracker.bookTitle);
+    try {
+      // 1. Reset tracker offset in our object
+      this.tracker.offset = 0;
+      console.log(`[BookReader] Reset offset to 0`);
+      
+      // 2. Save tracker state with reset offset
+      await this.saveTrackerState();
+      
+      // 3. IMPORTANT: Reset BookPipe's internal position tracking
+      if (this.reader) {
+        const bookSource = bookSources.find(book => book.title === this.readerBookTitle);
+        if (bookSource) {
+          const bookId = bookSource.id;
+          const storageKey = `book_position_${bookId}`;
+          
+          console.log(`[BookReader] Resetting BookPipe position with key: ${storageKey}`);
+          
+          // Force position to 0 in BookPipe's storage
+          await AsyncStorage.removeItem(storageKey);
+          await AsyncStorage.setItem(storageKey, "0");
+          
+          // Reset the BookPipe object
+          console.log(`[BookReader] Resetting BookPipe object`);
+          BookPipe.reset();
+        }
+      }
+      
+      // 4. Reload the book from the beginning
+      console.log(`[BookReader] Reloading book from beginning`);
+      return this.handleLoadBook(this.tracker.studyLanguage, this.tracker.bookTitle);
+      
+    } catch (error) {
+      console.error(`[BookReader] Error during rewind: ${error}`);
+      return false;
+    }
   }
   
   // Load and process next raw sentence
