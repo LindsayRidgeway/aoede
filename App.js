@@ -5,8 +5,7 @@ import ListeningSpeed from './listeningSpeed';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { processSourceText, translateBatch } from './apiServices';
 import { translateSentences, detectLanguageCode } from './textProcessing';
-import BatchProcessor from './batchProcessor';
-import BookPipe from './bookPipe';
+import BookReader from './bookReader';
 import { bookSources } from './bookSources';
 
 // Direct translation method using Google Translate
@@ -83,14 +82,12 @@ export default function App() {
   const [studyLanguage, setStudyLanguage] = useState("");
   const [listeningSpeed, setListeningSpeed] = useState(1.0);
   const [loadingBook, setLoadingBook] = useState(false);
-  const [loadingMoreSentences, setLoadingMoreSentences] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
-  const [sentences, setSentences] = useState([]);
+  const [totalSentences, setTotalSentences] = useState(0);
   const [sourceLanguage, setSourceLanguage] = useState("en");
   const [readingLevel, setReadingLevel] = useState(6);
-  const [isLoadingInitialBatch, setIsLoadingInitialBatch] = useState(false); // Distinguish initial vs next batch loading
-  const [isAtEndOfBook, setIsAtEndOfBook] = useState(false); // Track if we've reached the end of all available sentences
+  const [isAtEndOfBook, setIsAtEndOfBook] = useState(false);
   
   // Initialize the app
   useEffect(() => {
@@ -125,6 +122,9 @@ export default function App() {
         const language = await ListeningSpeed.getStoredStudyLanguage();
         setStudyLanguage(language);
         await ListeningSpeed.detectLanguageCode(language);
+        
+        // Initialize BookReader
+        BookReader.initialize(handleSentenceProcessed, userLanguage);
       } catch (error) {
         // Silent error handling
       }
@@ -168,6 +168,27 @@ export default function App() {
     }
   };
   
+  // Callback for when BookReader processes a sentence
+  const handleSentenceProcessed = (sentence, translation) => {
+    if (!sentence) {
+      setStudyLangSentence("");
+      setNativeLangSentence("");
+      return;
+    }
+    
+    // Set the study language sentence (simplified in the study language)
+    setStudyLangSentence(sentence);
+    
+    // Set the translated sentence (translation to user's language)
+    setNativeLangSentence(translation || sentence);
+    
+    // Update progress indicators
+    const progress = BookReader.getProgress();
+    setCurrentSentenceIndex(progress.currentSentenceIndex);
+    setTotalSentences(progress.totalSentencesInMemory);
+    setIsAtEndOfBook(!progress.hasMoreContent && progress.currentSentenceIndex === progress.totalSentencesInMemory - 1);
+  };
+  
   // Handle speak button click
   const handleToggleSpeak = () => {
     if (isSpeaking) {
@@ -183,92 +204,22 @@ export default function App() {
   const clearContent = () => {
     setStudyLangSentence("");
     setNativeLangSentence("");
-    setSentences([]);
     setCurrentSentenceIndex(0);
-    setIsAtEndOfBook(false); // Reset end flag
-    
-    // Reset BatchProcessor too
-    BatchProcessor.reset();
+    setTotalSentences(0);
+    setIsAtEndOfBook(false);
+    BookReader.reset();
   };
   
-  // Handle next sentence button click - with improved end-of-book handling
+  // Handle next sentence button click
   const handleNextSentence = async () => {
-    if (sentences.length === 0) return;
-    
-    // Enable position saving in BookPipe when user clicks Next
-    BookPipe.enablePositionSaving();
-    
-    // Increment sentence index
-    const nextIndex = currentSentenceIndex + 1;
-    
-    // Check if we've reached the end of available sentences
-    if (nextIndex >= sentences.length) {
-      // Check if we should load more sentences
-      if (BatchProcessor.shouldProcessNextBatch(currentSentenceIndex)) {
-        setLoadingMoreSentences(true);
-        
-        try {
-          // Process next batch of sentences
-          const newBatch = await BatchProcessor.processNextBatch();
-          
-          if (newBatch && newBatch.length > 0) {
-            // Add new sentences and continue
-            setSentences(prevSentences => [...prevSentences, ...newBatch]);
-            
-            // Move to the first sentence of the new batch
-            const newIndex = sentences.length; // Index of first item in new batch
-            setCurrentSentenceIndex(newIndex);
-            setStudyLangSentence(newBatch[0].original);
-            setNativeLangSentence(newBatch[0].translation);
-          } else {
-            // No more sentences available - directly display end of book message
-            setStudyLangSentence(uiText.endOfBook || "You have read all the sentences that I retrieved for that book. To continue studying, please use Load Book again.");
-            setNativeLangSentence("");
-            
-            // Set a specific flag to indicate we're at the end
-            setIsAtEndOfBook(true);
-          }
-        } catch (error) {
-          setStudyLangSentence("Error loading more sentences.");
-          setNativeLangSentence("Please try again.");
-        } finally {
-          setLoadingMoreSentences(false);
-        }
-        
-        return;
-      } else {
-        // We're at the end and can't load more - directly display end of book message
-        setStudyLangSentence(uiText.endOfBook || "You have read all the sentences that I retrieved for that book. To continue studying, please use Load Book again.");
-        setNativeLangSentence("");
-        
-        // Set a specific flag to indicate we're at the end
-        setIsAtEndOfBook(true);
-        return;
-      }
-    }
-    
-    // Display the next sentence
-    setCurrentSentenceIndex(nextIndex);
-    setStudyLangSentence(sentences[nextIndex].original);
-    setNativeLangSentence(sentences[nextIndex].translation);
-    
-    // Check if we should start loading more sentences in the background
-    if (BatchProcessor.shouldProcessNextBatch(nextIndex)) {
-      setLoadingMoreSentences(true);
-      
-      try {
-        // Process next batch of sentences in the background
-        const newBatch = await BatchProcessor.processNextBatch();
-        
-        if (newBatch && newBatch.length > 0) {
-          // Add new sentences without changing the current index
-          setSentences(prevSentences => [...prevSentences, ...newBatch]);
-        }
-      } catch (error) {
-        // Silent error handling
-      } finally {
-        setLoadingMoreSentences(false);
-      }
+    try {
+      setLoadingBook(true);
+      await BookReader.handleNextSentence();
+    } catch (error) {
+      console.error("Error getting next sentence:", error);
+      setStudyLangSentence("Error: " + error.message);
+    } finally {
+      setLoadingBook(false);
     }
   };
   
@@ -285,19 +236,11 @@ export default function App() {
   // Handle reading level change
   const handleReadingLevelChange = async (level) => {
     setReadingLevel(level);
+    BookReader.setReadingLevel(level);
     try {
       await AsyncStorage.setItem("readingLevel", level.toString());
     } catch (error) {
       // Silent error handling
-    }
-  };
-  
-  // Handle new batch of sentences
-  const handleNewBatchReady = (newBatch) => {
-    // Only add new batch to sentences if we're loading the initial batch
-    // For subsequent batches, they are added directly in handleNextSentence
-    if (isLoadingInitialBatch && newBatch.length > 0) {
-      setSentences(prevSentences => [...prevSentences, ...newBatch]);
     }
   };
   
@@ -306,7 +249,7 @@ export default function App() {
     console.log("handleRewindBook called in App.js");
     
     // Prevent rewind during loading operations
-    if (loadingBook || loadingMoreSentences) {
+    if (loadingBook) {
       console.log("Cannot rewind - book is currently loading");
       return false;
     }
@@ -315,22 +258,8 @@ export default function App() {
       // Show loading state
       setLoadingBook(true);
       
-      // Important: Force reset the AsyncStorage key to 0
-      const storageKey = `book_position_${selectedBook}`;
-      console.log(`Forcibly resetting saved position for book ${selectedBook}`);
-      
-      // CRITICAL: We must await this to ensure it completes before proceeding
-      await AsyncStorage.removeItem(storageKey);
-      await AsyncStorage.setItem(storageKey, "0");
-      
-      // Fully reset all internal state
-      BookPipe.reset();
-      BatchProcessor.reset();
-      clearContent();
-      
-      // Now reload the book
-      console.log("Forcibly reloading book from the beginning");
-      const success = await handleLoadBook();
+      // Use BookReader to handle rewinding
+      const success = await BookReader.handleRewind();
       
       console.log(`Book rewind ${success ? 'successful' : 'failed'}`);
       return success;
@@ -353,15 +282,15 @@ export default function App() {
     }
   };
   
-  // Handle load book button click - using batch processor
+  // Handle load book button click
   const handleLoadBook = async () => {
     console.log("handleLoadBook called");
     
-    // Reset previous sentences and state
-    clearContent(); // Use the common clear function
-    setIsAtEndOfBook(false); // Ensure flag is reset
+    // Reset previous state
+    clearContent();
+    setIsAtEndOfBook(false);
     
-    // Use the selected book
+    // Get the selected book
     const bookId = selectedBook;
     
     if (!bookId) {
@@ -384,50 +313,29 @@ export default function App() {
     }
     
     setLoadingBook(true);
-    setIsLoadingInitialBatch(true);
     
     try {
+      // Get book details
+      const book = bookSources.find(b => b.id === bookId);
+      if (!book) {
+        throw new Error(`Book with ID ${bookId} not found`);
+      }
+      
       // Set source language from study language
       setSourceLanguage(detectLanguageCode(studyLanguage));
       
-      console.log(`Initializing BatchProcessor for ${bookId} in ${studyLanguage}`);
-      // Step 1: Initialize the batch processor with the book ID
-      const firstBatch = await BatchProcessor.initialize(
-        bookId,
-        studyLanguage,
-        userLanguage,
-        readingLevel,
-        handleNewBatchReady
-      );
+      // Set reading level in BookReader
+      BookReader.setReadingLevel(readingLevel);
       
-      if (!firstBatch || firstBatch.length === 0) {
-        console.log("Failed to get first batch of sentences");
-        setStudyLangSentence("Error processing content.");
-        setNativeLangSentence("Error processing content.");
-        setLoadingBook(false);
-        setIsLoadingInitialBatch(false);
-        return false;
-      }
+      // Load the book
+      console.log(`Loading book "${book.title}" in ${studyLanguage}`);
+      const success = await BookReader.handleLoadBook(studyLanguage, book.title);
       
-      // Set sentences and display the first one
-      setSentences(firstBatch);
-      setCurrentSentenceIndex(0);
-      setStudyLangSentence(firstBatch[0].original);
-      setNativeLangSentence(firstBatch[0].translation);
-      
-      // Start background loading of the second batch if needed
-      if (BatchProcessor.shouldProcessNextBatch(0)) {
-        BatchProcessor.processNextBatch().then(newBatch => {
-          if (newBatch && newBatch.length > 0) {
-            setSentences(prevSentences => [...prevSentences, ...newBatch]);
-          }
-        }).catch(error => {
-          // Silent error handling
-        });
+      if (!success) {
+        throw new Error("Failed to load book");
       }
       
       return true;
-      
     } catch (error) {
       console.error("Error in handleLoadBook:", error);
       setStudyLangSentence(`Error: ${error.message || "Unknown error loading content."}`);
@@ -435,7 +343,6 @@ export default function App() {
       return false;
     } finally {
       setLoadingBook(false);
-      setIsLoadingInitialBatch(false);
     }
   };
   
@@ -457,13 +364,13 @@ export default function App() {
       speakSentence={handleToggleSpeak}
       nextSentence={handleNextSentence}
       isSpeaking={isSpeaking}
-      loadingBook={loadingBook || loadingMoreSentences}
+      loadingBook={loadingBook}
       listeningSpeed={listeningSpeed}
       setListeningSpeed={setListeningSpeed}
       studyLanguage={studyLanguage}
       setStudyLanguage={setStudyLanguage}
       currentSentenceIndex={currentSentenceIndex}
-      totalSentences={sentences.length}
+      totalSentences={totalSentences}
       readingLevel={readingLevel}
       setReadingLevel={handleReadingLevelChange}
       isAtEndOfBook={isAtEndOfBook}
