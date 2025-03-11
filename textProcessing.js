@@ -86,53 +86,62 @@ export const translateSentences = async (sentences, sourceLang, targetLang) => {
   return translatedSentences;
 };
 
-// Basic language code detection
+// Enhanced language code detection with more localized language names support
 export const detectLanguageCode = (languageName) => {
+  if (!languageName) return "";
+  
+  // Normalize the input (lowercase, trim spaces)
+  const normalizedInput = languageName.toLowerCase().trim();
+  
+  // Comprehensive language map including native language names
   const languageMap = {
-    'english': 'en',
-    'spanish': 'es',
-    'french': 'fr',
-    'german': 'de',
-    'italian': 'it',
-    'portuguese': 'pt',
-    'dutch': 'nl',
-    'russian': 'ru',
-    'japanese': 'ja',
-    'chinese': 'zh',
-    'korean': 'ko',
-    'arabic': 'ar',
-    'hindi': 'hi',
-    'turkish': 'tr',
-    'vietnamese': 'vi',
-    'thai': 'th',
-    'indonesian': 'id',
-    'hebrew': 'he',
-    'polish': 'pl',
-    'swedish': 'sv',
-    'greek': 'el',
-    'czech': 'cs',
-    'danish': 'da',
-    'finnish': 'fi',
-    'norwegian': 'no',
-    'romanian': 'ro',
-    'hungarian': 'hu'
+    // English language names
+    'english': 'en', 'spanish': 'es', 'french': 'fr', 'german': 'de', 'italian': 'it',
+    'portuguese': 'pt', 'dutch': 'nl', 'russian': 'ru', 'japanese': 'ja', 'chinese': 'zh',
+    'korean': 'ko', 'arabic': 'ar', 'hindi': 'hi', 'turkish': 'tr', 'vietnamese': 'vi',
+    'thai': 'th', 'indonesian': 'id', 'hebrew': 'he', 'polish': 'pl', 'swedish': 'sv',
+    'greek': 'el', 'czech': 'cs', 'danish': 'da', 'finnish': 'fi', 'norwegian': 'no',
+    'romanian': 'ro', 'hungarian': 'hu', 'ukrainian': 'uk', 'bulgarian': 'bg', 'croatian': 'hr',
+    'serbian': 'sr', 'slovak': 'sk', 'slovenian': 'sl', 'latvian': 'lv', 'lithuanian': 'lt',
+    'estonian': 'et', 'albanian': 'sq', 'macedonian': 'mk', 'icelandic': 'is', 'maltese': 'mt',
+    
+    // Native language names
+    'español': 'es', 'français': 'fr', 'deutsch': 'de', 'italiano': 'it', 'português': 'pt',
+    'nederlands': 'nl', 'русский': 'ru', '日本語': 'ja', '中文': 'zh', '한국어': 'ko',
+    'العربية': 'ar', 'हिन्दी': 'hi', 'türkçe': 'tr', 'tiếng việt': 'vi', 'ไทย': 'th',
+    'bahasa indonesia': 'id', 'עברית': 'he', 'polski': 'pl', 'svenska': 'sv', 'ελληνικά': 'el',
+    'čeština': 'cs', 'dansk': 'da', 'suomi': 'fi', 'norsk': 'no', 'română': 'ro',
+    'magyar': 'hu', 'українська': 'uk', 'български': 'bg', 'hrvatski': 'hr', 'српски': 'sr',
+    'slovenčina': 'sk', 'slovenščina': 'sl', 'latviešu': 'lv', 'lietuvių': 'lt', 'eesti': 'et',
+    
+    // Common alternate names
+    'american': 'en', 'british': 'en', 'chinese simplified': 'zh', 'chinese traditional': 'zh',
+    'mandarin': 'zh', 'cantonese': 'zh', 'castilian': 'es', 'castellano': 'es', 'brazilian': 'pt',
+    'brazilian portuguese': 'pt', 'português brasileiro': 'pt', 'farsi': 'fa', 'persian': 'fa',
+    'flemish': 'nl', 'vlaams': 'nl', 'afrikaans': 'af', 'hebrew': 'he', 'aramaic': 'arc',
+    'yiddish': 'yi', 'arabic': 'ar', 'hindi': 'hi', 'bengali': 'bn', 'punjabi': 'pa',
+    'swahili': 'sw', 'latinoamericano': 'es', 'latin american spanish': 'es',
+    
+    // Short forms that might be entered
+    'eng': 'en', 'spa': 'es', 'fre': 'fr', 'fra': 'fr', 'ger': 'de', 'deu': 'de', 'ita': 'it',
+    'por': 'pt', 'dut': 'nl', 'nld': 'nl', 'rus': 'ru', 'jpn': 'ja', 'chi': 'zh', 'zho': 'zh',
+    'kor': 'ko', 'ara': 'ar', 'hin': 'hi', 'tur': 'tr', 'vie': 'vi', 'tha': 'th', 'ind': 'id',
+    'heb': 'he', 'pol': 'pl', 'swe': 'sv'
   };
   
-  const lowercaseName = languageName.toLowerCase();
-  
-  // Try to find an exact match
-  if (languageMap[lowercaseName]) {
-    return languageMap[lowercaseName];
+  // Direct lookup
+  if (languageMap[normalizedInput]) {
+    return languageMap[normalizedInput];
   }
   
   // If it's a 2-letter code already, return it
-  if (/^[a-z]{2}$/.test(lowercaseName)) {
-    return lowercaseName;
+  if (/^[a-z]{2}$/.test(normalizedInput)) {
+    return normalizedInput;
   }
   
   // Try to find a partial match
   for (const [key, value] of Object.entries(languageMap)) {
-    if (lowercaseName.includes(key) || key.includes(lowercaseName)) {
+    if (normalizedInput.includes(key) || key.includes(normalizedInput)) {
       return value;
     }
   }

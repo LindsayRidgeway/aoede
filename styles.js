@@ -279,38 +279,20 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     width: '45%'
   },
-  // Rewind button styles for native
+  // Updated rewind button to be consistent across platforms
   rewindButton: {
-    position: 'absolute',
-    right: 0,
-    top: 45,  // Position it just below the Next button
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#f0f0f0',
-    justifyContent: 'center',
-    alignItems: 'center',
+    marginTop: 10,
+    alignSelf: 'flex-end',
+    backgroundColor: '#e6e6e6',
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 4,
     borderWidth: 1,
-    borderColor: '#ddd',
-    opacity: 0.7,
-    zIndex: 10
+    borderColor: '#ccc'
   },
   rewindButtonText: {
-    fontSize: 18,
-    fontWeight: '300',
-    color: '#555'
-  },
-  // Text link for rewind
-  rewindTextLinkContainer: {
-    position: 'absolute',
-    right: 5,
-    top: 50,
-    zIndex: 100
-  },
-  rewindTextLink: {
-    color: '#4a90e2',
     fontSize: 14,
-    textDecorationLine: 'underline'
+    color: '#333'
   },
   // Speed Control with Inline Circles
   speedControlRow: {
