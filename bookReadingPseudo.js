@@ -32,20 +32,17 @@ FUNCTION handleLoadBook(STRING studyLanguage,STRING bookTitle) {
     set tracker.bookTitle = bookTitle;
     set tracker.offset = 0;
     set trackerExists = true;
-    *** Store the tracker in persisten store
+    *** Store the tracker in persistent store
   }
 
-  if (reader == null) {
-    *** Set reader to the anchor in the URL anchor specification
-    set readerStudyLanguage = studyLanguage;
-    set readerBookTitle = bookTitle;
-  } else {
+  if (reader != null) {
       close reader;
-      *** Set reader to the anchor in the URL anchor specification
-      set readerStudyLanguage = studyLanguage;
-      set readerBookTitle = bookTitle;
-    }
   }
+    
+  *** Set reader to the anchor in the URL anchor specification
+  *** Skip readern forward tracker.offset bytes
+  set readerStudyLanguage = studyLanguage;
+  set readerBookTitle = bookTitle;
 
   loadRawSentence();
   processSimpleSentence();
