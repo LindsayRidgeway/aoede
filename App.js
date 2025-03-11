@@ -216,7 +216,6 @@ export default function App() {
       setLoadingBook(true);
       await BookReader.handleNextSentence();
     } catch (error) {
-      console.error("Error getting next sentence:", error);
       setStudyLangSentence("Error: " + error.message);
     } finally {
       setLoadingBook(false);
@@ -246,11 +245,8 @@ export default function App() {
   
   // Handle rewind book functionality
   const handleRewindBook = async () => {
-    console.log("handleRewindBook called in App.js");
-    
     // Prevent rewind during loading operations
     if (loadingBook) {
-      console.log("Cannot rewind - book is currently loading");
       return false;
     }
     
@@ -261,11 +257,8 @@ export default function App() {
       // Use BookReader to handle rewinding
       const success = await BookReader.handleRewind();
       
-      console.log(`Book rewind ${success ? 'successful' : 'failed'}`);
       return success;
     } catch (error) {
-      console.error("Error in handleRewindBook:", error);
-      
       // Show error message appropriate for the platform
       if (Platform.OS === 'web') {
         alert(uiText.rewindFailed || "Failed to rewind the book.");
@@ -284,8 +277,6 @@ export default function App() {
   
   // Handle load book button click
   const handleLoadBook = async () => {
-    console.log("handleLoadBook called");
-    
     // Reset previous state
     clearContent();
     setIsAtEndOfBook(false);
@@ -328,7 +319,6 @@ export default function App() {
       BookReader.setReadingLevel(readingLevel);
       
       // Load the book
-      console.log(`Loading book "${book.title}" in ${studyLanguage}`);
       const success = await BookReader.handleLoadBook(studyLanguage, book.title);
       
       if (!success) {
@@ -337,7 +327,6 @@ export default function App() {
       
       return true;
     } catch (error) {
-      console.error("Error in handleLoadBook:", error);
       setStudyLangSentence(`Error: ${error.message || "Unknown error loading content."}`);
       setNativeLangSentence(`Error: ${error.message || "Unknown error loading content."}`);
       return false;
