@@ -35,12 +35,20 @@ export function MainUI({
   setReadingLevel,
   isAtEndOfBook
 }) {
+  // State to track if content should be shown
+  const [showContent, setShowContent] = useState(sentence && sentence.length > 0);
+  
   // Define showControls early to avoid reference errors
-  const showControls = sentence && sentence.length > 0;
+  const showControls = showContent && sentence && sentence.length > 0;
   
   // State to track the displayed book title
   const [displayBookTitle, setDisplayBookTitle] = useState("");
   const [showBookModal, setShowBookModal] = useState(false);
+  
+  // Update showContent when sentence changes
+  useEffect(() => {
+    setShowContent(sentence && sentence.length > 0);
+  }, [sentence]);
   
   // Initialize listening speed from storage when component mounts
   useEffect(() => {
@@ -79,6 +87,11 @@ export function MainUI({
     return translatedTitle || book.title;
   };
 
+  // Handle input change that should clear content
+  const handleClearContent = () => {
+    setShowContent(false);
+  };
+
   // Handle Load Book button click
   const handleLoadButtonClick = () => {
     // Call the passed loadBook function from props
@@ -113,6 +126,7 @@ export function MainUI({
   // Handle book selection with more robustness for Android
   const handleBookChange = (itemValue) => {
     setSelectedBook(itemValue);
+    handleClearContent(); // Clear content when book selection changes
     if (itemValue) {
       const book = bookSources.find(b => b.id === itemValue);
       if (book) {
@@ -271,7 +285,9 @@ export function MainUI({
                 onChangeText={(text) => {
                   setStudyLanguage(text);
                   ListeningSpeed.saveStudyLanguage(text);
+                  handleClearContent(); // Clear content when study language changes
                 }}
+                onFocus={handleClearContent} // Clear content when input is focused
               />
             </View>
 
@@ -286,7 +302,10 @@ export function MainUI({
                       styles.readingLevelButton,
                       readingLevel === level ? styles.readingLevelButtonActive : null
                     ]}
-                    onPress={() => setReadingLevel(level)}
+                    onPress={() => {
+                      setReadingLevel(level);
+                      handleClearContent(); // Clear content when reading level changes
+                    }}
                   >
                     <Text 
                       style={[
@@ -327,7 +346,7 @@ export function MainUI({
             </View>
           </View>
 
-          {showControls && (
+          {showContent && showControls && (
             <>
               <View style={styles.controlsContainer}>
                 <View style={styles.controls}>
