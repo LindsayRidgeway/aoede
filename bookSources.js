@@ -44,7 +44,7 @@ export const bookSources = [
     id: "warandpeace", 
     title: "War and Peace", 
     author: "Leo Tolstoy",
-    url: "https://www.gutenberg.org/files/2600/2600-h/2600-h.htm#link2H_4_0001",
+    url: "https://www.gutenberg.org/cache/epub/2600/pg2600-images.html#link2H_4_0001",
     language: "en",
     format: "text"
     },
@@ -57,7 +57,6 @@ export const bookSources = [
     language: "en",
     format: "text"
   },
-    /*
   { 
     id: "mobydick", 
     title: "Moby Dick", 
@@ -66,7 +65,6 @@ export const bookSources = [
     language: "en",
     format: "text"
     },
-    */
   { 
     id: "frankenstein", 
     title: "Frankenstein", 
@@ -75,7 +73,6 @@ export const bookSources = [
     language: "en",
     format: "text"
   },
-    /*
   { 
     id: "donquixote", 
     title: "Don Quixote", 
@@ -84,7 +81,6 @@ export const bookSources = [
     language: "en",
     format: "text"
     },
-    */
   { 
     id: "taleoftwocities", 
     title: "A Tale of Two Cities", 
@@ -117,7 +113,6 @@ export const bookSources = [
     language: "en",
     format: "text"
   },
-    /*
   { 
     id: "littlewomen", 
     title: "Little Women", 
@@ -126,7 +121,6 @@ export const bookSources = [
     language: "en",
     format: "text"
     },
-    */
   { 
     id: "odyssey", 
     title: "The Odyssey", 
@@ -177,8 +171,7 @@ export const bookSources = [
     format: "text"
     },
     */
-    /*
-  { 
+    { 
     id: "republic", 
     title: "The Republic", 
     author: "Plato",
@@ -186,7 +179,6 @@ export const bookSources = [
     language: "en",
     format: "text"
     },
-    */
   { 
     id: "zarathustra", 
     title: "Thus Spoke Zarathustra", 
@@ -221,7 +213,6 @@ export const bookSources = [
     language: "fr",
     format: "text"
   },
-    /*
   { 
     id: "annakarenina", 
     title: "Anna Karenina", 
@@ -230,8 +221,41 @@ export const bookSources = [
     language: "en",
     format: "text"
     },
+  { 
+    id: "dollshouse", 
+    title: "A Doll's House", 
+    author: "Henrik Ibsen",
+    url: "https://www.gutenberg.org/files/2542/2542-h/2542-h.htm#act01",
+    language: "en",
+    format: "text"
+  },
+    /*
+  { 
+    id: "crimeandpunishment", 
+    title: "Crime and Punishment", 
+    author: "Fyodor Dostoyevsky",
+    url: "https://www.gutenberg.org/files/2554/2554-h/2554-h.htm#link2H_4_0002",
+    language: "en",
+    format: "text"
+    },
     */
-];
+  { 
+    id: "christmascarol", 
+    title: "A Christmas Carol", 
+    author: "Charles Dickens",
+    url: "https://www.gutenberg.org/files/19337/19337-h/19337-h.htm#Page_11",
+    language: "en",
+    format: "text"
+  },
+  { 
+    id: "huckfinn", 
+    title: "The Adventures of Huckleberry Finn", 
+    author: "Mark Train",
+    url: "https://www.gutenberg.org/files/76/76-h/76-h.htm#chap01",
+    language: "en",
+    format: "text"
+    },
+]
 
 // Helper function to get book source by ID
 export const getBookSourceById = (id) => {
