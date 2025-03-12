@@ -213,6 +213,7 @@ export const bookSources = [
     language: "fr",
     format: "text"
   },
+    /*
   { 
     id: "annakarenina", 
     title: "Anna Karenina", 
@@ -221,6 +222,7 @@ export const bookSources = [
     language: "en",
     format: "text"
     },
+    */
   { 
     id: "dollshouse", 
     title: "A Doll's House", 
