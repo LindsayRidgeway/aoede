@@ -7,6 +7,35 @@ import { processSourceText, translateBatch } from './apiServices';
 import { translateSentences, detectLanguageCode } from './textProcessing';
 import BookReader from './bookReader';
 import { bookSources } from './bookSources';
+import Constants from 'expo-constants';
+
+// Get API key using both old and new Expo Constants paths for compatibility
+const getConstantValue = (key) => {
+  // Try the new path (expoConfig.extra) first - Expo SDK 46+
+  if (Constants?.expoConfig?.extra && Constants.expoConfig.extra[key] !== undefined) {
+    return Constants.expoConfig.extra[key];
+  }
+  
+  // Fallback to old path (manifest.extra) - before Expo SDK 46
+  if (Constants?.manifest?.extra && Constants.manifest.extra[key] !== undefined) {
+    return Constants.manifest.extra[key];
+  }
+  
+  // For Expo Go and other environments - check extra at top level
+  if (Constants?.extra && Constants.extra[key] !== undefined) {
+    return Constants.extra[key];
+  }
+  
+  // Check the direct path in Constants as last resort
+  if (Constants && Constants[key] !== undefined) {
+    return Constants[key];
+  }
+  
+  return null;
+};
+
+// Get Google API key from Expo Constants
+const GOOGLE_API_KEY = getConstantValue('EXPO_PUBLIC_GOOGLE_API_KEY');
 
 // Direct translation method using Google Translate
 const directTranslate = async (text, sourceLang, targetLang) => {
@@ -14,7 +43,7 @@ const directTranslate = async (text, sourceLang, targetLang) => {
   
   try {
     const response = await fetch(
-      `https://translation.googleapis.com/language/translate/v2?key=AIzaSyDvrAsHGvT7nurWKi3w0879zLWFYtpEgJ0`,
+      `https://translation.googleapis.com/language/translate/v2?key=${GOOGLE_API_KEY}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
