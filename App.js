@@ -132,6 +132,8 @@ export default function App() {
           const storedSelectedBook = await AsyncStorage.getItem("selectedBook");
           const storedSpeechRate = await AsyncStorage.getItem("speechRate");
           const storedReadingLevel = await AsyncStorage.getItem("readingLevel");
+          const storedShowText = await AsyncStorage.getItem("showText");
+          const storedShowTranslation = await AsyncStorage.getItem("showTranslation");
           
           if (storedSelectedBook !== null) {
             setSelectedBook(storedSelectedBook);
@@ -143,6 +145,14 @@ export default function App() {
           
           if (storedReadingLevel !== null) {
             setReadingLevel(parseInt(storedReadingLevel, 10));
+          }
+          
+          if (storedShowText !== null) {
+            setShowText(storedShowText === 'true');
+          }
+          
+          if (storedShowTranslation !== null) {
+            setShowTranslation(storedShowTranslation === 'true');
           }
         } catch (error) {
           // Silent error handling
@@ -272,6 +282,26 @@ export default function App() {
     }
   };
   
+  // Handle show text toggle change
+  const handleShowTextChange = async (value) => {
+    setShowText(value);
+    try {
+      await AsyncStorage.setItem("showText", value.toString());
+    } catch (error) {
+      // Silent error handling
+    }
+  };
+  
+  // Handle show translation toggle change
+  const handleShowTranslationChange = async (value) => {
+    setShowTranslation(value);
+    try {
+      await AsyncStorage.setItem("showTranslation", value.toString());
+    } catch (error) {
+      // Silent error handling
+    }
+  };
+  
   // Handle rewind book functionality
   const handleRewindBook = async () => {
     // Prevent rewind during loading operations
@@ -375,8 +405,8 @@ export default function App() {
       translatedSentence={nativeLangSentence}
       showText={showText}
       showTranslation={showTranslation}
-      setShowText={setShowText}
-      setShowTranslation={setShowTranslation}
+      setShowText={handleShowTextChange}
+      setShowTranslation={handleShowTranslationChange}
       speechRate={speechRate}
       setSpeechRate={setSpeechRate}
       speakSentence={handleToggleSpeak}
