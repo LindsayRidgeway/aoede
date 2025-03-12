@@ -1,12 +1,24 @@
 import { StyleSheet } from 'react-native';
 
 export const styles = StyleSheet.create({
-  container: {
+  // New styles for full-page scrolling
+  safeArea: {
     flex: 1,
     backgroundColor: '#f5f5f5',
-    alignItems: 'center',
-    padding: 20
   },
+  scrollView: {
+    flex: 1,
+    width: '100%',
+  },
+  scrollViewContent: {
+    flexGrow: 1,
+    paddingBottom: 30, // Extra padding at the bottom for scrolling
+  },
+  innerContainer: {
+    alignItems: 'center',
+    padding: 20,
+  },
+  // Original styles
   header: {
     fontSize: 36,
     fontWeight: 'bold',
@@ -226,6 +238,7 @@ export const styles = StyleSheet.create({
   activeButton: {
     backgroundColor: '#e24a4a'
   },
+  // Updated content container for flexible sizing
   contentContainer: {
     width: '80%',
     marginTop: 5,
@@ -233,7 +246,10 @@ export const styles = StyleSheet.create({
     backgroundColor: '#f9f9f9',
     borderRadius: 5,
     borderWidth: 1,
-    borderColor: '#ddd'
+    borderColor: '#ddd',
+    // No fixed height - allows content to determine size
+    minHeight: 100, // Minimum height for empty content
+    marginBottom: 10
   },
   navigationContainer: {
     marginBottom: 10

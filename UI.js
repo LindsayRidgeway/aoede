@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { 
   Text, View, TouchableOpacity, TextInput, Switch, 
   ActivityIndicator, Platform, Alert, Animated, 
-  Modal, FlatList, SafeAreaView
+  Modal, FlatList, SafeAreaView, ScrollView
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { styles } from './styles';  
@@ -255,161 +255,166 @@ export function MainUI({
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>{uiText.appName || "Aoede"}</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollViewContent}>
+        <View style={styles.innerContainer}>
+          <Text style={styles.header}>{uiText.appName || "Aoede"}</Text>
 
-      {/* Input container is always visible */}
-      <View style={styles.inputContainer}>
-        <View style={styles.studyLangRow}>
-          <Text style={styles.smallLabel}>{uiText.studyLanguage || "Study Language"}:</Text>
-          <TextInput
-            style={styles.studyLangInput}
-            placeholder={uiText.enterLanguage || "Enter study language"}
-            value={studyLanguage}
-            onChangeText={(text) => {
-              setStudyLanguage(text);
-              ListeningSpeed.saveStudyLanguage(text);
-            }}
-          />
-        </View>
+          {/* Input container is always visible */}
+          <View style={styles.inputContainer}>
+            <View style={styles.studyLangRow}>
+              <Text style={styles.smallLabel}>{uiText.studyLanguage || "Study Language"}:</Text>
+              <TextInput
+                style={styles.studyLangInput}
+                placeholder={uiText.enterLanguage || "Enter study language"}
+                value={studyLanguage}
+                onChangeText={(text) => {
+                  setStudyLanguage(text);
+                  ListeningSpeed.saveStudyLanguage(text);
+                }}
+              />
+            </View>
 
-        {/* Reading Level Row */}
-        <View style={styles.readingLevelRow}>
-          <Text style={styles.smallLabel}>{uiText.readingLevel || "Reading Level"}:</Text>
-          <View style={styles.readingLevelControls}>
-            {[6, 9, 12, 15, 18].map((level) => (
-              <TouchableOpacity
-                key={level}
-                style={[
-                  styles.readingLevelButton,
-                  readingLevel === level ? styles.readingLevelButtonActive : null
-                ]}
-                onPress={() => setReadingLevel(level)}
-              >
-                <Text 
-                  style={[
-                    styles.readingLevelButtonText,
-                    readingLevel === level ? styles.readingLevelButtonTextActive : null
-                  ]}
-                >
-                  {level}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-
-        {/* Book Selection Row with improved UI */}
-        <View style={styles.bookSelectionRow}>
-          {renderBookPicker()}
-          <TouchableOpacity 
-            style={[
-              styles.loadButton, 
-              loadingBook ? styles.disabledButton : null, 
-              !selectedBook ? styles.disabledButton : null
-            ]} 
-            onPress={handleLoadButtonClick} 
-            disabled={loadingBook || !selectedBook}
-          >
-            {loadingBook ? (
-              <View style={styles.nextButtonContent}>
-                <ActivityIndicator size="small" color="#ffffff" style={styles.buttonSpinner} />
-                <Text style={[styles.buttonText, styles.buttonTextWithSpinner]}>
-                  {uiText.loadBook || "Load Book"}
-                </Text>
+            {/* Reading Level Row */}
+            <View style={styles.readingLevelRow}>
+              <Text style={styles.smallLabel}>{uiText.readingLevel || "Reading Level"}:</Text>
+              <View style={styles.readingLevelControls}>
+                {[6, 9, 12, 15, 18].map((level) => (
+                  <TouchableOpacity
+                    key={level}
+                    style={[
+                      styles.readingLevelButton,
+                      readingLevel === level ? styles.readingLevelButtonActive : null
+                    ]}
+                    onPress={() => setReadingLevel(level)}
+                  >
+                    <Text 
+                      style={[
+                        styles.readingLevelButtonText,
+                        readingLevel === level ? styles.readingLevelButtonTextActive : null
+                      ]}
+                    >
+                      {level}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
               </View>
-            ) : (
-              <Text style={styles.buttonText}>{uiText.loadBook || "Load Book"}</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-      </View>
+            </View>
 
-      {showControls && (
-        <>
-          <View style={styles.controlsContainer}>
-            <View style={styles.controls}>
+            {/* Book Selection Row with improved UI */}
+            <View style={styles.bookSelectionRow}>
+              {renderBookPicker()}
               <TouchableOpacity 
                 style={[
-                  styles.controlButton, 
-                  isSpeaking ? styles.activeButton : null,
-                  loadingBook ? styles.disabledButton : null
+                  styles.loadButton, 
+                  loadingBook ? styles.disabledButton : null, 
+                  !selectedBook ? styles.disabledButton : null
                 ]} 
-                onPress={speakSentence} 
-                disabled={loadingBook}
-              >
-                <Text style={styles.buttonText}>{isSpeaking ? (uiText.stop || "Stop") : (uiText.listen || "Listen")}</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={[
-                  styles.controlButton, 
-                  (loadingBook || isAtEndOfBook) ? styles.disabledButton : null
-                ]} 
-                onPress={handleNextButtonPress} 
-                disabled={loadingBook || isAtEndOfBook}
+                onPress={handleLoadButtonClick} 
+                disabled={loadingBook || !selectedBook}
               >
                 {loadingBook ? (
                   <View style={styles.nextButtonContent}>
                     <ActivityIndicator size="small" color="#ffffff" style={styles.buttonSpinner} />
                     <Text style={[styles.buttonText, styles.buttonTextWithSpinner]}>
-                      {uiText.next || "Next Sentence"}
+                      {uiText.loadBook || "Load Book"}
                     </Text>
                   </View>
                 ) : (
-                  <Animated.View style={{transform: [{scale: nextButtonAnimation}]}}>
-                    <Text style={styles.buttonText}>{uiText.next || "Next Sentence"}</Text>
-                  </Animated.View>
+                  <Text style={styles.buttonText}>{uiText.loadBook || "Load Book"}</Text>
                 )}
               </TouchableOpacity>
             </View>
-            
-            {/* Render rewind button consistently across platforms */}
-            {renderRewindButton()}
-          </View>
-          
-          {/* Speed Control with Inline Circle Buttons - Only 5 speeds */}
-          <View style={styles.speedControlRow}>
-            <Text style={styles.speedLabel}>{uiText.readingSpeed || "Listening Speed"}:</Text>
-            <View style={styles.speedCircleContainer}>
-              {speedOptions.map((speed) => (
-                <TouchableOpacity
-                  key={speed}
-                  style={[
-                    styles.speedCircle,
-                    Math.abs(listeningSpeed - speed) < 0.1 ? styles.speedCircleActive : null
-                  ]}
-                  onPress={() => updateListeningSpeed(speed)}
-                />
-              ))}
-            </View>
           </View>
 
-          <View style={styles.toggleContainer}>
-            <View style={styles.toggleItem}>
-              <Text style={styles.toggleLabel}>{uiText.showText || "Show Study Language"}</Text>
-              <Switch value={showText} onValueChange={setShowText} />
-            </View>
-            <View style={styles.toggleItem}>
-              <Text style={styles.toggleLabel}>{uiText.showTranslation || "Show System Language"}</Text>
-              <Switch value={showTranslation} onValueChange={setShowTranslation} />
-            </View>
-          </View>
-          
-          <View style={styles.contentContainer}>
-            {showText && (
-              <View style={styles.sentenceWrapper}>
-                <Text style={styles.foreignSentence}>{sentence}</Text>
+          {showControls && (
+            <>
+              <View style={styles.controlsContainer}>
+                <View style={styles.controls}>
+                  <TouchableOpacity 
+                    style={[
+                      styles.controlButton, 
+                      isSpeaking ? styles.activeButton : null,
+                      loadingBook ? styles.disabledButton : null
+                    ]} 
+                    onPress={speakSentence} 
+                    disabled={loadingBook}
+                  >
+                    <Text style={styles.buttonText}>{isSpeaking ? (uiText.stop || "Stop") : (uiText.listen || "Listen")}</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity 
+                    style={[
+                      styles.controlButton, 
+                      (loadingBook || isAtEndOfBook) ? styles.disabledButton : null
+                    ]} 
+                    onPress={handleNextButtonPress} 
+                    disabled={loadingBook || isAtEndOfBook}
+                  >
+                    {loadingBook ? (
+                      <View style={styles.nextButtonContent}>
+                        <ActivityIndicator size="small" color="#ffffff" style={styles.buttonSpinner} />
+                        <Text style={[styles.buttonText, styles.buttonTextWithSpinner]}>
+                          {uiText.next || "Next Sentence"}
+                        </Text>
+                      </View>
+                    ) : (
+                      <Animated.View style={{transform: [{scale: nextButtonAnimation}]}}>
+                        <Text style={styles.buttonText}>{uiText.next || "Next Sentence"}</Text>
+                      </Animated.View>
+                    )}
+                  </TouchableOpacity>
+                </View>
+                
+                {/* Render rewind button consistently across platforms */}
+                {renderRewindButton()}
               </View>
-            )}
-            {showTranslation && translatedSentence && (
-              <View style={showText ? styles.translationWrapper : styles.soloTranslationWrapper}>
-                <Text style={styles.translation}>{translatedSentence}</Text>
+              
+              {/* Speed Control with Inline Circle Buttons - Only 5 speeds */}
+              <View style={styles.speedControlRow}>
+                <Text style={styles.speedLabel}>{uiText.readingSpeed || "Listening Speed"}:</Text>
+                <View style={styles.speedCircleContainer}>
+                  {speedOptions.map((speed) => (
+                    <TouchableOpacity
+                      key={speed}
+                      style={[
+                        styles.speedCircle,
+                        Math.abs(listeningSpeed - speed) < 0.1 ? styles.speedCircleActive : null
+                      ]}
+                      onPress={() => updateListeningSpeed(speed)}
+                    />
+                  ))}
+                </View>
               </View>
-            )}
-          </View>
-        </>
-      )}
-    </View>
+
+              <View style={styles.toggleContainer}>
+                <View style={styles.toggleItem}>
+                  <Text style={styles.toggleLabel}>{uiText.showText || "Show Study Language"}</Text>
+                  <Switch value={showText} onValueChange={setShowText} />
+                </View>
+                <View style={styles.toggleItem}>
+                  <Text style={styles.toggleLabel}>{uiText.showTranslation || "Show System Language"}</Text>
+                  <Switch value={showTranslation} onValueChange={setShowTranslation} />
+                </View>
+              </View>
+              
+              {/* Content Container without fixed height */}
+              <View style={styles.contentContainer}>
+                {showText && (
+                  <View style={styles.sentenceWrapper}>
+                    <Text style={styles.foreignSentence}>{sentence}</Text>
+                  </View>
+                )}
+                {showTranslation && translatedSentence && (
+                  <View style={showText ? styles.translationWrapper : styles.soloTranslationWrapper}>
+                    <Text style={styles.translation}>{translatedSentence}</Text>
+                  </View>
+                )}
+              </View>
+            </>
+          )}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
