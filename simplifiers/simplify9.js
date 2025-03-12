@@ -1,4 +1,4 @@
-// simplify9.js - Simplification prompt for 9-year-old reading level
+// simplify9.js - Improved simplification prompt for 9-year-old reading level
 
 const getSimplificationPrompt = (sourceText, targetLanguage, ageGroup = 9) => {
   return `Here are some consecutive sentences from a book that I need simplified:
@@ -22,9 +22,29 @@ Guidelines for simplification:
 6. Use simple verb tenses when possible
 7. Maintain the emotion and tone of the original where possible
 
+FORMAT REQUIREMENTS:
+- Put each sentence on its own line with a line break after
+- A sentence is defined as a complete thought with subject and verb
+- Each line must contain EXACTLY ONE sentence
+- Each sentence must end with a period, question mark, or exclamation point
+- Never combine multiple sentences on one line
+- Never use semicolons to join sentences
+
+Examples of correct formatting:
+The girl went to the store.
+She wanted to buy candy.
+Her mother said no.
+She was disappointed but understood why.
+
+Example of incorrect formatting:
+The girl went to the store. She wanted to buy candy.
+Her mother said no and she was disappointed.
+
 Process the ENTIRE text I've provided, maintaining the full narrative.
 
-VERY IMPORTANT: Format your response by listing ONLY ONE simplified sentence per line. Each sentence must be a complete thought ending with a period, question mark, or exclamation point. DO NOT include any explanations or commentary.`;
+FINAL CHECK: Before submitting your response, verify that EACH LINE contains EXACTLY ONE sentence ending with a period, question mark, or exclamation point. No exceptions.
+
+DELIVER ONLY THE SIMPLIFIED TEXT WITH ONE SENTENCE PER LINE. DO NOT include any explanations or commentary.`;
 };
 
 export default getSimplificationPrompt;

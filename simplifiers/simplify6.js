@@ -24,9 +24,29 @@ Guidelines for simplification:
 8. Repeat character names instead of using pronouns if there's any ambiguity
 9. Break complex scenes into simple, step-by-step actions
 
+FORMAT REQUIREMENTS:
+- Put each sentence on its own line with a line break after
+- A sentence is defined as a complete thought with subject and verb
+- Each line must contain EXACTLY ONE sentence
+- Each sentence must end with a period, question mark, or exclamation point
+- Never combine multiple sentences on one line
+- Never use semicolons to join sentences
+
+Examples of correct formatting:
+The boy walks home.
+He sees a dog.
+The dog is big.
+The boy pets the dog.
+
+Example of incorrect formatting:
+The boy walks home. He sees a dog.
+The dog is big and the boy pets it.
+
 Process the ENTIRE text I've provided, maintaining the full narrative.
 
-VERY IMPORTANT: Format your response by listing ONLY ONE simplified sentence per line. Each sentence must be a complete thought ending with a period, question mark, or exclamation point. DO NOT include any explanations or commentary.`;
+FINAL CHECK: Before submitting your response, verify that EACH LINE contains EXACTLY ONE sentence ending with a period, question mark, or exclamation point. No exceptions.
+
+DELIVER ONLY THE SIMPLIFIED TEXT WITH ONE SENTENCE PER LINE. DO NOT include any explanations or commentary.`;
 };
 
 export default getSimplificationPrompt;
