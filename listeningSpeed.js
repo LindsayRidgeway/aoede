@@ -73,9 +73,11 @@ export const stopSpeaking = async () => {
   if (currentSound) {
     try {
       await currentSound.stopAsync();
-      currentSound = null;
+      await currentSound.unloadAsync();
     } catch (error) {
-      // Handle silently
+      console.warn("Error stopping speech:", error);
+    } finally {
+      currentSound = null;
     }
   }
 };
@@ -87,7 +89,10 @@ const supportedTTSLanguages = {
 };
 
 export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish) => {
-    if (!sentence) return;
+    if (!sentence) {
+        if (onFinish) onFinish();
+        return;
+    }
 
     // Stop any currently playing audio first
     await stopSpeaking();
@@ -116,24 +121,56 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
         );
 
         const data = await response.json();
-        if (!data.audioContent) throw new Error();
+        if (!data.audioContent) {
+            if (onFinish) onFinish();
+            return;
+        }
 
         // Decode Base64 and play MP3
         const sound = new Audio.Sound();
         currentSound = sound; // Store reference to current sound
-        const audioUri = `data:audio/mp3;base64,${data.audioContent}`;
-        await sound.loadAsync({ uri: audioUri });
         
-        // Set up a listener for when playback finishes
-        sound.setOnPlaybackStatusUpdate(status => {
-            if (status.didJustFinish) {
+        try {
+            const audioUri = `data:audio/mp3;base64,${data.audioContent}`;
+            await sound.loadAsync({ uri: audioUri });
+            
+            // Set up a listener for when playback finishes
+            sound.setOnPlaybackStatusUpdate(status => {
+                if (status.didJustFinish) {
+                    // Only run this once when playback finishes
+                    sound.setOnPlaybackStatusUpdate(null);
+                    
+                    // Clean up
+                    (async () => {
+                        try {
+                            if (sound === currentSound) {
+                                await sound.unloadAsync();
+                                currentSound = null;
+                            }
+                        } catch (error) {
+                            console.warn("Error cleaning up sound:", error);
+                        } finally {
+                            if (onFinish) onFinish();
+                        }
+                    })();
+                }
+            });
+            
+            await sound.playAsync();
+        } catch (error) {
+            console.warn("Error playing sound:", error);
+            if (sound === currentSound) {
+                try {
+                    await sound.unloadAsync();
+                } catch (e) {
+                    // Ignore errors during cleanup
+                }
                 currentSound = null;
-                if (onFinish) onFinish();
             }
-        });
-        
-        await sound.playAsync();
+            if (onFinish) onFinish();
+        }
     } catch (error) {
+        console.warn("Error in speech synthesis:", error);
         if (onFinish) onFinish(); // Call onFinish even on error
     }
 };
