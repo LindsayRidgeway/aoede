@@ -50,40 +50,45 @@ export function MainUI({
   const [displayBookTitle, setDisplayBookTitle] = useState("");
   const [showBookModal, setShowBookModal] = useState(false);
   
-  // Load font with retry mechanism for Android
+  // Load font with aggressive retry mechanism
   useEffect(() => {
     let mounted = true;
+    let fontLoadAttempts = 0;
+    const MAX_ATTEMPTS = 5;
     
-    const loadAndRetryFont = async (retries = 3) => {
+    const attemptFontLoad = async () => {
       try {
-        if (Platform.OS === 'android') {
-          // On Android, load the font with asset path
-          await Font.loadAsync({
-            'Cinzel': require('./assets/fonts/Cinzel.ttf'),
-          });
-        } else {
-          // For iOS and web
-          await Font.loadAsync({
-            'Cinzel': require('./assets/fonts/Cinzel.ttf'),
-          });
+        if (fontLoadAttempts >= MAX_ATTEMPTS) {
+          console.log(`Max font load attempts (${MAX_ATTEMPTS}) reached`);
+          return;
         }
+        
+        fontLoadAttempts++;
+        console.log(`Attempting to load font (attempt ${fontLoadAttempts})`);
+        
+        // Force load with direct path
+        await Font.loadAsync({
+          'Cinzel': require('./assets/fonts/Cinzel.ttf'),
+        });
         
         if (mounted) {
           setFontsLoaded(true);
           console.log('Font loaded successfully');
         }
       } catch (error) {
-        console.warn('Error loading fonts:', error);
-        if (retries > 0 && mounted) {
-          // Wait and retry
-          setTimeout(() => {
-            loadAndRetryFont(retries - 1);
-          }, 500);
+        console.warn(`Font load error (attempt ${fontLoadAttempts}):`, error);
+        
+        // Wait longer between retries
+        if (mounted && fontLoadAttempts < MAX_ATTEMPTS) {
+          const delay = 500 * Math.pow(2, fontLoadAttempts - 1); // Exponential backoff
+          console.log(`Retrying in ${delay}ms...`);
+          setTimeout(attemptFontLoad, delay);
         }
       }
     };
     
-    loadAndRetryFont();
+    // Start loading fonts
+    attemptFontLoad();
     
     return () => {
       mounted = false;
@@ -313,11 +318,20 @@ export function MainUI({
     );
   };
 
-  // Create a style object for the header text
-  const headerTextStyle = [
-    styles.header,
-    Platform.OS === 'android' && fontsLoaded ? { fontFamily: 'Cinzel' } : null
-  ];
+  // Define the header style based on platform and font loading
+  const getHeaderTextStyle = () => {
+    // Since Android has special font issues, be more explicit
+    if (Platform.OS === 'android') {
+      return fontsLoaded ? 
+        [styles.header, {fontFamily: 'Cinzel', fontWeight: 'bold'}] : 
+        [styles.header, {fontWeight: 'bold'}];
+    } else {
+      // For web and iOS, use the style directly
+      return fontsLoaded ? 
+        [styles.header, {fontFamily: 'Cinzel'}] : 
+        styles.header;
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -330,7 +344,7 @@ export function MainUI({
               resizeMode="contain"
             />
             <View style={styles.titleContainer}>
-              <Text style={headerTextStyle}>
+              <Text style={getHeaderTextStyle()}>
                 {uiText.appName || "Aoede"}
               </Text>
               <Text style={styles.headerPronunciation}>(ay-EE-dee)</Text>

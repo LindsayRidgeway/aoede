@@ -42,7 +42,6 @@ export const styles = StyleSheet.create({
     fontSize: 36,
     fontWeight: 'bold',
     color: '#3a7ca5',
-    fontFamily: 'Cinzel'
   },
   headerPronunciation: {
     fontSize: 14,
@@ -109,8 +108,6 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#f0f0f0',
-    marginHorizontal: 5,
-    marginLeft: 0, // First button aligns with left edge
     marginRight: 10, // More space between buttons
     borderWidth: 1,
     borderColor: '#ddd'
@@ -412,8 +409,8 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
-    // Made extremely tight on Android
-    marginBottom: Platform.OS === 'android' ? 0 : 4  
+    height: Platform.OS === 'android' ? 25 : 35, // Control exact height on Android
+    marginVertical: Platform.OS === 'android' ? 0 : 2 // Remove vertical margin on Android
   },
   toggleLabel: {
     fontSize: 14,
