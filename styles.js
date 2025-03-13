@@ -34,6 +34,33 @@ export const styles = StyleSheet.create({
     height: 60,
     marginRight: 15,
   },
+  // 3D Framed logo style (with asymmetric border to create 3D effect)
+  headerLogoFramed: {
+    width: 50,
+    height: 60,
+    marginRight: 15,
+    backgroundColor: '#fff',
+    padding: 4,
+    // Asymmetric border for 3D effect
+    borderRightWidth: 3,
+    borderBottomWidth: 3,
+    borderLeftWidth: 1,
+    borderTopWidth: 1,
+    borderColor: '#3a7ca5',
+    borderRadius: 6,
+    // For React Native
+    ...(Platform.OS !== 'web' ? {
+      shadowColor: '#000',
+      shadowOffset: { width: 3, height: 3 },
+      shadowOpacity: 0.4,
+      shadowRadius: 3,
+      elevation: 6, // For Android shadow
+    } : {}),
+    // For Web - use boxShadow instead
+    ...(Platform.OS === 'web' ? {
+      boxShadow: '3px 3px 3px rgba(0, 0, 0, 0.4)'
+    } : {})
+  },
   titleContainer: {
     flexDirection: 'column',
   },
@@ -56,10 +83,15 @@ export const styles = StyleSheet.create({
     borderColor: '#3a7ca5',
     padding: 15,
     marginBottom: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    ...(Platform.OS !== 'web' ? {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+    } : {}),
+    ...(Platform.OS === 'web' ? {
+      boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)'
+    } : {}),
     elevation: 3
   },
   // Redesigned study language and reading level
@@ -288,10 +320,15 @@ export const styles = StyleSheet.create({
     // No fixed height - allows content to determine size
     minHeight: 100, // Minimum height for empty content
     marginBottom: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+    ...(Platform.OS !== 'web' ? {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.1,
+      shadowRadius: 2,
+    } : {}),
+    ...(Platform.OS === 'web' ? {
+      boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.1)'
+    } : {}),
     elevation: 2
   },
   navigationContainer: {
@@ -382,20 +419,30 @@ export const styles = StyleSheet.create({
     borderColor: '#aaa',
     marginLeft: 5,
     // 3D effect for popped out appearance
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 1,
+    ...(Platform.OS !== 'web' ? {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.2,
+      shadowRadius: 1,
+    } : {}),
+    ...(Platform.OS === 'web' ? {
+      boxShadow: '0px 1px 1px rgba(0, 0, 0, 0.2)'
+    } : {}),
     elevation: 2
   },
   speedCircleActive: {
     backgroundColor: '#3a7ca5',
     borderColor: '#2a6c95',
     // 3D effect for pressed in appearance
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.1,
-    shadowRadius: 1,
+    ...(Platform.OS !== 'web' ? {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.1,
+      shadowRadius: 1,
+    } : {}),
+    ...(Platform.OS === 'web' ? {
+      boxShadow: '0px 0px 1px rgba(0, 0, 0, 0.1)'
+    } : {}),
     elevation: 1,
     // Slight inset effect
     transform: [{ scale: 0.9 }]
@@ -409,8 +456,14 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
-    height: Platform.OS === 'android' ? 25 : 35, // Control exact height on Android
-    marginVertical: Platform.OS === 'android' ? 0 : 2 // Remove vertical margin on Android
+    // Platform-specific heights to fix vertical spacing in web
+    ...(Platform.OS === 'web' ? {
+      height: 24, // Reduced height for web
+      marginVertical: 2 // Small vertical margin for web
+    } : {
+      height: Platform.OS === 'android' ? 25 : 35, // Original heights for native
+      marginVertical: Platform.OS === 'android' ? 0 : 2 // Original margins for native
+    })
   },
   toggleLabel: {
     fontSize: 14,
