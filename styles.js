@@ -1,4 +1,7 @@
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Platform } from 'react-native';
+
+// Different top padding based on platform
+const topPadding = Platform.OS === 'android' ? 50 : 0;
 
 export const styles = StyleSheet.create({
   // New styles for full-page scrolling
@@ -13,24 +16,45 @@ export const styles = StyleSheet.create({
   scrollViewContent: {
     flexGrow: 1,
     paddingBottom: 30, // Extra padding at the bottom for scrolling
+    paddingTop: topPadding, // Platform-specific top padding
   },
   innerContainer: {
     alignItems: 'center',
     padding: 20,
   },
+  // Header with logo
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 15,
+  },
+  headerLogo: {
+    width: 50,
+    height: 60,
+    marginRight: 15,
+  },
+  titleContainer: {
+    flexDirection: 'column',
+  },
   // Original styles
   header: {
     fontSize: 36,
     fontWeight: 'bold',
-    marginBottom: 15,
-    color: '#333'
+    color: '#3a7ca5',
+    fontFamily: 'Cinzel'
+  },
+  headerPronunciation: {
+    fontSize: 14,
+    color: '#3a7ca5',
+    marginTop: -2,
   },
   inputContainer: {
     width: '80%',
     backgroundColor: '#fff',
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#4a90e2',
+    borderColor: '#3a7ca5',
     padding: 15,
     marginBottom: 10,
     shadowColor: '#000',
@@ -39,20 +63,44 @@ export const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3
   },
+  // Redesigned study language and reading level
   studyLangRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
     marginBottom: 15
+  },
+  studyLangLabel: {
+    fontSize: 12,
+    fontStyle: 'italic',
+    marginBottom: 5,
+    color: '#666'
+  },
+  studyLangInput: {
+    width: '100%',
+    height: 40,
+    borderColor: '#ddd',
+    borderWidth: 1,
+    borderRadius: 5,
+    paddingHorizontal: 10,
+    backgroundColor: '#fff'
   },
   // Reading Level styles
   readingLevelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
     marginBottom: 15
+  },
+  readingLevelLabel: {
+    fontSize: 12,
+    fontStyle: 'italic',
+    marginBottom: 5,
+    color: '#666'
   },
   readingLevelControls: {
     flexDirection: 'row',
-    marginLeft: 10
+    marginLeft: 0, // Align with left edge
+    width: '100%', // Use full width
+    justifyContent: 'flex-start' // Left justify
   },
   readingLevelButton: {
     width: 36,
@@ -62,12 +110,14 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#f0f0f0',
     marginHorizontal: 5,
+    marginLeft: 0, // First button aligns with left edge
+    marginRight: 10, // More space between buttons
     borderWidth: 1,
     borderColor: '#ddd'
   },
   readingLevelButtonActive: {
-    backgroundColor: '#4a90e2',
-    borderColor: '#3a80d2'
+    backgroundColor: '#3a7ca5',
+    borderColor: '#2a6c95'
   },
   readingLevelButtonText: {
     fontSize: 14,
@@ -200,17 +250,8 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 10,
     backgroundColor: '#fff'
   },
-  studyLangInput: {
-    width: 120,
-    height: 40,
-    borderColor: '#ddd',
-    borderWidth: 1,
-    borderRadius: 5,
-    paddingHorizontal: 10,
-    backgroundColor: '#fff'
-  },
   button: {
-    backgroundColor: '#4a90e2',
+    backgroundColor: '#3a7ca5',
     padding: 10,
     borderRadius: 5,
     alignItems: 'center',
@@ -218,7 +259,7 @@ export const styles = StyleSheet.create({
     width: '100%'
   },
   loadButton: {
-    backgroundColor: '#4a90e2',
+    backgroundColor: '#3a7ca5',
     padding: 10,
     borderRadius: 5,
     alignItems: 'center',
@@ -236,30 +277,35 @@ export const styles = StyleSheet.create({
     opacity: 0.6
   },
   activeButton: {
-    backgroundColor: '#e24a4a'
+    backgroundColor: '#d16666'
   },
   // Updated content container for flexible sizing
   contentContainer: {
     width: '80%',
     marginTop: 5,
-    padding: 10,
+    padding: 15,
     backgroundColor: '#f9f9f9',
-    borderRadius: 5,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: '#ddd',
     // No fixed height - allows content to determine size
     minHeight: 100, // Minimum height for empty content
-    marginBottom: 10
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2
   },
   navigationContainer: {
     marginBottom: 10
   },
   sentenceWrapper: {
-    marginBottom: 8
+    marginBottom: 12
   },
   translationWrapper: {
-    marginTop: 5,
-    paddingTop: 5,
+    marginTop: 8,
+    paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: '#eee'
   },
@@ -267,13 +313,15 @@ export const styles = StyleSheet.create({
     // No top border when translation is alone
   },
   foreignSentence: {
-    fontSize: 16,
+    fontSize: 18,
     fontStyle: 'italic',
-    color: '#444'
+    color: '#2a6c95',
+    lineHeight: 26
   },
   translation: {
     fontSize: 16,
-    color: '#333'
+    color: '#444',
+    lineHeight: 24
   },
   controlsContainer: {
     width: '80%',
@@ -288,7 +336,7 @@ export const styles = StyleSheet.create({
     marginTop: 5
   },
   controlButton: {
-    backgroundColor: '#4a90e2',
+    backgroundColor: '#3a7ca5',
     padding: 10,
     borderRadius: 5,
     alignItems: 'center',
@@ -299,7 +347,7 @@ export const styles = StyleSheet.create({
   rewindButton: {
     marginTop: 10,
     alignSelf: 'flex-end',
-    backgroundColor: '#e6e6e6',
+    backgroundColor: '#f0f0f0',
     paddingVertical: 5,
     paddingHorizontal: 10,
     borderRadius: 4,
@@ -316,7 +364,7 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 10,
-    marginBottom: 5
+    marginBottom: 12  // Increased space after speed control
   },
   speedLabel: {
     fontSize: 14,
@@ -329,9 +377,9 @@ export const styles = StyleSheet.create({
     alignItems: 'center'
   },
   speedCircle: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
     backgroundColor: '#f0f0f0',
     borderWidth: 1,
     borderColor: '#aaa',
@@ -344,8 +392,8 @@ export const styles = StyleSheet.create({
     elevation: 2
   },
   speedCircleActive: {
-    backgroundColor: '#4a90e2',
-    borderColor: '#3a80d2',
+    backgroundColor: '#3a7ca5',
+    borderColor: '#2a6c95',
     // 3D effect for pressed in appearance
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 0 },
@@ -357,16 +405,20 @@ export const styles = StyleSheet.create({
   },
   toggleContainer: {
     width: '80%',
-    marginTop: 0
+    marginTop: 0,
+    marginBottom: 5
   },
   toggleItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 3
+    justifyContent: 'flex-start',
+    // Made extremely tight on Android
+    marginBottom: Platform.OS === 'android' ? 0 : 4  
   },
   toggleLabel: {
     fontSize: 14,
-    marginRight: 10
+    marginRight: 10,
+    color: '#555'
   },
   // Next button with spinner styles
   nextButtonContent: {

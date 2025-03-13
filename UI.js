@@ -2,12 +2,14 @@ import React, { useEffect, useState, useRef } from 'react';
 import { 
   Text, View, TouchableOpacity, TextInput, Switch, 
   ActivityIndicator, Platform, Alert, Animated, 
-  Modal, FlatList, SafeAreaView, ScrollView
+  Modal, FlatList, SafeAreaView, ScrollView,
+  Image
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { styles } from './styles';  
 import ListeningSpeed from './listeningSpeed';
 import { bookSources } from './bookSources';
+import * as Font from 'expo-font';
 
 export function MainUI({
   studyLanguage,
@@ -38,12 +40,55 @@ export function MainUI({
   // State to track if content should be shown
   const [showContent, setShowContent] = useState(sentence && sentence.length > 0);
   
-  // Define showControls early to avoid reference errors
+  // State to track if fonts are loaded
+  const [fontsLoaded, setFontsLoaded] = useState(false);
+  
+  // Define showControls early to avoid reference references
   const showControls = showContent && sentence && sentence.length > 0;
   
   // State to track the displayed book title
   const [displayBookTitle, setDisplayBookTitle] = useState("");
   const [showBookModal, setShowBookModal] = useState(false);
+  
+  // Load font with retry mechanism for Android
+  useEffect(() => {
+    let mounted = true;
+    
+    const loadAndRetryFont = async (retries = 3) => {
+      try {
+        if (Platform.OS === 'android') {
+          // On Android, load the font with asset path
+          await Font.loadAsync({
+            'Cinzel': require('./assets/fonts/Cinzel.ttf'),
+          });
+        } else {
+          // For iOS and web
+          await Font.loadAsync({
+            'Cinzel': require('./assets/fonts/Cinzel.ttf'),
+          });
+        }
+        
+        if (mounted) {
+          setFontsLoaded(true);
+          console.log('Font loaded successfully');
+        }
+      } catch (error) {
+        console.warn('Error loading fonts:', error);
+        if (retries > 0 && mounted) {
+          // Wait and retry
+          setTimeout(() => {
+            loadAndRetryFont(retries - 1);
+          }, 500);
+        }
+      }
+    };
+    
+    loadAndRetryFont();
+    
+    return () => {
+      mounted = false;
+    };
+  }, []);
   
   // Update showContent when sentence changes
   useEffect(() => {
@@ -268,16 +313,35 @@ export function MainUI({
     );
   };
 
+  // Create a style object for the header text
+  const headerTextStyle = [
+    styles.header,
+    Platform.OS === 'android' && fontsLoaded ? { fontFamily: 'Cinzel' } : null
+  ];
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollViewContent}>
         <View style={styles.innerContainer}>
-          <Text style={styles.header}>{uiText.appName || "Aoede"}</Text>
+          <View style={styles.headerContainer}>
+            <Image 
+              source={require('./assets/muse.png')} 
+              style={styles.headerLogo} 
+              resizeMode="contain"
+            />
+            <View style={styles.titleContainer}>
+              <Text style={headerTextStyle}>
+                {uiText.appName || "Aoede"}
+              </Text>
+              <Text style={styles.headerPronunciation}>(ay-EE-dee)</Text>
+            </View>
+          </View>
 
           {/* Input container is always visible */}
           <View style={styles.inputContainer}>
+            {/* Redesigned Study Language Row */}
             <View style={styles.studyLangRow}>
-              <Text style={styles.smallLabel}>{uiText.studyLanguage || "Study Language"}:</Text>
+              <Text style={styles.studyLangLabel}>{uiText.studyLanguage || "Study Language"}:</Text>
               <TextInput
                 style={styles.studyLangInput}
                 placeholder={uiText.enterLanguage || "Enter study language"}
@@ -291,9 +355,9 @@ export function MainUI({
               />
             </View>
 
-            {/* Reading Level Row */}
+            {/* Redesigned Reading Level Row */}
             <View style={styles.readingLevelRow}>
-              <Text style={styles.smallLabel}>{uiText.readingLevel || "Reading Level"}:</Text>
+              <Text style={styles.readingLevelLabel}>{uiText.readingLevel || "Reading Level"}:</Text>
               <View style={styles.readingLevelControls}>
                 {[6, 9, 12, 15, 18].map((level) => (
                   <TouchableOpacity
