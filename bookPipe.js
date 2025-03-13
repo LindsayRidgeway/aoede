@@ -376,19 +376,40 @@ class BookPipe {
       html = html.replace(/<header\b[^<]*(?:(?!<\/header>)<[^<]*)*<\/header>/gi, ' ');
       html = html.replace(/<footer\b[^<]*(?:(?!<\/footer>)<[^<]*)*<\/footer>/gi, ' ');
       
+      // Preserve heading tags by adding newlines before and after them
+      // This helps maintain chapter titles and headers
+      html = html.replace(/(<h[1-6][^>]*>)/gi, '\n$1');
+      html = html.replace(/(<\/h[1-6]>)/gi, '$1\n');
+      
+      // Add newlines for other structural elements 
+      html = html.replace(/(<(div|p|section|article)[^>]*>)/gi, '\n$1');
+      html = html.replace(/(<\/(div|p|section|article)>)/gi, '$1\n');
+      
+      // Special handling for content that's likely to be title elements
+      html = html.replace(/(<[^>]*class\s*=\s*["'][^"']*(?:title|chapter|heading|header)[^"']*["'][^>]*>)/gi, '\n$1');
+      
       // Remove all remaining HTML tags
       let text = html.replace(/<[^>]*>/g, ' ');
       
       // Decode HTML entities
       text = text.replace(/&nbsp;/g, ' ')
-                 .replace(/&amp;/g, '&')
-                 .replace(/&lt;/g, '<')
-                 .replace(/&gt;/g, '>')
-                 .replace(/&quot;/g, '"')
-                 .replace(/&#39;/g, "'");
+                .replace(/&amp;/g, '&')
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>')
+                .replace(/&quot;/g, '"')
+                .replace(/&#39;/g, "'");
       
-      // Clean up whitespace
-      text = text.replace(/\s+/g, ' ').trim();
+      // Normalize newlines
+      text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+      
+      // Remove consecutive newlines
+      text = text.replace(/\n{3,}/g, '\n\n');
+      
+      // Clean up whitespace while preserving newlines
+      text = text.split('\n')
+                .map(line => line.replace(/\s+/g, ' ').trim())
+                .join('\n')
+                .trim();
       
       return text;
     } catch (error) {

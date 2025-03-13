@@ -15,30 +15,89 @@ export const parseIntoSentences = (text) => {
   // Initialize an array for the final sentences
   let sentences = [];
   
-  // Define a simple sentence-splitting regex
-  const sentenceRegex = /[^.!?]+[.!?]+(?:\s|$)/g;
+  // Pattern for detecting common title formats
+  const titlePattern = /^(?:(?:BOOK|Chapter|CHAPTER|Part|PART|Volume|VOLUME|Section|SECTION)\s+[IVXLCDM\d]+|Introduction|Preface|Prologue|Epilogue|Afterword|Conclusion|Appendix|Note to the Reader|Foreword)(?:\s*[-:]\s*[^\.]*)?$/i;
   
-  // Apply regex to each line
+  // Process each line
   for (let line of lines) {
+    // Check if the line matches a title pattern first
+    if (titlePattern.test(line)) {
+      // It's a title, preserve it as is and add a period if it doesn't end with punctuation
+      if (!/[.!?]$/.test(line)) {
+        sentences.push(line + '.');
+      } else {
+        sentences.push(line);
+      }
+      continue;
+    }
+    
+    // Handle normal sentence splitting
+    const sentenceRegex = /[^.!?]+[.!?]+(?:\s|$)/g;
     const matches = line.match(sentenceRegex);
     
     if (matches && matches.length > 0) {
       sentences.push(...matches);
-    } else if (line.length > 10) {
-      // If we couldn't split it and it's reasonably long, use the whole line
-      sentences.push(line);
+    } else if (line.length > 5) {
+      // If we couldn't split it and it's reasonably long, it might be a title or header
+      // Add it as a sentence (with a period if it doesn't have ending punctuation)
+      if (!/[.!?]$/.test(line)) {
+        sentences.push(line + '.');
+      } else {
+        sentences.push(line);
+      }
     }
   }
   
   // If we don't have many sentences from line processing, try direct text processing
   if (sentences.length < 10) {
-    const matches = text.match(sentenceRegex);
-    if (matches && matches.length > sentences.length) {
-      sentences = matches;
+    // Check if there are potential titles in the text that we should preserve
+    const potentialTitles = text.match(/(?:^|\n)(?:(?:BOOK|Chapter|CHAPTER|Part|PART|Volume|VOLUME|Section|SECTION)\s+[IVXLCDM\d]+|Introduction|Preface|Prologue|Epilogue|Afterword|Note to the Reader|Foreword)(?:\s*[-:]\s*[^\.]*)?(?:\n|$)/gi);
+    
+    if (potentialTitles && potentialTitles.length > 0) {
+      // If we found potential titles, make sure they're included
+      for (let title of potentialTitles) {
+        title = title.trim();
+        if (title.length > 0) {
+          if (!/[.!?]$/.test(title)) {
+            sentences.push(title + '.');
+          } else {
+            sentences.push(title);
+          }
+        }
+      }
+    }
+    
+    // Also apply the regular sentence detection
+    const matches = text.match(/[^.!?]+[.!?]+(?:\s|$)/g);
+    if (matches && matches.length > 0) {
+      // Combine with existing sentences, avoiding duplicates
+      const existingSentences = new Set(sentences.map(s => s.trim()));
+      for (let match of matches) {
+        if (!existingSentences.has(match.trim())) {
+          sentences.push(match);
+        }
+      }
     }
   }
   
-  // Ensure each sentence ends with a punctuation mark
+  // Enhanced detection for chapter titles with names
+  const chapterWithNameRegex = /^(?:(?:BOOK|Chapter|CHAPTER|Part|PART)\s+[IVXLCDM\d]+)\s*[:\.-]\s*(.+)/i;
+  for (let i = 0; i < sentences.length; i++) {
+    const chapterNameMatch = sentences[i].match(chapterWithNameRegex);
+    if (chapterNameMatch && chapterNameMatch[1] && chapterNameMatch[1].length > 0) {
+      // This is a chapter with a name - make sure it's properly formatted
+      let chapterName = chapterNameMatch[1].trim();
+      if (!/[.!?]$/.test(chapterName)) {
+        chapterName += '.';
+      }
+      // Replace the original with properly formatted version
+      sentences[i] = sentences[i].replace(chapterWithNameRegex, (match, nameGroup) => {
+        return match.replace(nameGroup, chapterName);
+      });
+    }
+  }
+  
+  // Ensure each sentence ends with a punctuation mark and filter out junk
   sentences = sentences.map(sentence => {
     // Clean up the sentence
     sentence = sentence.trim();
@@ -51,7 +110,7 @@ export const parseIntoSentences = (text) => {
   })
   .filter(sentence => {
     // Remove very short sentences or likely HTML fragments
-    return sentence.length > 10 && 
+    return sentence.length > 3 && 
            !sentence.includes('©') &&
            !sentence.includes('®');
   });
