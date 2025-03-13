@@ -59,29 +59,27 @@ export function MainUI({
     const attemptFontLoad = async () => {
       try {
         if (fontLoadAttempts >= MAX_ATTEMPTS) {
-          console.log(`Max font load attempts (${MAX_ATTEMPTS}) reached`);
           return;
         }
         
         fontLoadAttempts++;
-        console.log(`Attempting to load font (attempt ${fontLoadAttempts})`);
         
-        // Force load with direct path
+        // Try to load both Cinzel and Cinzel-ExtraBold fonts
+        // This gives us backup options for different platforms
         await Font.loadAsync({
           'Cinzel': require('./assets/fonts/Cinzel.ttf'),
+          'Cinzel-ExtraBold': require('./assets/fonts/Cinzel-ExtraBold.ttf'),
+          // Load the font with explicit weight variations - helps on Android
+          'Cinzel-Bold': require('./assets/fonts/Cinzel.ttf'),
         });
         
         if (mounted) {
           setFontsLoaded(true);
-          console.log('Font loaded successfully');
         }
       } catch (error) {
-        console.warn(`Font load error (attempt ${fontLoadAttempts}):`, error);
-        
         // Wait longer between retries
         if (mounted && fontLoadAttempts < MAX_ATTEMPTS) {
           const delay = 500 * Math.pow(2, fontLoadAttempts - 1); // Exponential backoff
-          console.log(`Retrying in ${delay}ms...`);
           setTimeout(attemptFontLoad, delay);
         }
       }
@@ -320,13 +318,34 @@ export function MainUI({
 
   // Define the header style based on platform and font loading
   const getHeaderTextStyle = () => {
-    // Since Android has special font issues, be more explicit
     if (Platform.OS === 'android') {
+      // Android needs explicit style parameters
+      if (fontsLoaded) {
+        return {
+          fontSize: 36,
+          fontWeight: 'bold',
+          color: '#3a7ca5',
+          fontFamily: 'Cinzel-ExtraBold', // Try the ExtraBold version for Android
+        };
+      } else {
+        return {
+          fontSize: 36,
+          fontWeight: 'bold',
+          color: '#3a7ca5',
+        };
+      }
+    } else if (Platform.OS === 'ios') {
+      // iOS may need different font handling
       return fontsLoaded ? 
-        [styles.header, {fontFamily: 'Cinzel', fontWeight: 'bold'}] : 
-        [styles.header, {fontWeight: 'bold'}];
+        {
+          fontSize: 36,
+          fontWeight: 'bold',
+          color: '#3a7ca5',
+          fontFamily: 'Cinzel',
+        } : 
+        styles.header;
     } else {
-      // For web and iOS, use the style directly
+      // Web should work fine with the standard approach
       return fontsLoaded ? 
         [styles.header, {fontFamily: 'Cinzel'}] : 
         styles.header;

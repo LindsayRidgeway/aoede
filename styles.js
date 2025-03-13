@@ -42,9 +42,9 @@ export const styles = StyleSheet.create({
     backgroundColor: '#fff',
     padding: 4,
     // Asymmetric border for 3D effect
-    borderRightWidth: 3,
-    borderBottomWidth: 3,
-    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderBottomWidth: 2,
+    borderLeftWidth: 2,
     borderTopWidth: 1,
     borderColor: '#3a7ca5',
     borderRadius: 6,
