@@ -398,6 +398,11 @@ export function MainUI({
               </View>
             </View>
 
+            {/* Source Material label */}
+            <View style={styles.sourceRow}>
+              <Text style={styles.studyLangLabel}>{uiText.sourceMaterial || "Source Material"}:</Text>
+            </View>
+
             {/* Book Selection Row with improved UI */}
             <View style={styles.bookSelectionRow}>
               {renderBookPicker()}
