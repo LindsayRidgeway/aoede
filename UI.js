@@ -359,7 +359,7 @@ export function MainUI({
           <View style={styles.headerContainer}>
             <Image 
               source={require('./assets/muse.png')} 
-              style={styles.headerLogoFramed} 
+              style={styles.headerLogo} 
               resizeMode="contain"
             />
             <View style={styles.titleContainer}>
