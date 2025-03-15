@@ -3,6 +3,9 @@ import { StyleSheet, Platform } from 'react-native';
 // Different top padding based on platform
 const topPadding = Platform.OS === 'android' ? 50 : 0;
 
+// Theme colors
+const themeBlue = '#3a7ca5';
+
 export const styles = StyleSheet.create({
   // New styles for full-page scrolling
   safeArea: {
@@ -34,31 +37,28 @@ export const styles = StyleSheet.create({
     height: 60,
     marginRight: 15,
   },
-  // 3D Framed logo style (with asymmetric border to create 3D effect)
+  // Platform-specific framed logo style
   headerLogoFramed: {
     width: 50,
     height: 60,
     marginRight: 15,
     backgroundColor: '#fff',
     padding: 4,
-    // Asymmetric border for 3D effect
-    borderRightWidth: 1,
-    borderBottomWidth: 2,
-    borderLeftWidth: 2,
-    borderTopWidth: 1,
-    borderColor: '#3a7ca5',
-    borderRadius: 6,
-    // For React Native
-    ...(Platform.OS !== 'web' ? {
-      shadowColor: '#000',
-      shadowOffset: { width: 3, height: 3 },
-      shadowOpacity: 0.4,
-      shadowRadius: 3,
-      elevation: 6, // For Android shadow
+    // Simple thin border for all platforms
+    borderWidth: 1,
+    borderColor: themeBlue,
+    borderRadius: 4,
+    // Remove shadow/elevation for clean look
+    ...(Platform.OS === 'android' || Platform.OS === 'ios' ? {
+      elevation: 0,
+      shadowColor: 'transparent',
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0,
+      shadowRadius: 0,
     } : {}),
-    // For Web - use boxShadow instead
+    // For Web - use boxShadow none to ensure no shadow
     ...(Platform.OS === 'web' ? {
-      boxShadow: '3px 3px 3px rgba(0, 0, 0, 0.4)'
+      boxShadow: 'none'
     } : {})
   },
   titleContainer: {
@@ -68,11 +68,11 @@ export const styles = StyleSheet.create({
   header: {
     fontSize: 36,
     fontWeight: 'bold',
-    color: '#3a7ca5',
+    color: themeBlue,
   },
   headerPronunciation: {
     fontSize: 14,
-    color: '#3a7ca5',
+    color: themeBlue,
     marginTop: -2,
   },
   inputContainer: {
@@ -80,7 +80,7 @@ export const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#3a7ca5',
+    borderColor: themeBlue,
     padding: 15,
     marginBottom: 10,
     ...(Platform.OS !== 'web' ? {
@@ -145,7 +145,7 @@ export const styles = StyleSheet.create({
     borderColor: '#ddd'
   },
   readingLevelButtonActive: {
-    backgroundColor: '#3a7ca5',
+    backgroundColor: themeBlue,
     borderColor: '#2a6c95'
   },
   readingLevelButtonText: {
@@ -280,7 +280,7 @@ export const styles = StyleSheet.create({
     backgroundColor: '#fff'
   },
   button: {
-    backgroundColor: '#3a7ca5',
+    backgroundColor: themeBlue,
     padding: 10,
     borderRadius: 5,
     alignItems: 'center',
@@ -288,7 +288,7 @@ export const styles = StyleSheet.create({
     width: '100%'
   },
   loadButton: {
-    backgroundColor: '#3a7ca5',
+    backgroundColor: themeBlue,
     padding: 10,
     borderRadius: 5,
     alignItems: 'center',
@@ -370,7 +370,7 @@ export const styles = StyleSheet.create({
     marginTop: 5
   },
   controlButton: {
-    backgroundColor: '#3a7ca5',
+    backgroundColor: themeBlue,
     padding: 10,
     borderRadius: 5,
     alignItems: 'center',
@@ -431,7 +431,7 @@ export const styles = StyleSheet.create({
     elevation: 2
   },
   speedCircleActive: {
-    backgroundColor: '#3a7ca5',
+    backgroundColor: themeBlue,
     borderColor: '#2a6c95',
     // 3D effect for pressed in appearance
     ...(Platform.OS !== 'web' ? {
