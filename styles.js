@@ -289,17 +289,40 @@ export const styles = StyleSheet.create({
   },
   loadButton: {
     backgroundColor: themeBlue,
-    padding: 10,
     borderRadius: 5,
     alignItems: 'center',
     justifyContent: 'center',
     minWidth: 120,
-    height: 40
+    // Platform-specific adjustments
+    ...(Platform.OS === 'android' 
+      ? {
+	  // Android needs a bit more vertical space
+	  paddingVertical: 12, 
+	  paddingHorizontal: 10,
+	  // Remove fixed height on Android
+	  height: undefined,
+	  // Add a bit of bottom margin to counteract text clipping
+	  marginBottom: 2
+	} 
+      : {
+	  // Keep existing style for iOS/Web
+	  padding: 10,
+	  height: 40
+	}
+    )
   },
   buttonText: {
     color: '#fff',
     fontSize: 16,
-    fontWeight: 'bold'
+    fontWeight: 'bold',
+    // Fix vertical text alignment on Android
+    ...(Platform.OS === 'android' 
+      ? {
+	  includeFontPadding: false,
+	  textAlignVertical: 'center'
+	} 
+      : {}
+    )
   },
   disabledButton: {
     backgroundColor: '#A9A9A9',
