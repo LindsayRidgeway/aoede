@@ -158,13 +158,20 @@ export const styles = StyleSheet.create({
   },
   bookSelectionRow: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between'
+    justifyContent: 'space-between',
+    ...(Platform.OS === 'android' ? {
+      alignItems: 'center', // Center alignment for Android
+    } : {
+      alignItems: 'flex-end' // Original alignment for other platforms
+    })
   },
   sourceRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    justifyContent: 'space-between'
+    justifyContent: 'space-between',
+    ...(Platform.OS === 'android' ? {
+      marginBottom: 0 // No bottom margin for Android
+    } : {})
   },
   pickerContainer: {
     flex: 1,
@@ -296,19 +303,19 @@ export const styles = StyleSheet.create({
     // Platform-specific adjustments
     ...(Platform.OS === 'android' 
       ? {
-	  // Android needs a bit more vertical space
-	  paddingVertical: 12, 
-	  paddingHorizontal: 10,
-	  // Remove fixed height on Android
-	  height: undefined,
-	  // Add a bit of bottom margin to counteract text clipping
-	  marginBottom: 2
-	} 
+          // Android needs a bit more vertical space
+          paddingVertical: 12, 
+          paddingHorizontal: 10,
+          // Remove fixed height on Android
+          height: undefined,
+          // Add a bit of bottom margin to counteract text clipping
+          marginBottom: 2
+        } 
       : {
-	  // Keep existing style for iOS/Web
-	  padding: 10,
-	  height: 40
-	}
+          // Keep existing style for iOS/Web
+          padding: 10,
+          height: 40
+        }
     )
   },
   buttonText: {
@@ -318,9 +325,9 @@ export const styles = StyleSheet.create({
     // Fix vertical text alignment on Android
     ...(Platform.OS === 'android' 
       ? {
-	  includeFontPadding: false,
-	  textAlignVertical: 'center'
-	} 
+          includeFontPadding: false,
+          textAlignVertical: 'center'
+        } 
       : {}
     )
   },

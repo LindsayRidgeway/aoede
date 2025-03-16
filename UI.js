@@ -217,11 +217,24 @@ export function MainUI({
   // This function handles showing the Picker differently based on platform
   const renderBookPicker = () => {
     if (Platform.OS === 'android') {
-      // For Android, create a custom picker-like interface with Modal
       return (
-        <View style={styles.androidPickerContainer}>
+        <View style={{
+          flex: 1,
+          marginRight: 10,
+          height: 40, // Exact height match with button
+        }}>
           <TouchableOpacity
-            style={styles.androidPickerButton}
+            style={{
+              height: 40, // Exact height match with button
+              borderColor: '#ddd',
+              borderWidth: 1,
+              borderRadius: 5,
+              backgroundColor: '#fff',
+              paddingHorizontal: 10,
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between'
+            }}
             onPress={() => {
               if (!loadingBook) {
                 setShowBookModal(true);
