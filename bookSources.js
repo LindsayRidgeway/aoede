@@ -13,7 +13,6 @@
  */
 
 export const bookSources = [
-    /*
   { 
     id: "montecristo", 
     title: "The Count of Monte Cristo by Alexandre Dumas",
@@ -22,7 +21,6 @@ export const bookSources = [
     language: "en",
     format: "text"
     },
-    */
   { 
     id: "prideandprejudice", 
     title: "Pride and Prejudice by Jane Austen",
@@ -39,7 +37,6 @@ export const bookSources = [
     language: "en",
     format: "text"
   },
-    /*
   { 
     id: "warandpeace", 
     title: "War and Peace by Leo Tolstoy",
@@ -48,7 +45,6 @@ export const bookSources = [
     language: "en",
     format: "text"
     },
-    */
   { 
     id: "aliceinwonderland", 
     title: "Alice's Adventures in Wonderland by Lewis Carroll",
@@ -181,13 +177,12 @@ export const bookSources = [
     },
   { 
     id: "zarathustra", 
-    title: "Thus Spoke Zarathustra by Friedrich Nietzsche",
+    title: "Thus Spake Zarathustra by Friedrich Nietzsche",
     author: "Friedrich Nietzsche",
     url: "https://www.gutenberg.org/files/1998/1998-h/1998-h.htm#link2H_4_0003",
     language: "en",
     format: "text"
   },
-    /*
   { 
     id: "lesmiserables", 
     title: "Les Misérables by Victor Hugo",
@@ -196,7 +191,6 @@ export const bookSources = [
     language: "en",
     format: "text"
     },
-    */
   { 
     id: "ladywiththepet", 
     title: "The Lady with the Dog by Anton Chekhov",
@@ -213,7 +207,6 @@ export const bookSources = [
     language: "fr",
     format: "text"
   },
-    /*
   { 
     id: "annakarenina", 
     title: "Anna Karenina by Leo Tolstoy",
@@ -222,7 +215,6 @@ export const bookSources = [
     language: "en",
     format: "text"
     },
-    */
   { 
     id: "dollshouse", 
     title: "A Doll's House by Henrik Ibsen",
@@ -231,7 +223,6 @@ export const bookSources = [
     language: "en",
     format: "text"
   },
-    /*
   { 
     id: "crimeandpunishment", 
     title: "Crime and Punishment by Fyodor Dostoyevsky",
@@ -240,7 +231,6 @@ export const bookSources = [
     language: "en",
     format: "text"
     },
-    */
   { 
     id: "christmascarol", 
     title: "A Christmas Carol by Charles Dickens",
@@ -256,7 +246,191 @@ export const bookSources = [
     url: "https://www.gutenberg.org/files/76/76-h/76-h.htm#chap01",
     language: "en",
     format: "text"
-    },
+  },
+  {
+    "id": "greatexpectations",
+    "language": "en",
+    "format": "text",
+    title: "Great Expectations by Charles Dickens",
+    author: "Charles Dickens",
+    url: "https://www.gutenberg.org/files/1400/1400-0.txt"
+  },
+  {
+    "id": "janeeyre",
+    "language": "en",
+    "format": "text",
+    title: "Jane Eyre by Charlotte Brontë",
+    author: "Charlotte Brontë",
+    url: "https://www.gutenberg.org/files/1260/1260-0.txt"
+  },
+  {
+    "id": "scarletletter",
+    "language": "en",
+    "format": "text",
+    title: "The Scarlet Letter by Nathaniel Hawthorne",
+    author: "Nathaniel Hawthorne",
+    url: "https://www.gutenberg.org/files/25344/25344-0.txt"
+  },
+  {
+    "id": "leviathan",
+    "language": "en",
+    "format": "text",
+    title: "Leviathan by Thomas Hobbes",
+    author: "Thomas Hobbes",
+    url: "https://www.gutenberg.org/files/3207/3207-0.txt"
+  },
+  {
+    "id": "soulsofblackfolk",
+    "language": "en",
+    "format": "text",
+    title: "The Souls of Black Folk by W. E. B. Du Bois",
+    author: "W. E. B. Du Bois",
+    url: "https://www.gutenberg.org/files/408/408-0.txt"
+  },
+  {
+    "id": "brotherskaramazov",
+    "language": "en",
+    "format": "text",
+    title: "The Brothers Karamazov by Fyodor Dostoyevsky",
+    author: "Fyodor Dostoyevsky",
+    url: "https://www.gutenberg.org/files/28054/28054-0.txt"
+  },
+  {
+    "id": "heartofdarkness",
+    "language": "en",
+    "format": "text",
+    title: "Heart of Darkness by Joseph Conrad",
+    author: "Joseph Conrad",
+    url: "https://www.gutenberg.org/files/219/219-0.txt"
+  },
+  {
+    "id": "theprince",
+    "language": "en",
+    "format": "text",
+    title: "The Prince by Niccolò Machiavelli",
+    author: "Niccolò Machiavelli",
+    url: "https://www.gutenberg.org/files/1232/1232-0.txt"
+  },
+  {
+    "id": "donquixote2",
+    "language": "en",
+    "format": "text",
+    title: "Don Quixote by Miguel de Cervantes",
+    author: "Miguel de Cervantes",
+    url: "https://www.gutenberg.org/files/996/996-0.txt"
+  },
+  {
+    "id": "waroftheworlds",
+    "language": "en",
+    "format": "text",
+    title: "The War of the Worlds by H. G. Wells",
+    author: "H. G. Wells",
+    url: "https://www.gutenberg.org/files/36/36-0.txt"
+  },
+  {
+    "id": "christmascarol2",
+    "language": "en",
+    "format": "text",
+    title: "A Christmas Carol by Charles Dickens",
+    author: "Charles Dickens",
+    url: "https://www.gutenberg.org/files/46/46-0.txt"
+  },
+  {
+    "id": "sherlockholmes2",
+    "language": "en",
+    "format": "text",
+    title: "The Adventures of Sherlock Holmes by Arthur Conan Doyle",
+    author: "Arthur Conan Doyle",
+    url: "https://www.gutenberg.org/files/1661/1661-0.txt"
+  },
+  {
+    "id": "doriangray",
+    "language": "en",
+    "format": "text",
+    title: "The Picture of Dorian Gray by Oscar Wilde",
+    author: "Oscar Wilde",
+    url: "https://www.gutenberg.org/files/174/174-0.txt"
+  },
+  {
+    "id": "metamorphosis",
+    "language": "en",
+    "format": "text",
+    title: "Metamorphosis by Franz Kafka",
+    author: "Franz Kafka",
+    url: "https://www.gutenberg.org/files/5200/5200-0.txt"
+  },
+  {
+    "id": "anthem",
+    "language": "en",
+    "format": "text",
+    title: "Anthem by Ayn Rand",
+    author: "Ayn Rand",
+    url: "https://www.gutenberg.org/files/1250/1250-0.txt"
+  },
+  {
+    "id": "yellowwallpaper",
+    "language": "en",
+    "format": "text",
+    title: "The Yellow Wallpaper by Charlotte Perkins Gilman",
+    author: "Charlotte Perkins Gilman",
+    url: "https://www.gutenberg.org/files/1952/1952-0.txt"
+  },
+  {
+    "id": "ulysses",
+    "language": "en",
+    "format": "text",
+    title: "Ulysses by James Joyce",
+    author: "James Joyce",
+    url: "https://www.gutenberg.org/files/4300/4300-0.txt"
+  },
+  {
+    "id": "iliad2",
+    "language": "en",
+    "format": "text",
+    title: "The Iliad by Homer",
+    author: "Homer",
+    url: "https://www.gutenberg.org/files/6130/6130-0.txt"
+  },
+  {
+    "id": "divinecomedy",
+    "language": "en",
+    "format": "text",
+    title: "The Divine Comedy by Dante Alighieri",
+    author: "Dante Alighieri",
+    url: "https://www.gutenberg.org/files/8800/8800-0.txt"
+  },
+  {
+    "id": "houndofbaskervilles",
+    "language": "en",
+    "format": "text",
+    title: "The Hound of the Baskervilles by Arthur Conan Doyle",
+    author: "Arthur Conan Doyle",
+    url: "https://www.gutenberg.org/files/2852/2852-0.txt"
+  },
+  {
+    "id": "gulliverstravels",
+    "language": "en",
+    "format": "text",
+    title: "Gulliver's Travels by Jonathan Swift",
+    author: "Jonathan Swift",
+    url: "https://www.gutenberg.org/files/829/829-0.txt"
+  },
+  {
+    "id": "peterpan",
+    "language": "en",
+    "format": "text",
+    title: "Peter Pan by J. M. Barrie",
+    author: "J. M. Barrie",
+    url: "https://www.gutenberg.org/files/16/16-0.txt"
+  },
+  {
+    "id": "eightydays",
+    "language": "en",
+    "format": "text",
+    title: "Around the World in Eighty Days by Jules Verne",
+    author: "Jules Verne",
+    url: "https://www.gutenberg.org/files/103/103-0.txt"
+  }
 ]
 
 // Helper function to get book source by ID
