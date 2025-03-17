@@ -21,6 +21,7 @@ export const bookSources = [
     language: "en",
     format: "text"
   },
+    /*
   {
     id: "sherlockholmes2",
     title: "The Adventures of Sherlock Holmes by Arthur Conan Doyle",
@@ -28,7 +29,8 @@ export const bookSources = [
     url: "https://www.gutenberg.org/files/1661/1661-0.txt",
     language: "en",
     format: "text"
-  },
+    },
+    */
   {
     id: "huckfinn", 
     title: "The Adventures of Huckleberry Finn by Mark Train",
@@ -53,6 +55,7 @@ export const bookSources = [
     language: "en",
     format: "text"
   },
+    /*
   {
     id: "annakarenina", 
     title: "Anna Karenina by Leo Tolstoy",
@@ -60,7 +63,8 @@ export const bookSources = [
     url: "https://www.gutenberg.org/files/1399/1399-h/1399-h.htm#chap01",
     language: "en",
     format: "text"
-  },
+    },
+    */
   {
     id: "anthem",
     title: "Anthem by Ayn Rand",
@@ -101,6 +105,7 @@ export const bookSources = [
     language: "en",
     format: "text"
   },
+    /*
   {
     id: "christmascarol2",
     title: "A Christmas Carol by Charles Dickens",
@@ -108,7 +113,9 @@ export const bookSources = [
     url: "https://www.gutenberg.org/files/46/46-0.txt",
     language: "en",
     format: "text"
-  },
+    },
+    */
+    /*
   {
     id: "montecristo", 
     title: "The Count of Monte Cristo by Alexandre Dumas",
@@ -116,7 +123,9 @@ export const bookSources = [
     url: "https://www.gutenberg.org/files/1184/1184-h/1184-h.htm#linkC2HCH0001",
     language: "en",
     format: "text"
-  },
+    },
+    */
+    /*
   {
     id: "crimeandpunishment", 
     title: "Crime and Punishment by Fyodor Dostoyevsky",
@@ -124,7 +133,8 @@ export const bookSources = [
     url: "https://www.gutenberg.org/files/2554/2554-h/2554-h.htm#link2H_4_0002",
     language: "en",
     format: "text"
-  },
+    },
+    */
   {
     id: "divinecomedy",
     title: "The Divine Comedy by Dante Alighieri",
@@ -149,6 +159,7 @@ export const bookSources = [
     language: "en",
     format: "text"
   },
+    /*
   {
     id: "donquixote2",
     title: "Don Quixote by Miguel de Cervantes",
@@ -156,7 +167,8 @@ export const bookSources = [
     url: "https://www.gutenberg.org/files/996/996-0.txt",
     language: "en",
     format: "text"
-  },
+    },
+    */
   {
     id: "dracula", 
     title: "Dracula by Bram Stoker",
@@ -181,6 +193,7 @@ export const bookSources = [
     language: "en",
     format: "text"
   },
+    /*
   {
     id: "greatgatsby", 
     title: "The Great Gatsby by F. Scott Fitzgerald",
@@ -188,7 +201,8 @@ export const bookSources = [
     url: "https://www.gutenberg.org/files/64317/64317-h/64317-h.htm#chapter-1",
     language: "en",
     format: "text"
-  },
+    },
+    */
   {
     id: "gulliverstravels",
     title: "Gulliver's Travels by Jonathan Swift",
@@ -221,6 +235,7 @@ export const bookSources = [
     language: "en",
     format: "text"
   },
+    /*
   {
     id: "iliad2",
     title: "The Iliad by Homer",
@@ -228,7 +243,9 @@ export const bookSources = [
     url: "https://www.gutenberg.org/files/6130/6130-0.txt",
     language: "en",
     format: "text"
-  },
+    },
+    */
+    /*
   {
     id: "janeeyre",
     title: "Jane Eyre by Charlotte Brontë",
@@ -236,15 +253,17 @@ export const bookSources = [
     url: "https://www.gutenberg.org/files/1260/1260-0.txt",
     language: "en",
     format: "text"
-  },
+    },
+    */
   {
-    id: "ladywiththepet", 
+    id: "ladywiththedog", 
     title: "The Lady with the Dog by Anton Chekhov",
     author: "Anton Chekhov",
     url: "https://www.gutenberg.org/files/13415/13415-h/13415-h.htm#THE_LADY_WITH_THE_DOG",
     language: "en",
     format: "text"
   },
+    /*
   {
     id: "lesmiserables", 
     title: "Les Misérables by Victor Hugo",
@@ -252,7 +271,9 @@ export const bookSources = [
     url: "https://www.gutenberg.org/files/135/135-h/135-h.htm#link2H_PREF",
     language: "en",
     format: "text"
-  },
+    },
+    */
+    /*
   {
     id: "leviathan",
     title: "Leviathan by Thomas Hobbes",
@@ -260,7 +281,8 @@ export const bookSources = [
     url: "https://www.gutenberg.org/files/3207/3207-0.txt",
     language: "en",
     format: "text"
-  },
+    },
+    */
   {
     id: "littleprince", 
     title: "The Little Prince by Antoine de Saint-Exupéry",
@@ -269,6 +291,7 @@ export const bookSources = [
     language: "fr",
     format: "text"
   },
+    /*
   {
     id: "littlewomen", 
     title: "Little Women by Louisa May Alcott",
@@ -276,7 +299,8 @@ export const bookSources = [
     url: "https://www.gutenberg.org/files/514/514-h/514-h.htm#part01",
     language: "en",
     format: "text"
-  },
+    },
+    */
   {
     id: "metamorphosis",
     title: "Metamorphosis by Franz Kafka",
@@ -381,6 +405,7 @@ export const bookSources = [
     language: "en",
     format: "text"
   },
+    /*
   {
     id: "ulysses",
     title: "Ulysses by James Joyce",
@@ -388,7 +413,9 @@ export const bookSources = [
     url: "https://www.gutenberg.org/files/4300/4300-0.txt",
     language: "en",
     format: "text"
-  },
+    },
+    */
+    /*
   {
     id: "warandpeace", 
     title: "War and Peace by Leo Tolstoy",
@@ -396,7 +423,8 @@ export const bookSources = [
     url: "https://www.gutenberg.org/cache/epub/2600/pg2600-images.html#link2H_4_0001",
     language: "en",
     format: "text"
-  },
+    },
+    */
   {
     id: "waroftheworlds",
     title: "The War of the Worlds by H. G. Wells",
