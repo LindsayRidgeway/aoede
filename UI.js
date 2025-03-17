@@ -10,7 +10,27 @@ import { styles } from './styles';
 import ListeningSpeed from './listeningSpeed';
 import { bookSources } from './bookSources';
 import * as Font from 'expo-font';
-import LanguageVerifier from './languageVerifier';
+import Constants from 'expo-constants';
+
+// Get API key using both old and new Expo Constants paths for compatibility
+const getConstantValue = (key) => {
+  if (Constants?.expoConfig?.extra && Constants.expoConfig.extra[key] !== undefined) {
+    return Constants.expoConfig.extra[key];
+  }
+  if (Constants?.manifest?.extra && Constants.manifest.extra[key] !== undefined) {
+    return Constants.manifest.extra[key];
+  }
+  if (Constants?.extra && Constants.extra[key] !== undefined) {
+    return Constants.extra[key];
+  }
+  if (Constants && Constants[key] !== undefined) {
+    return Constants[key];
+  }
+  return null;
+};
+
+// Get Google API key from Expo Constants
+const GOOGLE_API_KEY = getConstantValue('EXPO_PUBLIC_GOOGLE_API_KEY');
 
 export function MainUI({
   studyLanguage,
@@ -44,25 +64,44 @@ export function MainUI({
   // State to track if fonts are loaded
   const [fontsLoaded, setFontsLoaded] = useState(false);
   
-  // Define showControls early to avoid reference references
+  // Define showControls early to avoid reference issues
   const showControls = showContent && sentence && sentence.length > 0;
   
   // State to track the displayed book title
   const [displayBookTitle, setDisplayBookTitle] = useState("");
   const [showBookModal, setShowBookModal] = useState(false);
   
-  // New state for languages and language selection modal
+  // State for languages and language selection modal
   const [languages, setLanguages] = useState([]);
   const [showLanguageModal, setShowLanguageModal] = useState(false);
   const [displayLanguage, setDisplayLanguage] = useState(studyLanguage || uiText.enterLanguage || "Select language");
   
-  // Load languages from the API
+  // Load languages from the Google Translate API
   useEffect(() => {
     const loadLanguages = async () => {
       try {
-        const languageData = await LanguageVerifier.fetchSupportedLanguages();
-        if (languageData && Array.isArray(languageData)) {
-          setLanguages(languageData);
+        // Get user's system language for localized language names
+        const userLang = typeof navigator !== 'undefined' && navigator.language
+          ? navigator.language.split('-')[0]
+          : 'en';
+        
+        // Fetch available languages from Google Translate API
+        const response = await fetch(
+          `https://translation.googleapis.com/language/translate/v2/languages?key=${GOOGLE_API_KEY}&target=${userLang}`,
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          }
+        );
+        
+        if (response.ok) {
+          const result = await response.json();
+          
+          if (result.data && result.data.languages) {
+            setLanguages(result.data.languages);
+          }
         }
       } catch (error) {
         console.error("Failed to load languages:", error);
@@ -77,13 +116,13 @@ export function MainUI({
     if (studyLanguage) {
       // Find the language in our list if possible
       const lang = languages.find(l => 
-        l.name.toLowerCase() === studyLanguage.toLowerCase() ||
-        l.language === studyLanguage.toLowerCase()
+        l.language === studyLanguage
       );
       
       if (lang) {
         setDisplayLanguage(lang.name);
       } else {
+        // If we can't find the language in our list, use the code directly
         setDisplayLanguage(studyLanguage);
       }
     } else {

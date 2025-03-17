@@ -8,7 +8,6 @@ import { translateSentences, detectLanguageCode } from './textProcessing';
 import BookReader from './bookReader';
 import { bookSources } from './bookSources';
 import Constants from 'expo-constants';
-import LanguageVerifier from './languageVerifier';
 
 // Get API key using both old and new Expo Constants paths for compatibility
 const getConstantValue = (key) => {
@@ -123,9 +122,6 @@ export default function App() {
   useEffect(() => {
     const initialize = async () => {
       try {
-        // Initialize the language verifier first
-        await LanguageVerifier.initialize();
-        
         // Translate UI if not English
         if (userLanguage !== 'en') {
           translateUiElements();
@@ -164,7 +160,6 @@ export default function App() {
         
         const language = await ListeningSpeed.getStoredStudyLanguage();
         setStudyLanguage(language);
-        await ListeningSpeed.detectLanguageCode(language);
         
         // Initialize BookReader
         BookReader.initialize(handleSentenceProcessed, userLanguage);
