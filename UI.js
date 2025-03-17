@@ -10,6 +10,7 @@ import { styles } from './styles';
 import ListeningSpeed from './listeningSpeed';
 import { bookSources } from './bookSources';
 import * as Font from 'expo-font';
+import LanguageVerifier from './languageVerifier';
 
 export function MainUI({
   studyLanguage,
@@ -49,6 +50,46 @@ export function MainUI({
   // State to track the displayed book title
   const [displayBookTitle, setDisplayBookTitle] = useState("");
   const [showBookModal, setShowBookModal] = useState(false);
+  
+  // New state for languages and language selection modal
+  const [languages, setLanguages] = useState([]);
+  const [showLanguageModal, setShowLanguageModal] = useState(false);
+  const [displayLanguage, setDisplayLanguage] = useState(studyLanguage || uiText.enterLanguage || "Select language");
+  
+  // Load languages from the API
+  useEffect(() => {
+    const loadLanguages = async () => {
+      try {
+        const languageData = await LanguageVerifier.fetchSupportedLanguages();
+        if (languageData && Array.isArray(languageData)) {
+          setLanguages(languageData);
+        }
+      } catch (error) {
+        console.error("Failed to load languages:", error);
+      }
+    };
+    
+    loadLanguages();
+  }, []);
+  
+  // Update displayed language when studyLanguage changes
+  useEffect(() => {
+    if (studyLanguage) {
+      // Find the language in our list if possible
+      const lang = languages.find(l => 
+        l.name.toLowerCase() === studyLanguage.toLowerCase() ||
+        l.language === studyLanguage.toLowerCase()
+      );
+      
+      if (lang) {
+        setDisplayLanguage(lang.name);
+      } else {
+        setDisplayLanguage(studyLanguage);
+      }
+    } else {
+      setDisplayLanguage(uiText.enterLanguage || "Select language");
+    }
+  }, [studyLanguage, languages, uiText]);
   
   // Load font with aggressive retry mechanism
   useEffect(() => {
@@ -146,6 +187,17 @@ export function MainUI({
     loadBook();
   };
   
+  // Handle language selection
+  const handleLanguageChange = async (language) => {
+    if (language && language.language) {
+      // Use the language code for API calls but display the friendly name
+      await ListeningSpeed.saveStudyLanguage(language.language);
+      setStudyLanguage(language.language);
+      setDisplayLanguage(language.name);
+      handleClearContent(); // Clear content when language changes
+    }
+  };
+  
   // Animation for Next button
   const nextButtonAnimation = useRef(new Animated.Value(1)).current;
   
@@ -212,6 +264,55 @@ export function MainUI({
         ]
       );
     }
+  };
+
+  // Render language selection component
+  const renderLanguagePicker = () => {
+    if (Platform.OS === 'android') {
+      return (
+        <TouchableOpacity
+          style={styles.studyLangInput}
+          onPress={() => {
+            if (!loadingBook) {
+              setShowLanguageModal(true);
+            }
+          }}
+          disabled={loadingBook}
+        >
+          <Text style={studyLanguage ? { color: '#000' } : { color: '#999' }}>
+            {displayLanguage}
+          </Text>
+        </TouchableOpacity>
+      );
+    }
+    
+    // For iOS and Web, use the standard Picker but styled like a text input
+    return (
+      <View style={[styles.studyLangInput, { paddingHorizontal: 0, overflow: 'hidden' }]}>
+        <Picker
+          selectedValue={studyLanguage}
+          style={{ width: '100%', height: 40, marginTop: Platform.OS === 'ios' ? -6 : 0 }}
+          onValueChange={(itemValue, itemIndex) => {
+            if (itemValue && itemIndex > 0) { // Skip the prompt item
+              const language = languages.find(l => l.language === itemValue);
+              if (language) {
+                handleLanguageChange(language);
+              }
+            }
+          }}
+          enabled={!loadingBook}
+        >
+          <Picker.Item key="prompt" label={uiText.enterLanguage || "Select language"} value="" />
+          {languages.map(lang => (
+            <Picker.Item 
+              key={lang.language} 
+              label={lang.name} 
+              value={lang.language} 
+            />
+          ))}
+        </Picker>
+      </View>
+    );
   };
 
   // This function handles showing the Picker differently based on platform
@@ -385,20 +486,49 @@ export function MainUI({
 
           {/* Input container is always visible */}
           <View style={styles.inputContainer}>
-            {/* Redesigned Study Language Row */}
+            {/* Redesigned Study Language Row with Dropdown */}
             <View style={styles.studyLangRow}>
               <Text style={styles.studyLangLabel}>{uiText.studyLanguage || "Study Language"}:</Text>
-              <TextInput
-                style={styles.studyLangInput}
-                placeholder={uiText.enterLanguage || "Enter study language"}
-                value={studyLanguage}
-                onChangeText={(text) => {
-                  setStudyLanguage(text);
-                  ListeningSpeed.saveStudyLanguage(text);
-                  handleClearContent(); // Clear content when study language changes
-                }}
-                onFocus={handleClearContent} // Clear content when input is focused
-              />
+              {renderLanguagePicker()}
+              
+              {/* Language Selection Modal for Android */}
+              {Platform.OS === 'android' && (
+                <Modal
+                  visible={showLanguageModal}
+                  transparent={true}
+                  animationType="slide"
+                  onRequestClose={() => setShowLanguageModal(false)}
+                >
+                  <SafeAreaView style={styles.modalContainer}>
+                    <View style={styles.modalContent}>
+                      <Text style={styles.modalHeader}>{uiText.studyLanguage || "Study Language"}</Text>
+                      
+                      <FlatList
+                        data={languages}
+                        keyExtractor={item => item.language}
+                        renderItem={({item}) => (
+                          <TouchableOpacity
+                            style={styles.bookItem}
+                            onPress={() => {
+                              handleLanguageChange(item);
+                              setShowLanguageModal(false);
+                            }}
+                          >
+                            <Text style={styles.bookItemText}>{item.name}</Text>
+                          </TouchableOpacity>
+                        )}
+                      />
+                      
+                      <TouchableOpacity
+                        style={styles.closeButton}
+                        onPress={() => setShowLanguageModal(false)}
+                      >
+                        <Text style={styles.closeButtonText}>Cancel</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </SafeAreaView>
+                </Modal>
+              )}
             </View>
 
             {/* Redesigned Reading Level Row */}

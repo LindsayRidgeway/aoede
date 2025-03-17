@@ -8,6 +8,7 @@ import { translateSentences, detectLanguageCode } from './textProcessing';
 import BookReader from './bookReader';
 import { bookSources } from './bookSources';
 import Constants from 'expo-constants';
+import LanguageVerifier from './languageVerifier';
 
 // Get API key using both old and new Expo Constants paths for compatibility
 const getConstantValue = (key) => {
@@ -87,7 +88,7 @@ export default function App() {
     showTranslation: "Show Translation",
     readingSpeed: "Reading Speed",
     studyLanguage: "Study Language",
-    enterLanguage: "Enter study language",
+    enterLanguage: "Select language",
     bookSelection: "Book Selection",
     readingLevel: "Reading Level",
     pleaseWait: "Please wait. This may take several minutes...",
@@ -122,6 +123,9 @@ export default function App() {
   useEffect(() => {
     const initialize = async () => {
       try {
+        // Initialize the language verifier first
+        await LanguageVerifier.initialize();
+        
         // Translate UI if not English
         if (userLanguage !== 'en') {
           translateUiElements();
@@ -355,9 +359,9 @@ export default function App() {
     
     if (!studyLanguage) {
       if (Platform.OS === 'web') {
-        alert("Language Required: Please enter a study language.");
+        alert("Language Required: Please select a study language.");
       } else {
-        Alert.alert("Language Required", "Please enter a study language.");
+        Alert.alert("Language Required", "Please select a study language.");
       }
       return false;
     }
