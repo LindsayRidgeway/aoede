@@ -191,9 +191,6 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
   }
 
   const speakingRate = Math.max(0.5, Math.min(1.5, (listeningSpeed - 0.5) * 1));
-  
-  // Debugging: Log the detected language code
-  console.log("[TTS] Using language code:", detectedLanguageCode);
 
   // Get the appropriate TTS language code with region
   let ttsLanguageCode;
@@ -211,14 +208,10 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
     // Default to English if no language code is detected
     ttsLanguageCode = "en-US";
   }
-  
-  // Debugging: Log the language code we're using
-  console.log("[TTS] Using TTS language code:", ttsLanguageCode);
 
   try {
     // Check if we have a Google API key before attempting the API call
     if (!GOOGLE_TTS_API_KEY) {
-      console.log("[TTS] No Google API key available");
       if (onFinish) onFinish();
       return;
     }
@@ -239,10 +232,8 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
     // If we have a specific voice name, use it
     if (voiceName) {
       requestBody.voice.name = voiceName;
-      console.log("[TTS] Using voice:", voiceName);
     }
 
-    console.log("[TTS] Sending request to Google TTS API");
     const response = await fetch(
       `https://texttospeech.googleapis.com/v1/text:synthesize?key=${GOOGLE_TTS_API_KEY}`,
       {
@@ -254,14 +245,12 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.log("[TTS] API error:", errorData);
       if (onFinish) onFinish();
       return;
     }
 
     const data = await response.json();
     if (!data.audioContent) {
-      console.log("[TTS] No audio content in response");
       if (onFinish) onFinish();
       return;
     }
@@ -272,7 +261,6 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
     
     try {
       const audioUri = `data:audio/mp3;base64,${data.audioContent}`;
-      console.log("[TTS] Loading audio");
       await sound.loadAsync({ uri: audioUri });
       
       // Set up a listener for when playback finishes
@@ -297,7 +285,6 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
         }
       });
       
-      console.log("[TTS] Playing audio");
       await sound.playAsync();
     } catch (error) {
       console.warn("[TTS] Error playing sound:", error);

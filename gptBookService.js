@@ -34,10 +34,6 @@ const getConstantValue = (key) => {
 const OPENAI_API_KEY = getConstantValue('EXPO_PUBLIC_OPENAI_API_KEY');
 const CORS_PROXY = getConstantValue('EXPO_PUBLIC_CORS_PROXY') || "https://thingproxy.freeboard.io/fetch/";
 
-// Log API key status for debugging
-console.log('OpenAI API key available:', !!OPENAI_API_KEY);
-console.log('CORS Proxy available:', !!CORS_PROXY);
-
 // Import the book cache manager
 import BookCacheManager from './bookCache';
 
@@ -49,7 +45,6 @@ export const fetchBookContent = async (bookIdOrSearch, sentenceCount = DEFAULT_S
   if (isCustomSearch) {
     // Use the provided text directly as search query
     searchQuery = bookIdOrSearch;
-    console.log(`Searching for book: "${searchQuery}" with ${sentenceCount} sentences`);
   } else {
     // This is a predefined book, check the cache first
     bookId = bookI

@@ -7,7 +7,6 @@ const isReactNative = typeof global !== 'undefined' && global.navigator && globa
 if (isReactNative) {
   // Add setImmediate polyfill if it doesn't exist
   if (typeof global.setImmediate !== 'function') {
-    console.log('Installing setImmediate polyfill');
     global.setImmediate = function(callback, ...args) {
       return setTimeout(() => callback(...args), 0);
     };

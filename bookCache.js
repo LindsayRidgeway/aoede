@@ -27,7 +27,6 @@ class BookCacheManager {
         
         // Check cache version and reset if outdated
         if (this.cacheIndex.version !== CACHE_VERSION) {
-          console.log('Cache version mismatch, resetting cache');
           await this.resetCache();
         }
       } else {
@@ -124,8 +123,6 @@ class BookCacheManager {
       // Update the index
       await this.saveIndex();
       
-      console.log(`Book "${bookData.title}" (${bookId}) added to cache with ${bookData.sentences ? bookData.sentences.length : 0} sentences`);
-      
       return true;
     } catch (error) {
       console.error(`Error adding book ${bookId} to cache:`, error);
@@ -150,7 +147,6 @@ class BookCacheManager {
     
     for (const [bookId, metadata] of entriesToRemove) {
       await this.removeBookFromCache(bookId);
-      console.log(`Removed ${metadata.title} (${bookId}) from cache to make space`);
     }
   }
 
@@ -183,8 +179,6 @@ class BookCacheManager {
     await this.initialize();
     
     try {
-      console.log('Performing cache maintenance');
-      
       const now = Date.now();
       const expiredEntries = [];
       
@@ -198,14 +192,11 @@ class BookCacheManager {
       // Remove expired entries
       for (const bookId of expiredEntries) {
         await this.removeBookFromCache(bookId);
-        console.log(`Removed expired cache entry for ${bookId}`);
       }
       
       // Update last cleanup timestamp
       this.cacheIndex.lastCleanup = now;
       await this.saveIndex();
-      
-      console.log(`Cache maintenance complete. Removed ${expiredEntries.length} expired entries.`);
     } catch (error) {
       console.error('Error during cache maintenance:', error);
     }
@@ -214,8 +205,6 @@ class BookCacheManager {
   // Reset the entire cache
   async resetCache() {
     try {
-      console.log('Resetting book cache');
-      
       // Create a fresh cache index
       this.cacheIndex = {
         version: CACHE_VERSION,
@@ -234,8 +223,6 @@ class BookCacheManager {
       if (cacheKeys.length > 0) {
         await AsyncStorage.multiRemove(cacheKeys);
       }
-      
-      console.log(`Cache reset complete. Removed ${cacheKeys.length} entries.`);
       
       this.initialized = true;
       return true;
