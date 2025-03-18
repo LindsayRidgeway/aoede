@@ -69,7 +69,7 @@ export const bookSources = [
     id: "anthem",
     title: "Anthem by Ayn Rand",
     author: "Ayn Rand",
-    url: "https://www.gutenberg.org/files/1250/1250-0.txt",
+    url: "https://www.gutenberg.org/files/1250/1250-h/1250-h.htm#link2H_PART1",
     language: "en",
     format: "text"
   },
@@ -77,7 +77,7 @@ export const bookSources = [
     id: "eightydays",
     title: "Around the World in Eighty Days by Jules Verne",
     author: "Jules Verne",
-    url: "https://www.gutenberg.org/files/103/103-0.txt",
+    url: "https://www.gutenberg.org/files/103/103-h/103-h.htm#chap01",
     language: "en",
     format: "text"
   },
@@ -85,7 +85,7 @@ export const bookSources = [
     id: "brotherskaramazov",
     title: "The Brothers Karamazov by Fyodor Dostoyevsky",
     author: "Fyodor Dostoyevsky",
-    url: "https://www.gutenberg.org/files/28054/28054-0.txt",
+    url: "https://www.gutenberg.org/files/28054/28054-h/28054-h.htm",
     language: "en",
     format: "text"
   },
@@ -139,7 +139,7 @@ export const bookSources = [
     id: "divinecomedy",
     title: "The Divine Comedy by Dante Alighieri",
     author: "Dante Alighieri",
-    url: "https://www.gutenberg.org/files/8800/8800-0.txt",
+    url: "https://www.gutenberg.org/files/8800/8800-h/8800-h.htm",
     language: "en",
     format: "text"
   },
@@ -189,7 +189,7 @@ export const bookSources = [
     id: "greatexpectations",
     title: "Great Expectations by Charles Dickens",
     author: "Charles Dickens",
-    url: "https://www.gutenberg.org/files/1400/1400-0.txt",
+    url: "https://www.gutenberg.org/files/1400/1400-h/1400-h.htm",
     language: "en",
     format: "text"
   },
@@ -207,7 +207,7 @@ export const bookSources = [
     id: "gulliverstravels",
     title: "Gulliver's Travels by Jonathan Swift",
     author: "Jonathan Swift",
-    url: "https://www.gutenberg.org/files/829/829-0.txt",
+    url: "https://www.gutenberg.org/files/829/829-h/829-h.htm",
     language: "en",
     format: "text"
   },
@@ -215,7 +215,7 @@ export const bookSources = [
     id: "heartofdarkness",
     title: "Heart of Darkness by Joseph Conrad",
     author: "Joseph Conrad",
-    url: "https://www.gutenberg.org/files/219/219-0.txt",
+    url: "https://www.gutenberg.org/files/219/219-h/219-h.htm",
     language: "en",
     format: "text"
   },
@@ -223,7 +223,7 @@ export const bookSources = [
     id: "houndofbaskervilles",
     title: "The Hound of the Baskervilles by Arthur Conan Doyle",
     author: "Arthur Conan Doyle",
-    url: "https://www.gutenberg.org/files/2852/2852-0.txt",
+    url: "https://www.gutenberg.org/files/2852/2852-h/2852-h.htm",
     language: "en",
     format: "text"
   },
@@ -305,7 +305,7 @@ export const bookSources = [
     id: "metamorphosis",
     title: "Metamorphosis by Franz Kafka",
     author: "Franz Kafka",
-    url: "https://www.gutenberg.org/files/5200/5200-0.txt",
+    url: "https://www.gutenberg.org/files/5200/5200-h/5200-h.htm",
     language: "en",
     format: "text"
   },
@@ -329,7 +329,7 @@ export const bookSources = [
     id: "peterpan",
     title: "Peter Pan by J. M. Barrie",
     author: "J. M. Barrie",
-    url: "https://www.gutenberg.org/files/16/16-0.txt",
+    url: "https://www.gutenberg.org/files/16/16-h/16-h.htm",
     language: "en",
     format: "text"
   },
@@ -337,7 +337,7 @@ export const bookSources = [
     id: "doriangray",
     title: "The Picture of Dorian Gray by Oscar Wilde",
     author: "Oscar Wilde",
-    url: "https://www.gutenberg.org/files/174/174-0.txt",
+    url: "https://www.gutenberg.org/files/174/174-h/174-h.htm",
     language: "en",
     format: "text"
   },
@@ -353,7 +353,7 @@ export const bookSources = [
     id: "theprince",
     title: "The Prince by Niccolò Machiavelli",
     author: "Niccolò Machiavelli",
-    url: "https://www.gutenberg.org/files/1232/1232-0.txt",
+    url: "https://www.gutenberg.org/files/1232/1232-h/1232-h.htm",
     language: "en",
     format: "text"
   },
@@ -369,7 +369,7 @@ export const bookSources = [
     id: "scarletletter",
     title: "The Scarlet Letter by Nathaniel Hawthorne",
     author: "Nathaniel Hawthorne",
-    url: "https://www.gutenberg.org/files/25344/25344-0.txt",
+    url: "https://www.gutenberg.org/files/25344/25344-h/25344-h.htm",
     language: "en",
     format: "text"
   },
@@ -377,7 +377,7 @@ export const bookSources = [
     id: "soulsofblackfolk",
     title: "The Souls of Black Folk by W. E. B. Du Bois",
     author: "W. E. B. Du Bois",
-    url: "https://www.gutenberg.org/files/408/408-0.txt",
+    url: "https://www.gutenberg.org/files/408/408-h/408-h.htm",
     language: "en",
     format: "text"
   },
@@ -420,7 +420,7 @@ export const bookSources = [
     id: "warandpeace", 
     title: "War and Peace by Leo Tolstoy",
     author: "Leo Tolstoy",
-    url: "https://www.gutenberg.org/cache/epub/2600/pg2600-images.html#link2H_4_0001",
+    url: "https://www.gutenberg.org/files/2600/2600-h/2600-h.htm",
     language: "en",
     format: "text"
     },
@@ -429,7 +429,7 @@ export const bookSources = [
     id: "waroftheworlds",
     title: "The War of the Worlds by H. G. Wells",
     author: "H. G. Wells",
-    url: "https://www.gutenberg.org/files/36/36-0.txt",
+    url: "https://www.gutenberg.org/files/36/36-h/36-h.htm",
     language: "en",
     format: "text"
   },
@@ -445,7 +445,7 @@ export const bookSources = [
     id: "yellowwallpaper",
     title: "The Yellow Wallpaper by Charlotte Perkins Gilman",
     author: "Charlotte Perkins Gilman",
-    url: "https://www.gutenberg.org/files/1952/1952-0.txt",
+    url: "https://www.gutenberg.org/files/1952/1952-h/1952-h.htm",
     language: "en",
     format: "text"
   }
