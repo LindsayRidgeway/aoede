@@ -120,115 +120,91 @@ export const parseIntoSentences = (text) => {
 
 // Translate sentences using Google Translate
 export const translateSentences = async (sentences, sourceLang, targetLang) => {
-  console.log(`[DEBUG] translateSentences called with: sourceLang=${sourceLang}, targetLang=${targetLang}`);
-  console.log(`[DEBUG] Sample sentence: "${sentences[0]?.substring(0, 30)}..."`);
+  if (!sentences || sentences.length === 0) return [];
+  if (sourceLang === targetLang) return sentences;
   
-  if (!sentences || sentences.length === 0) {
-    console.log(`[DEBUG] No sentences to translate, returning empty array`);
-    return [];
-  }
+  const translatedSentences = [];
   
-  // Skip translation if languages are the same
-  if (sourceLang && targetLang && sourceLang.toLowerCase() === targetLang.toLowerCase()) {
-    console.log(`[DEBUG] Source and target languages are identical (${sourceLang}). No translation needed.`);
-    return sentences;
-  }
-  
-  // Validation check - this is critical
-  if (!sourceLang || !targetLang) {
-    console.log(`[DEBUG] INVALID LANGUAGE CODES: sourceLang=${sourceLang}, targetLang=${targetLang}`);
-    return sentences; // Return original sentences as fallback
-  }
-  
-  // Force language codes to lowercase - Google API expects lowercase
-  const normalizedSource = sourceLang.toLowerCase();
-  const normalizedTarget = targetLang.toLowerCase();
-  
-  console.log(`[DEBUG] Normalized language codes: source=${normalizedSource}, target=${normalizedTarget}`);
-  
-  // Explicit check for Italian to see if it's being treated specially somehow
-  if (normalizedSource === 'it') {
-    console.log(`[DEBUG] SOURCE LANGUAGE IS ITALIAN`);
-  }
+  // Detect language code for source language if needed
+  const sourceLanguageCode = detectLanguageCode(sourceLang);
   
   // Batch translations to avoid too many API calls
-  const translatedSentences = [];
   const batchSize = 10;
-  
-  // Override console.log temporarily to get more verbose logging
-  const originalConsoleLog = console.log;
-  console.log = function(...args) {
-    if (typeof args[0] === 'string' && args[0].includes('[Translation]')) {
-      args[0] = '[DEBUG] ' + args[0];
+  for (let i = 0; i < sentences.length; i += batchSize) {
+    const batch = sentences.slice(i, i + batchSize);
+    
+    try {
+      const translations = await translateBatch(batch, sourceLanguageCode, targetLang);
+      translatedSentences.push(...translations);
+    } catch (error) {
+      // If translation fails, use original sentences as fallback
+      translatedSentences.push(...batch);
     }
-    originalConsoleLog.apply(console, args);
-  };
-  
-  try {
-    // Actually perform the translation
-    for (let i = 0; i < sentences.length; i += batchSize) {
-      const batch = sentences.slice(i, i + batchSize);
-      
-      try {
-        console.log(`[DEBUG] Translating batch ${Math.floor(i/batchSize) + 1} of ${Math.ceil(sentences.length/batchSize)}`);
-        console.log(`[DEBUG] Calling translateBatch with: source=${normalizedSource}, target=${normalizedTarget}`);
-        
-        // Call the translation API
-        const translations = await translateBatch(batch, normalizedSource, normalizedTarget);
-        
-        // DEBUG: Compare before and after translation
-        if (translations && translations.length > 0) {
-          console.log(`[DEBUG] Translation Example:`);
-          console.log(`[DEBUG] Original: "${batch[0].substring(0, 30)}..."`);
-          console.log(`[DEBUG] Translated: "${translations[0].substring(0, 30)}..."`);
-          
-          // Check if translation actually happened
-          const unchanged = batch.every((original, index) => 
-            original === translations[index]
-          );
-          
-          if (unchanged) {
-            console.log(`[DEBUG] WARNING: All sentences unchanged after translation!`);
-          }
-          
-          translatedSentences.push(...translations);
-        } else {
-          console.log(`[DEBUG] Empty translation result, using original batch`);
-          translatedSentences.push(...batch);
-        }
-      } catch (error) {
-        console.log(`[DEBUG] Error translating batch: ${error.message || 'Unknown error'}`);
-        console.log(`[DEBUG] Error details:`, error);
-        // If translation fails, use original sentences as fallback
-        translatedSentences.push(...batch);
-      }
-    }
-  } finally {
-    // Restore original console.log
-    console.log = originalConsoleLog;
   }
   
-  console.log(`[DEBUG] translateSentences completed with ${translatedSentences.length} sentences`);
   return translatedSentences;
 };
 
-// Detect language code - no language-specific logic
+// Enhanced language code detection with more localized language names support
 export const detectLanguageCode = (languageName) => {
   if (!languageName) return "";
   
-  // Log for debugging
-  console.log(`[Lang] Detecting language code for: ${languageName}`);
+  // Normalize the input (lowercase, trim spaces)
+  const normalizedInput = languageName.toLowerCase().trim();
   
-  // If the input is already a valid ISO language code, just return it
-  // This covers both basic 2-letter codes and extended codes with region
-  if (/^[a-z]{2}(-[a-z]{2,})?$/i.test(languageName)) {
-    // Convert to lowercase for consistency
-    const code = languageName.toLowerCase();
-    console.log(`[Lang] Input is already a language code: ${code}`);
-    return code;
+  // Comprehensive language map including native language names
+  const languageMap = {
+    // English language names
+    'english': 'en', 'spanish': 'es', 'french': 'fr', 'german': 'de', 'italian': 'it',
+    'portuguese': 'pt', 'dutch': 'nl', 'russian': 'ru', 'japanese': 'ja', 'chinese': 'zh',
+    'korean': 'ko', 'arabic': 'ar', 'hindi': 'hi', 'turkish': 'tr', 'vietnamese': 'vi',
+    'thai': 'th', 'indonesian': 'id', 'hebrew': 'he', 'polish': 'pl', 'swedish': 'sv',
+    'greek': 'el', 'czech': 'cs', 'danish': 'da', 'finnish': 'fi', 'norwegian': 'no',
+    'romanian': 'ro', 'hungarian': 'hu', 'ukrainian': 'uk', 'bulgarian': 'bg', 'croatian': 'hr',
+    'serbian': 'sr', 'slovak': 'sk', 'slovenian': 'sl', 'latvian': 'lv', 'lithuanian': 'lt',
+    'estonian': 'et', 'albanian': 'sq', 'macedonian': 'mk', 'icelandic': 'is', 'maltese': 'mt',
+    
+    // Native language names
+    'español': 'es', 'français': 'fr', 'deutsch': 'de', 'italiano': 'it', 'português': 'pt',
+    'nederlands': 'nl', 'русский': 'ru', '日本語': 'ja', '中文': 'zh', '한국어': 'ko',
+    'العربية': 'ar', 'हिन्दी': 'hi', 'türkçe': 'tr', 'tiếng việt': 'vi', 'ไทย': 'th',
+    'bahasa indonesia': 'id', 'עברית': 'he', 'polski': 'pl', 'svenska': 'sv', 'aελληνικά': 'el',
+    'čeština': 'cs', 'dansk': 'da', 'suomi': 'fi', 'norsk': 'no', 'română': 'ro',
+    'magyar': 'hu', 'українська': 'uk', 'български': 'bg', 'hrvatski': 'hr', 'српски': 'sr',
+    'slovenčina': 'sk', 'slovenščina': 'sl', 'latviešu': 'lv', 'lietuvių': 'lt', 'eesti': 'et',
+    
+    // Common alternate names
+    'american': 'en', 'british': 'en', 'chinese simplified': 'zh', 'chinese traditional': 'zh',
+    'mandarin': 'zh', 'cantonese': 'zh', 'castilian': 'es', 'castellano': 'es', 'brazilian': 'pt',
+    'brazilian portuguese': 'pt', 'português brasileiro': 'pt', 'farsi': 'fa', 'persian': 'fa',
+    'flemish': 'nl', 'vlaams': 'nl', 'afrikaans': 'af', 'hebrew': 'he', 'aramaic': 'arc',
+    'yiddish': 'yi', 'arabic': 'ar', 'hindi': 'hi', 'bengali': 'bn', 'punjabi': 'pa',
+    'swahili': 'sw', 'latinoamericano': 'es', 'latin american spanish': 'es',
+    
+    // Short forms that might be entered
+    'eng': 'en', 'spa': 'es', 'fre': 'fr', 'fra': 'fr', 'ger': 'de', 'deu': 'de', 'ita': 'it',
+    'por': 'pt', 'dut': 'nl', 'nld': 'nl', 'rus': 'ru', 'jpn': 'ja', 'chi': 'zh', 'zho': 'zh',
+    'kor': 'ko', 'ara': 'ar', 'hin': 'hi', 'tur': 'tr', 'vie': 'vi', 'tha': 'th', 'ind': 'id',
+    'heb': 'he', 'pol': 'pl', 'swe': 'sv'
+  };
+  
+  // Direct lookup
+  if (languageMap[normalizedInput]) {
+    return languageMap[normalizedInput];
   }
   
-  // For anything else, just pass through
-  console.log(`[Lang] Unable to convert to standard language code: ${languageName}`);
-  return languageName;
+  // If it's a 2-letter code already, return it
+  if (/^[a-z]{2}$/.test(normalizedInput)) {
+    return normalizedInput;
+  }
+  
+  // Try to find a partial match
+  for (const [key, value] of Object.entries(languageMap)) {
+    if (normalizedInput.includes(key) || key.includes(normalizedInput)) {
+      return value;
+    }
+  }
+  
+  // Default to English if no match found
+  return 'en';
 };

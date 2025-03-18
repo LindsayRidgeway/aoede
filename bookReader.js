@@ -1,7 +1,7 @@
 // bookReader.js - Manages reading state for books according to the specified pseudocode
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { processSourceText, translateBatch } from './apiServices';
-import { parseIntoSentences, detectLanguageCode } from './textProcessing';
+import { parseIntoSentences, detectLanguageCode, translateSentences } from './textProcessing';
 import { bookSources, getBookSourceById } from './bookSources';
 import BookPipe from './bookPipe';
 
@@ -224,6 +224,31 @@ class BookReader {
     }
   }
   
+  // Function to check if a string is mostly in the target language or not
+  // Returns true if the text appears to be in the target language
+  isInTargetLanguage(text, targetLangCode) {
+    if (!text || !targetLangCode) return true;
+    
+    // Simple check based on common words in different languages
+    const commonWords = {
+      'it': ['di', 'e', 'il', 'la', 'in', 'un', 'una', 'che', 'è', 'per', 'con', 'non', 'sono'],
+      'es': ['el', 'la', 'de', 'en', 'y', 'a', 'que', 'por', 'con', 'no', 'una', 'los', 'se', 'es'],
+      'fr': ['le', 'la', 'de', 'et', 'en', 'un', 'une', 'du', 'des', 'à', 'que', 'qui', 'pas', 'sur'],
+      'de': ['der', 'die', 'das', 'und', 'in', 'zu', 'von', 'mit', 'auf', 'für', 'ist', 'nicht', 'ein', 'eine']
+      // Add more languages as needed
+    };
+    
+    // If we don't have a check for this language, assume it's correct
+    if (!commonWords[targetLangCode]) return true;
+    
+    // Check if any of the common words for the target language appear in the text
+    const words = text.toLowerCase().split(/\s+/);
+    const matches = words.filter(word => commonWords[targetLangCode].includes(word));
+    
+    // If we have at least 2 common words matching, it's likely in the target language
+    return matches.length >= 2;
+  }
+  
   // Load and process next raw sentence
   async loadRawSentence() {
     // Save tracker state
@@ -258,6 +283,8 @@ class BookReader {
       
       // 1. FIRST TRANSLATE to the study language if the book is not already in that language
       let textForSimplification = rawText;
+      let studyLanguageText = null;
+      
       const bookSource = bookSources.find(book => book.title === this.readerBookTitle);
       
       if (bookSource && bookSource.language !== this.readerStudyLanguage) {
@@ -272,11 +299,15 @@ class BookReader {
             
             if (translatedText && translatedText.length > 0) {
               textForSimplification = translatedText[0];
+              studyLanguageText = translatedText[0]; // Save the pure translation for verification
             }
           }
         } catch (error) {
           // Continue with original text as fallback
         }
+      } else {
+        // Book is already in study language
+        studyLanguageText = rawText;
       }
       
       // 2. THEN SIMPLIFY the text in the study language
@@ -297,16 +328,72 @@ class BookReader {
         }
       }
       
+      // 3. VERIFY that our simplified text is actually in the target language
+      // This is crucial! If Claude returns English despite being asked for Italian,
+      // we need to force a new translation to the study language
+      
+      // Check a sample of the simplified sentences
+      const studyLanguageCode = detectLanguageCode(this.readerStudyLanguage);
+      let needsRetranslation = false;
+      
+      // Only check if we have a valid language code to test against
+      if (studyLanguageCode && ['it', 'es', 'fr', 'de'].includes(studyLanguageCode)) {
+        // Take the first sentence as a sample
+        const sampleSentence = this.simpleArray[0];
+        
+        // If sample doesn't appear to be in the target language, mark for retranslation
+        if (sampleSentence && !this.isInTargetLanguage(sampleSentence, studyLanguageCode)) {
+          needsRetranslation = true;
+        }
+      }
+      
+      // If needed, re-translate the simplified sentences to the study language
+      if (needsRetranslation && studyLanguageCode) {
+        try {
+          // Re-translate from English to the study language
+          const fixedTranslation = await translateBatch(this.simpleArray, 'en', studyLanguageCode);
+          
+          if (fixedTranslation && fixedTranslation.length > 0) {
+            this.simpleArray = fixedTranslation;
+          }
+        } catch (error) {
+          // Continue with what we have if re-translation fails
+        }
+      }
+      
       // 3. TRANSLATE the simplified sentences to user's language
       try {
         if (this.readerStudyLanguage !== this.userLanguage) {
           const studyLanguageCode = detectLanguageCode(this.readerStudyLanguage);
           const userLanguageCode = this.userLanguage;
           
-          this.translatedArray = await translateBatch(this.simpleArray, studyLanguageCode, userLanguageCode);
-          
-          if (!this.translatedArray || this.translatedArray.length === 0) {
-            // Fallback to original sentences if translation fails
+          // One more check to ensure we actually need translation
+          if (studyLanguageCode !== userLanguageCode) {
+            // Directly use full translateSentences to ensure all needed translation
+            this.translatedArray = await translateSentences(this.simpleArray, studyLanguageCode, userLanguageCode);
+            
+            // Safety check - if translations look identical to originals, try one more approach
+            const firstSimple = this.simpleArray[0];
+            const firstTranslated = this.translatedArray[0];
+            
+            if (firstSimple === firstTranslated && firstSimple && firstSimple.length > 5) {
+              // Last resort: force a direct translation with translateBatch
+              try {
+                const forcedTranslations = await translateBatch(this.simpleArray, studyLanguageCode, userLanguageCode);
+                if (forcedTranslations && forcedTranslations.length > 0) {
+                  this.translatedArray = forcedTranslations;
+                }
+              } catch (innerError) {
+                // Keep the unchanged result if this fails
+              }
+            }
+            
+            // If translations still failed completely, use original
+            if (!this.translatedArray || this.translatedArray.length === 0) {
+              this.translatedArray = [...this.simpleArray];
+            }
+          } else {
+            // If codes are identical, no need to translate
             this.translatedArray = [...this.simpleArray];
           }
         } else {
