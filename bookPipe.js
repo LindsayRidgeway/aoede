@@ -25,26 +25,6 @@ class BookPipe {
     this.shouldSavePosition = false; // Flag to prevent auto-saving position when just loading
   }
 
-  // Get original anchor position for a given fragment ID in HTML
-  findOriginalAnchorPosition(html, fragmentId) {
-    if (!html || !fragmentId) return -1;
-    
-    // Escape special regex characters in the fragment ID
-    const escapedFragmentId = fragmentId.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    
-    // Pattern for the anchor element
-    const anchorPattern = new RegExp(`<a[^>]*?\\sname\\s*=\\s*["']?${escapedFragmentId}["']?[^>]*?>`, 'i');
-    
-    // Try to find the anchor in the HTML
-    const match = anchorPattern.exec(html);
-    
-    if (match) {
-      return match.index;
-    }
-    
-    return -1;
-  }
-
   // Initialize the pipe with a book ID
   async initialize(bookId) {
     if (!bookId) {
@@ -114,7 +94,6 @@ class BookPipe {
         if (isNaN(this.currentReadPosition)) {
           this.currentReadPosition = 0;
         }
-        console.log(`[BookPipe] Loaded saved position: ${this.currentReadPosition}`);
       } else {
         // Check for legacy storage format
         const legacyKey = `book_position_${this.bookId}`;
@@ -130,15 +109,12 @@ class BookPipe {
           // Save in new format and clean up legacy format
           await AsyncStorage.setItem(storageKey, this.currentReadPosition.toString());
           await AsyncStorage.removeItem(legacyKey);
-          console.log(`[BookPipe] Converted legacy position: ${this.currentReadPosition}`);
         } else {
           this.currentReadPosition = 0;
-          console.log(`[BookPipe] No saved position found, using 0`);
         }
       }
     } catch (error) {
       this.currentReadPosition = 0;
-      console.log(`[BookPipe] Error loading position: ${error.message}`);
     }
   }
 
@@ -149,141 +125,162 @@ class BookPipe {
     try {
       const storageKey = `book_reading_position_${this.bookId}`;
       await AsyncStorage.setItem(storageKey, this.currentReadPosition.toString());
-      console.log(`[BookPipe] Saved position: ${this.currentReadPosition}`);
     } catch (error) {
       // Silent error handling
-      console.log(`[BookPipe] Error saving position: ${error.message}`);
     }
   }
 
-  // Reset book position to the beginning - complete bypass of the regular flow
+  // Full reset that mimics creating a new object instance
+  thorough_reset() {
+    // Save what we need to keep
+    const bookId = this.bookId;
+    
+    // Reset EVERYTHING to initial values
+    this.bookId = null;
+    this.bookTitle = '';
+    this.bookLanguage = '';
+    this.bookUrl = '';
+    this.htmlContent = null;
+    this.anchorPosition = 0;
+    this.currentReadPosition = 0;
+    this.chunkSize = 50000;
+    this.sentences = [];
+    this.nextSentenceIndex = 0;
+    this.isInitialized = false;
+    this.isLoading = false;
+    this.error = null;
+    this.hasMoreContent = true;
+    this.shouldSavePosition = false;
+    
+    return bookId;
+  }
+
+  // Reset book position to the beginning - explicit command to the singleton
   async resetBookPosition() {
     if (!this.bookId) return false;
     
     try {
-      console.log(`[BookPipe] Rewinding book ID: ${this.bookId}`);
-      
-      // Get the current book information before resetting
+      // Remember current book ID
       const currentBookId = this.bookId;
-      const bookSource = getBookSourceById(currentBookId);
-      if (!bookSource) {
-        throw new Error(`Book with ID ${this.bookId} not found`);
-      }
       
-      const bookUrl = bookSource.url;
-      
-      // 1. Clear the storage positions
+      // 1. Delete ALL storage for this book - both formats
       const storageKey = `book_reading_position_${currentBookId}`;
       await AsyncStorage.removeItem(storageKey);
       
       const legacyKey = `book_position_${currentBookId}`;
       await AsyncStorage.removeItem(legacyKey);
       
-      console.log(`[BookPipe] Cleared storage positions`);
+      // Other book tracker info
+      const trackerKey = `book_tracker_${currentBookId}`;
+      await AsyncStorage.removeItem(trackerKey);
       
-      // 2. Bypass the pipe and fetch the content directly
-      console.log(`[BookPipe] Fetching fresh content from: ${bookUrl}`);
-      let freshHtmlContent = null;
+      // 2. Full reset - return the singleton to its initial state
+      this.thorough_reset();
       
-      // List of CORS proxies to try
-      const corsProxies = [
-        `${CORS_PROXY}`, // Use the configured CORS proxy first
-        'https://corsproxy.io/?', // Alternative proxy 1
-        'https://api.allorigins.win/raw?url=', // Alternative proxy 2
-        'https://proxy.cors.sh/' // Alternative proxy 3
-      ];
-      
-      let response = null;
-      let fetchSuccess = false;
-      
-      // Try each proxy until one works
-      for (const proxy of corsProxies) {
-        if (fetchSuccess) break;
-        
-        try {
-          // Ensure URL is properly encoded if using a proxy that requires it
-          let targetUrl = bookUrl;
-          if (proxy.includes('?url=')) {
-            targetUrl = encodeURIComponent(bookUrl);
-          }
-          
-          const proxyUrl = `${proxy}${targetUrl}`;
-          console.log(`[BookPipe] Trying proxy: ${proxy}`);
-          
-          response = await fetch(proxyUrl, { 
-            method: 'GET',
-            mode: 'cors',
-            headers: {
-              'Accept': 'text/html,application/xhtml+xml,application/xml',
-              'Cache-Control': 'no-cache, no-store, must-revalidate',
-              'Pragma': 'no-cache'
-            },
-            cache: 'no-store'
-          });
-          
-          if (response.ok) {
-            freshHtmlContent = await response.text();
-            fetchSuccess = true;
-            console.log(`[BookPipe] Successfully fetched fresh content (${freshHtmlContent.length} bytes)`);
-          }
-        } catch (error) {
-          console.log(`[BookPipe] Proxy fetch error: ${error.message}`);
-        }
-      }
-      
-      if (!freshHtmlContent) {
-        throw new Error('Could not fetch fresh content for rewinding');
-      }
-      
-      // 3. Find the anchor directly in the fresh content
-      const fragmentId = bookUrl.includes('#') ? bookUrl.split('#')[1] : '';
-      if (!fragmentId) {
-        throw new Error('URL does not contain an anchor fragment');
-      }
-      
-      const anchorPosition = this.findOriginalAnchorPosition(freshHtmlContent, fragmentId);
-      
-      if (anchorPosition === -1) {
-        throw new Error(`Could not find anchor "#${fragmentId}" in content`);
-      }
-      
-      console.log(`[BookPipe] Found anchor at position: ${anchorPosition}`);
-      
-      // 4. Extract a chunk of text from anchor position
-      const chunkEnd = Math.min(anchorPosition + this.chunkSize, freshHtmlContent.length);
-      const htmlChunk = freshHtmlContent.substring(anchorPosition, chunkEnd);
-      
-      // 5. Process text and extract sentences
-      const textChunk = this.extractText(htmlChunk);
-      const newSentences = parseIntoSentences(textChunk);
-      
-      console.log(`[BookPipe] Extracted ${newSentences.length} sentences from anchor`);
-      
-      if (newSentences.length > 0) {
-        console.log(`[BookPipe] First sentence: "${newSentences[0]}"`);
-      }
-      
-      // 6. Complete refresh of the pipe state
-      this.reset();
-      
-      // 7. Set up the pipe with fresh state
+      // 3. Now rebuild from scratch with forced zero offset
       this.bookId = currentBookId;
+      this.isLoading = true;
+      this.shouldSavePosition = false;
+      
+      // 4. Get book information
+      const bookSource = getBookSourceById(currentBookId);
+      if (!bookSource) {
+        throw new Error(`Book with ID ${currentBookId} not found`);
+      }
+      
       this.bookTitle = bookSource.title || 'Unknown Title';
       this.bookLanguage = bookSource.language || 'en';
-      this.bookUrl = bookUrl;
-      this.htmlContent = freshHtmlContent;
-      this.anchorPosition = anchorPosition;
-      this.currentReadPosition = 0;
-      this.sentences = newSentences;
-      this.nextSentenceIndex = 0;
-      this.isInitialized = newSentences.length > 0;
-      this.hasMoreContent = true;
+      this.bookUrl = bookSource.url;
       
-      return newSentences.length > 0;
+      // 5. Fetch fresh content with no caching
+      await this.fetchContentWithNoCaching();
+      
+      // 6. Find the anchor directly - do not use saved info
+      await this.findAnchorPosition();
+      
+      // 7. Force reading position to zero - do not load from storage
+      this.currentReadPosition = 0;
+      
+      // 8. Process the first chunk
+      await this.processNextChunk(false);
+      
+      // 9. If we got sentences, we're initialized
+      this.isInitialized = this.sentences.length > 0;
+      this.nextSentenceIndex = 0;
+      this.isLoading = false;
+      
+      return this.sentences.length > 0;
     } catch (error) {
-      console.log(`[BookPipe] Rewind error: ${error.message}`);
       return false;
     }
+  }
+  
+  // Special fetch that ensures no caching
+  async fetchContentWithNoCaching() {
+    if (!this.bookUrl) {
+      throw new Error('Book URL is not set');
+    }
+    
+    // Add a unique cache-busting parameter
+    let targetUrl = this.bookUrl;
+    if (targetUrl.includes('?')) {
+      targetUrl = `${targetUrl}&_=${Date.now()}`;
+    } else if (targetUrl.includes('#')) {
+      const [baseUrl, fragment] = targetUrl.split('#');
+      targetUrl = `${baseUrl}?_=${Date.now()}#${fragment}`;
+    } else {
+      targetUrl = `${targetUrl}?_=${Date.now()}`;
+    }
+    
+    // Clear HTML content first to ensure a fresh start
+    this.htmlContent = null;
+    
+    // List of CORS proxies to try
+    const corsProxies = [
+      `${CORS_PROXY}`, // Use the configured CORS proxy first
+      'https://corsproxy.io/?', // Alternative proxy 1
+      'https://api.allorigins.win/raw?url=', // Alternative proxy 2
+      'https://proxy.cors.sh/' // Alternative proxy 3
+    ];
+    
+    // Try each proxy
+    for (const proxy of corsProxies) {
+      try {
+        // Ensure URL is properly encoded if using a proxy that requires it
+        let proxyTargetUrl = targetUrl;
+        if (proxy.includes('?url=')) {
+          proxyTargetUrl = encodeURIComponent(targetUrl);
+        }
+        
+        const proxyUrl = `${proxy}${proxyTargetUrl}`;
+        
+        const response = await fetch(proxyUrl, { 
+          method: 'GET',
+          mode: 'cors',
+          headers: {
+            'Accept': 'text/html,application/xhtml+xml,application/xml',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+          },
+          cache: 'no-store',
+          credentials: 'omit' // Don't send cookies
+        });
+        
+        if (response.ok) {
+          this.htmlContent = await response.text();
+          
+          if (this.htmlContent && this.htmlContent.length >= 1000) {
+            return; // Success, exit the function
+          }
+        }
+      } catch (error) {
+        // Try next proxy
+      }
+    }
+    
+    // If we reach here, all proxies failed
+    throw new Error('Failed to fetch book content with fresh request');
   }
 
   // Fetch book content from the URL
@@ -297,17 +294,6 @@ class BookPipe {
       let maxRetries = 4;
       let retryCount = 0;
       let success = false;
-      
-      // Add cache-busting query parameter
-      let targetUrl = this.bookUrl;
-      if (targetUrl.includes('?')) {
-        targetUrl += `&_cb=${Date.now()}`;
-      } else if (targetUrl.includes('#')) {
-        const [urlBase, fragment] = targetUrl.split('#');
-        targetUrl = `${urlBase}?_cb=${Date.now()}#${fragment}`;
-      } else {
-        targetUrl += `?_cb=${Date.now()}`;
-      }
       
       // List of CORS proxies to try
       const corsProxies = [
@@ -327,47 +313,34 @@ class BookPipe {
             
             if (currentProxy) {
               // Ensure URL is properly encoded if using a proxy that requires it
-              let proxyTargetUrl = targetUrl;
+              let targetUrl = this.bookUrl;
               if (currentProxy.includes('?url=')) {
-                proxyTargetUrl = encodeURIComponent(targetUrl);
+                targetUrl = encodeURIComponent(this.bookUrl);
               }
               
-              const proxyUrl = `${currentProxy}${proxyTargetUrl}`;
-              console.log(`[BookPipe] Using proxy: ${currentProxy}`);
+              const proxyUrl = `${currentProxy}${targetUrl}`;
               
               response = await fetch(proxyUrl, { 
                 method: 'GET',
                 mode: 'cors',
                 headers: {
                   'Accept': 'text/html,application/xhtml+xml,application/xml',
-                  'Cache-Control': 'no-cache, no-store, must-revalidate',
-                  'Pragma': 'no-cache'
+                  'Cache-Control': 'no-cache'
                 },
-                cache: 'no-store',
                 timeout: 15000 // 15 second timeout
               });
             } else {
               // If no proxy is available or they all failed, try a no-cors request as last resort
-              response = await fetch(targetUrl, { 
+              response = await fetch(this.bookUrl, { 
                 method: 'GET',
                 mode: 'no-cors',
-                headers: {
-                  'Cache-Control': 'no-cache, no-store, must-revalidate',
-                  'Pragma': 'no-cache'
-                },
-                cache: 'no-store',
+                cache: 'no-cache',
                 timeout: 15000
               });
             }
           } else {
             // For native platforms, use direct fetch which shouldn't have CORS issues
-            response = await fetch(targetUrl, {
-              headers: {
-                'Cache-Control': 'no-cache, no-store, must-revalidate',
-                'Pragma': 'no-cache'
-              },
-              cache: 'no-store'
-            });
+            response = await fetch(this.bookUrl);
           }
           
           if (response.type === 'opaque') {
@@ -386,10 +359,8 @@ class BookPipe {
           }
           
           success = true;
-          console.log(`[BookPipe] Successfully fetched content (${this.htmlContent.length} bytes)`);
         } catch (fetchError) {
           retryCount++;
-          console.log(`[BookPipe] Fetch attempt ${retryCount} failed: ${fetchError.message}`);
           
           // Wait a bit longer between retries
           if (retryCount < maxRetries) {
@@ -420,26 +391,35 @@ class BookPipe {
       let fragmentId = '';
       if (this.bookUrl.includes('#')) {
         fragmentId = this.bookUrl.split('#')[1];
-        console.log(`[BookPipe] Found fragment ID: ${fragmentId}`);
       } else {
         // No fragment ID, we don't have a specific anchor to find
         this.sentences = ["Unable to find the beginning of the text. URL has no anchor."];
         throw new Error('URL does not contain an anchor fragment');
       }
       
-      const anchorPosition = this.findOriginalAnchorPosition(this.htmlContent, fragmentId);
-      
-      if (anchorPosition !== -1) {
-        this.anchorPosition = anchorPosition;
-        console.log(`[BookPipe] Found anchor at position ${this.anchorPosition}`);
+      // Look for anchor element patterns
+      const anchorPatterns = [
+        // Pattern 1: <a name="i"> - classic HTML anchor
+        new RegExp(`<a[^>]*?\\sname\\s*=\\s*["']?${fragmentId}["']?[^>]*?>((?!</a>).)*</a>`, 'i'),
         
-        // Log a snippet of context
-        const snippetStart = Math.max(0, this.anchorPosition - 50);
-        const snippetEnd = Math.min(this.htmlContent.length, this.anchorPosition + 150);
-        const snippet = this.htmlContent.substring(snippetStart, snippetEnd).replace(/\s+/g, ' ');
-        console.log(`[BookPipe] Context around match: ${snippet}`);
+        // Pattern 2: <a name="i" - with any attributes after
+        new RegExp(`<a[^>]*?\\sname\\s*=\\s*["']?${fragmentId}["']?[^>]*?>`, 'i'),
+        
+        // Pattern 3: <element id="i"> - any element with matching ID
+        new RegExp(`<[^>]+\\sid\\s*=\\s*["']?${fragmentId}["']?[^>]*?>`, 'i')
+      ];
+      
+      // Try each pattern
+      let match = null;
+      for (const pattern of anchorPatterns) {
+        match = pattern.exec(this.htmlContent);
+        if (match) break;
+      }
+      
+      if (match) {
+        this.anchorPosition = match.index;
       } else {
-        // We couldn't find the anchor - alert the user with a clear message
+        // We couldn't find the anchor - clear state
         this.sentences = [`Unable to find the beginning of the text. Anchor "#${fragmentId}" not found.`];
         throw new Error(`Anchor "#${fragmentId}" not found in HTML content`);
       }
@@ -476,10 +456,6 @@ class BookPipe {
       // Parse the text into sentences
       const newSentences = parseIntoSentences(textChunk);
       
-      if (newSentences.length > 0) {
-        console.log(`[BookPipe] First sentence: ${newSentences[0]}`);
-      }
-      
       // Add new sentences to our collection
       this.sentences = [...this.sentences, ...newSentences];
       
@@ -514,7 +490,7 @@ class BookPipe {
       html = html.replace(/<header\b[^<]*(?:(?!<\/header>)<[^<]*)*<\/header>/gi, ' ');
       html = html.replace(/<footer\b[^<]*(?:(?!<\/footer>)<[^<]*)*<\/footer>/gi, ' ');
       
-      // Remove tables, they often contain distracting information
+      // Remove table elements - often contain TOC or other navigation
       html = html.replace(/<table\b[^<]*(?:(?!<\/table>)<[^<]*)*<\/table>/gi, ' ');
       
       // Preserve heading tags by adding newlines before and after them
@@ -626,8 +602,9 @@ class BookPipe {
     };
   }
 
-  // Reset the pipe for a new book
+  // Reset the pipe for a new book - basic version, not thorough
   reset() {
+    // Note: This is not a thorough reset - see thorough_reset for that
     this.bookId = null;
     this.bookTitle = '';
     this.bookLanguage = '';
