@@ -24,9 +24,9 @@ export const bookSources = [
     /*
   {
     id: "sherlockholmes2",
-    title: "The Adventures of Sherlock Holmes by Arthur Conan Doyle",
+    title: "*The Adventures of Sherlock Holmes by Arthur Conan Doyle",
     author: "Arthur Conan Doyle",
-    url: "https://www.gutenberg.org/files/1661/1661-0.txt",
+    url: "https://www.gutenberg.org/files/1661/1661-h/1661-h.htm",
     language: "en",
     format: "text"
     },
@@ -81,6 +81,7 @@ export const bookSources = [
     language: "en",
     format: "text"
   },
+    /*
   {
     id: "brotherskaramazov",
     title: "The Brothers Karamazov by Fyodor Dostoyevsky",
@@ -88,7 +89,8 @@ export const bookSources = [
     url: "https://www.gutenberg.org/files/28054/28054-h/28054-h.htm",
     language: "en",
     format: "text"
-  },
+    },
+    */
   {
     id: "callofthewild", 
     title: "The Call of the Wild by Jack London",
@@ -108,9 +110,9 @@ export const bookSources = [
     /*
   {
     id: "christmascarol2",
-    title: "A Christmas Carol by Charles Dickens",
+    title: "*A Christmas Carol by Charles Dickens",
     author: "Charles Dickens",
-    url: "https://www.gutenberg.org/files/46/46-0.txt",
+    url: "https://www.gutenberg.org/files/46/46-h/46-h.htm",
     language: "en",
     format: "text"
     },
@@ -162,9 +164,9 @@ export const bookSources = [
     /*
   {
     id: "donquixote2",
-    title: "Don Quixote by Miguel de Cervantes",
+    title: "*Don Quixote by Miguel de Cervantes",
     author: "Miguel de Cervantes",
-    url: "https://www.gutenberg.org/files/996/996-0.txt",
+    url: "https://www.gutenberg.org/files/996/996-h/996-h.htm",
     language: "en",
     format: "text"
     },
@@ -238,9 +240,9 @@ export const bookSources = [
     /*
   {
     id: "iliad2",
-    title: "The Iliad by Homer",
+    title: "*The Iliad by Homer",
     author: "Homer",
-    url: "https://www.gutenberg.org/files/6130/6130-0.txt",
+    url: "https://www.gutenberg.org/files/6130/6130-h/6130-h.htm",
     language: "en",
     format: "text"
     },
@@ -248,9 +250,9 @@ export const bookSources = [
     /*
   {
     id: "janeeyre",
-    title: "Jane Eyre by Charlotte Brontë",
+    title: "*Jane Eyre by Charlotte Brontë",
     author: "Charlotte Brontë",
-    url: "https://www.gutenberg.org/files/1260/1260-0.txt",
+    url: "https://www.gutenberg.org/files/1260/1260-h/1260-h.htm",
     language: "en",
     format: "text"
     },
@@ -276,9 +278,9 @@ export const bookSources = [
     /*
   {
     id: "leviathan",
-    title: "Leviathan by Thomas Hobbes",
+    title: "*Leviathan by Thomas Hobbes",
     author: "Thomas Hobbes",
-    url: "https://www.gutenberg.org/files/3207/3207-0.txt",
+    url: "https://www.gutenberg.org/files/3207/3207-h/3207-h.htm",
     language: "en",
     format: "text"
     },
@@ -408,9 +410,9 @@ export const bookSources = [
     /*
   {
     id: "ulysses",
-    title: "Ulysses by James Joyce",
+    title: "*Ulysses by James Joyce",
     author: "James Joyce",
-    url: "https://www.gutenberg.org/files/4300/4300-0.txt",
+    url: "https://www.gutenberg.org/files/4300/4300-h/4300-h.htm",
     language: "en",
     format: "text"
     },
