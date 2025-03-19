@@ -23,6 +23,14 @@ class BookPipe {
     this.error = null;
     this.hasMoreContent = true;  // Flag to indicate if there's more content to process
     this.shouldSavePosition = false; // Flag to prevent auto-saving position when just loading
+    this.debugMode = true;       // Enable debug logging
+  }
+
+  // Debug logging helper
+  log(message) {
+    if (this.debugMode) {
+      console.log(`[BookPipe] ${message}`);
+    }
   }
 
   // Initialize the pipe with a book ID
@@ -31,10 +39,12 @@ class BookPipe {
       throw new Error('Book ID is required');
     }
 
+    this.log(`Initializing book ID: ${bookId}`);
     this.reset();
     this.bookId = bookId;
     this.isLoading = true;
     this.shouldSavePosition = false; // Don't save position on initial load
+    this.log(`After reset: currentReadPosition=${this.currentReadPosition}, shouldSavePosition=${this.shouldSavePosition}`);
 
     try {
       const bookSource = getBookSourceById(bookId);
@@ -45,18 +55,22 @@ class BookPipe {
       this.bookTitle = bookSource.title || 'Unknown Title';
       this.bookLanguage = bookSource.language || 'en';
       this.bookUrl = bookSource.url;
+      this.log(`Book info: title="${this.bookTitle}", language=${this.bookLanguage}, url=${this.bookUrl}`);
       
       // Fetch the book content
       await this.fetchBookContent();
       
       // Find the anchor position in the HTML
       await this.findAnchorPosition();
+      this.log(`Found anchor at position: ${this.anchorPosition}`);
       
       // Load saved reading position if available
       await this.loadReadingPosition();
+      this.log(`After loading position: currentReadPosition=${this.currentReadPosition}`);
       
       // Process the first chunk of text starting from the anchor position plus saved read position
       await this.processNextChunk(false); // Do not save position when loading
+      this.log(`After processing first chunk: ${this.sentences.length} sentences, currentReadPosition=${this.currentReadPosition}`);
       
       // If we got sentences, we're ready to go
       this.isInitialized = this.sentences.length > 0;
@@ -76,6 +90,7 @@ class BookPipe {
       }
     } catch (error) {
       this.error = error.message;
+      this.log(`Initialization error: ${error.message}`);
       throw error;
     } finally {
       this.isLoading = false;
@@ -86,47 +101,77 @@ class BookPipe {
   async loadReadingPosition() {
     try {
       const storageKey = `book_reading_position_${this.bookId}`;
+      this.log(`Loading position for key: ${storageKey}`);
+      
       const savedPosition = await AsyncStorage.getItem(storageKey);
       
       if (savedPosition) {
+        this.log(`Found saved position: ${savedPosition}`);
         this.currentReadPosition = parseInt(savedPosition, 10);
         // Ensure it's a valid number
         if (isNaN(this.currentReadPosition)) {
+          this.log(`Saved position is not a valid number, resetting to 0`);
           this.currentReadPosition = 0;
         }
       } else {
+        this.log(`No saved position found for storage key: ${storageKey}`);
+        
         // Check for legacy storage format
         const legacyKey = `book_position_${this.bookId}`;
+        this.log(`Checking legacy key: ${legacyKey}`);
         const legacyPosition = await AsyncStorage.getItem(legacyKey);
         
         if (legacyPosition) {
+          this.log(`Found legacy position: ${legacyPosition}`);
           // Convert legacy position to new format
           this.currentReadPosition = parseInt(legacyPosition, 10);
           if (isNaN(this.currentReadPosition)) {
+            this.log(`Legacy position is not a valid number, resetting to 0`);
             this.currentReadPosition = 0;
           }
           
           // Save in new format and clean up legacy format
           await AsyncStorage.setItem(storageKey, this.currentReadPosition.toString());
+          this.log(`Saved legacy position to new format: ${this.currentReadPosition}`);
           await AsyncStorage.removeItem(legacyKey);
+          this.log(`Removed legacy storage key`);
         } else {
+          this.log(`No legacy position found, setting currentReadPosition to 0`);
           this.currentReadPosition = 0;
         }
       }
+      
+      this.log(`Final currentReadPosition after loading: ${this.currentReadPosition}`);
     } catch (error) {
+      this.log(`Error loading position: ${error.message}`);
       this.currentReadPosition = 0;
     }
   }
 
   // Save current reading position to AsyncStorage
   async saveReadingPosition() {
-    if (!this.bookId || !this.shouldSavePosition) return;
+    if (!this.bookId) {
+      this.log(`Cannot save position: bookId is null`);
+      return;
+    }
+    
+    if (!this.shouldSavePosition) {
+      this.log(`Not saving position because shouldSavePosition=${this.shouldSavePosition}`);
+      return;
+    }
     
     try {
       const storageKey = `book_reading_position_${this.bookId}`;
+      this.log(`Saving position ${this.currentReadPosition} to key: ${storageKey}`);
+      
       await AsyncStorage.setItem(storageKey, this.currentReadPosition.toString());
+      this.log(`Successfully saved position ${this.currentReadPosition}`);
+      
+      // Verify what we saved
+      const verification = await AsyncStorage.getItem(storageKey);
+      this.log(`Verification - read back saved position: ${verification}`);
     } catch (error) {
-      // Silent error handling
+      this.log(`Error saving position: ${error.message}`);
     }
   }
 
@@ -134,6 +179,8 @@ class BookPipe {
   thorough_reset() {
     // Save what we need to keep
     const bookId = this.bookId;
+    
+    this.log(`Performing thorough reset, current bookId: ${bookId}`);
     
     // Reset EVERYTHING to initial values
     this.bookId = null;
@@ -152,6 +199,10 @@ class BookPipe {
     this.hasMoreContent = true;
     this.shouldSavePosition = false;
     
+    // Don't reset debug mode
+    
+    this.log(`After thorough reset: currentReadPosition=${this.currentReadPosition}, shouldSavePosition=${this.shouldSavePosition}`);
+    
     return bookId;
   }
 
@@ -162,16 +213,20 @@ class BookPipe {
     try {
       // Remember current book ID
       const currentBookId = this.bookId;
+      this.log(`Resetting book position for: ${currentBookId}`);
       
       // 1. Delete ALL storage for this book - both formats
       const storageKey = `book_reading_position_${currentBookId}`;
+      this.log(`Removing storage key: ${storageKey}`);
       await AsyncStorage.removeItem(storageKey);
       
       const legacyKey = `book_position_${currentBookId}`;
+      this.log(`Removing legacy key: ${legacyKey}`);
       await AsyncStorage.removeItem(legacyKey);
       
       // Other book tracker info
       const trackerKey = `book_tracker_${currentBookId}`;
+      this.log(`Removing tracker key: ${trackerKey}`);
       await AsyncStorage.removeItem(trackerKey);
       
       // 2. Full reset - return the singleton to its initial state
@@ -181,6 +236,7 @@ class BookPipe {
       this.bookId = currentBookId;
       this.isLoading = true;
       this.shouldSavePosition = false;
+      this.log(`After reset, starting rebuild: bookId=${this.bookId}, currentReadPosition=${this.currentReadPosition}`);
       
       // 4. Get book information
       const bookSource = getBookSourceById(currentBookId);
@@ -191,18 +247,22 @@ class BookPipe {
       this.bookTitle = bookSource.title || 'Unknown Title';
       this.bookLanguage = bookSource.language || 'en';
       this.bookUrl = bookSource.url;
+      this.log(`Rebuilt book info: title="${this.bookTitle}", language=${this.bookLanguage}, url=${this.bookUrl}`);
       
       // 5. Fetch fresh content with no caching
       await this.fetchContentWithNoCaching();
       
       // 6. Find the anchor directly - do not use saved info
       await this.findAnchorPosition();
+      this.log(`Found anchor at position: ${this.anchorPosition}`);
       
       // 7. Force reading position to zero - do not load from storage
       this.currentReadPosition = 0;
+      this.log(`Forced currentReadPosition to 0`);
       
       // 8. Process the first chunk
       await this.processNextChunk(false);
+      this.log(`After processing chunk: ${this.sentences.length} sentences, currentReadPosition=${this.currentReadPosition}`);
       
       // 9. If we got sentences, we're initialized
       this.isInitialized = this.sentences.length > 0;
@@ -211,6 +271,7 @@ class BookPipe {
       
       return this.sentences.length > 0;
     } catch (error) {
+      this.log(`Error during reset: ${error.message}`);
       return false;
     }
   }
@@ -220,6 +281,8 @@ class BookPipe {
     if (!this.bookUrl) {
       throw new Error('Book URL is not set');
     }
+    
+    this.log(`Fetching content with no caching from: ${this.bookUrl}`);
     
     // Add a unique cache-busting parameter
     let targetUrl = this.bookUrl;
@@ -231,6 +294,8 @@ class BookPipe {
     } else {
       targetUrl = `${targetUrl}?_=${Date.now()}`;
     }
+    
+    this.log(`Using cache-busted URL: ${targetUrl}`);
     
     // Clear HTML content first to ensure a fresh start
     this.htmlContent = null;
@@ -253,6 +318,7 @@ class BookPipe {
         }
         
         const proxyUrl = `${proxy}${proxyTargetUrl}`;
+        this.log(`Trying proxy: ${proxy}`);
         
         const response = await fetch(proxyUrl, { 
           method: 'GET',
@@ -271,10 +337,12 @@ class BookPipe {
           this.htmlContent = await response.text();
           
           if (this.htmlContent && this.htmlContent.length >= 1000) {
+            this.log(`Successfully fetched content: ${this.htmlContent.length} bytes`);
             return; // Success, exit the function
           }
         }
       } catch (error) {
+        this.log(`Fetch error with proxy ${proxy}: ${error.message}`);
         // Try next proxy
       }
     }
@@ -288,6 +356,8 @@ class BookPipe {
     if (!this.bookUrl) {
       throw new Error('Book URL is not set');
     }
+
+    this.log(`Fetching book content from: ${this.bookUrl}`);
 
     try {
       let response;
@@ -319,6 +389,7 @@ class BookPipe {
               }
               
               const proxyUrl = `${currentProxy}${targetUrl}`;
+              this.log(`Using proxy: ${currentProxy}`);
               
               response = await fetch(proxyUrl, { 
                 method: 'GET',
@@ -331,6 +402,7 @@ class BookPipe {
               });
             } else {
               // If no proxy is available or they all failed, try a no-cors request as last resort
+              this.log(`No proxy available, trying no-cors request`);
               response = await fetch(this.bookUrl, { 
                 method: 'GET',
                 mode: 'no-cors',
@@ -340,6 +412,7 @@ class BookPipe {
             }
           } else {
             // For native platforms, use direct fetch which shouldn't have CORS issues
+            this.log(`Using direct fetch for native platform`);
             response = await fetch(this.bookUrl);
           }
           
@@ -359,8 +432,10 @@ class BookPipe {
           }
           
           success = true;
+          this.log(`Successfully fetched content: ${this.htmlContent.length} bytes`);
         } catch (fetchError) {
           retryCount++;
+          this.log(`Fetch attempt ${retryCount} failed: ${fetchError.message}`);
           
           // Wait a bit longer between retries
           if (retryCount < maxRetries) {
@@ -376,6 +451,7 @@ class BookPipe {
         throw new Error(`Failed to fetch book content after ${maxRetries} attempts`);
       }
     } catch (error) {
+      this.log(`Fatal fetch error: ${error.message}`);
       throw error;
     }
   }
@@ -391,6 +467,7 @@ class BookPipe {
       let fragmentId = '';
       if (this.bookUrl.includes('#')) {
         fragmentId = this.bookUrl.split('#')[1];
+        this.log(`Found fragment ID: ${fragmentId}`);
       } else {
         // No fragment ID, we don't have a specific anchor to find
         this.sentences = ["Unable to find the beginning of the text. URL has no anchor."];
@@ -411,16 +488,29 @@ class BookPipe {
       
       // Try each pattern
       let match = null;
-      for (const pattern of anchorPatterns) {
-        match = pattern.exec(this.htmlContent);
-        if (match) break;
+      let patternIndex = -1;
+      
+      for (let i = 0; i < anchorPatterns.length; i++) {
+        match = anchorPatterns[i].exec(this.htmlContent);
+        if (match) {
+          patternIndex = i;
+          break;
+        }
       }
       
       if (match) {
         this.anchorPosition = match.index;
+        this.log(`Found anchor using pattern ${patternIndex + 1} at position ${match.index}`);
+        
+        // Log surrounding context for debugging
+        const contextStart = Math.max(0, match.index - 50);
+        const contextEnd = Math.min(this.htmlContent.length, match.index + 150);
+        const context = this.htmlContent.substring(contextStart, contextEnd);
+        this.log(`Context around anchor: ${context.replace(/\s+/g, ' ')}`);
       } else {
         // We couldn't find the anchor - clear state
         this.sentences = [`Unable to find the beginning of the text. Anchor "#${fragmentId}" not found.`];
+        this.log(`Could not find anchor "#${fragmentId}" in HTML content`);
         throw new Error(`Anchor "#${fragmentId}" not found in HTML content`);
       }
     } catch (error) {
@@ -441,9 +531,12 @@ class BookPipe {
       const chunkStart = this.anchorPosition + this.currentReadPosition;
       const chunkEnd = Math.min(chunkStart + this.chunkSize, this.htmlContent.length);
       
+      this.log(`Processing chunk from ${chunkStart} to ${chunkEnd}, shouldSave=${shouldSave}`);
+      
       // Check if we're at the end of the content
       if (chunkStart >= this.htmlContent.length || chunkStart >= chunkEnd) {
         this.hasMoreContent = false;
+        this.log(`Reached end of content`);
         return [];
       }
       
@@ -455,6 +548,11 @@ class BookPipe {
       
       // Parse the text into sentences
       const newSentences = parseIntoSentences(textChunk);
+      this.log(`Extracted ${newSentences.length} sentences from chunk`);
+      
+      if (newSentences.length > 0) {
+        this.log(`First sentence: "${newSentences[0].substring(0, 30)}..."`);
+      }
       
       // Add new sentences to our collection
       this.sentences = [...this.sentences, ...newSentences];
@@ -462,16 +560,21 @@ class BookPipe {
       // Update the current read position
       const chunkSize = chunkEnd - chunkStart;
       this.currentReadPosition += chunkSize;
+      this.log(`Updated currentReadPosition to ${this.currentReadPosition}`);
       
       // Only save position if instructed to (e.g., after user clicks Next)
       if (shouldSave) {
         this.shouldSavePosition = true; // Now it's ok to save position
+        this.log(`Setting shouldSavePosition=true`);
         await this.saveReadingPosition();
+      } else {
+        this.log(`Not saving position (shouldSave=${shouldSave})`);
       }
       
       // Return the new sentences
       return newSentences;
     } catch (error) {
+      this.log(`Error processing chunk: ${error.message}`);
       return [];
     }
   }
@@ -542,6 +645,7 @@ class BookPipe {
       return text;
     } catch (error) {
       // Return a simplified version as fallback
+      this.log(`Error extracting text: ${error.message}`);
       return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
     }
   }
@@ -555,16 +659,21 @@ class BookPipe {
     const startIdx = this.nextSentenceIndex;
     let endIdx = Math.min(startIdx + batchSize, this.sentences.length);
     
+    this.log(`Getting next batch: startIdx=${startIdx}, endIdx=${endIdx}, totalSentences=${this.sentences.length}`);
+    
     // If we don't have enough sentences and there's more content, process another chunk
     if (endIdx - startIdx < batchSize && this.hasMoreContent) {
+      this.log(`Need more sentences, processing another chunk (have ${endIdx - startIdx}, need ${batchSize})`);
       // Process another chunk - only save position if this isn't the initial load
       const newSentences = await this.processNextChunk(this.shouldSavePosition);
       
       // Recalculate the end index
       endIdx = Math.min(startIdx + batchSize, this.sentences.length);
+      this.log(`After processing chunk: endIdx=${endIdx}, totalSentences=${this.sentences.length}`);
     }
     
     if (startIdx >= this.sentences.length) {
+      this.log(`No more sentences available (startIdx=${startIdx} >= totalSentences=${this.sentences.length})`);
       return [];
     }
     
@@ -573,18 +682,23 @@ class BookPipe {
     
     // Update our position
     this.nextSentenceIndex = endIdx;
+    this.log(`Updated nextSentenceIndex to ${this.nextSentenceIndex}`);
     
     return batch;
   }
 
   // User actively advanced to next sentence - enable position saving
   enablePositionSaving() {
+    const oldValue = this.shouldSavePosition;
     this.shouldSavePosition = true;
+    this.log(`enablePositionSaving called: shouldSavePosition changed from ${oldValue} to ${this.shouldSavePosition}`);
   }
 
   // Check if there are more sentences available
   hasMoreSentences() {
-    return this.isInitialized && (this.nextSentenceIndex < this.sentences.length || this.hasMoreContent);
+    const hasMore = this.isInitialized && (this.nextSentenceIndex < this.sentences.length || this.hasMoreContent);
+    this.log(`hasMoreSentences called: ${hasMore} (nextSentenceIndex=${this.nextSentenceIndex}, totalSentences=${this.sentences.length}, hasMoreContent=${this.hasMoreContent})`);
+    return hasMore;
   }
 
   // Get current progress information
@@ -604,6 +718,7 @@ class BookPipe {
 
   // Reset the pipe for a new book - basic version, not thorough
   reset() {
+    this.log(`Basic reset called`);
     // Note: This is not a thorough reset - see thorough_reset for that
     this.bookId = null;
     this.bookTitle = '';
@@ -615,12 +730,4 @@ class BookPipe {
     this.sentences = [];
     this.nextSentenceIndex = 0;
     this.isInitialized = false;
-    this.isLoading = false;
-    this.error = null;
-    this.hasMoreContent = true;
-    this.shouldSavePosition = false;
-  }
-}
-
-// Export a singleton instance
-export default new BookPipe();
+    this.isLoading = false

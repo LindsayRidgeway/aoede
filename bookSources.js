@@ -21,14 +21,6 @@ export const bookSources = [
     language: "en",
     format: "text"
   },
-  {
-    id: "sherlockholmes3", 
-    title: "The Adventures of Sherlock Holmes by Arthur Conan Doyle (ADJ)",
-    author: "Arthur Conan Doyle",
-    url: "https://www.gutenberg.org/files/48320/48320-h/48320-h.htm#i",
-    language: "en",
-    format: "text"
-  },
     /*
   {
     id: "sherlockholmes2",
