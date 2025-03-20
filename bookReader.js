@@ -211,32 +211,52 @@ class BookReader {
   // Handle Rewind button
   async handleRewind() {
     if (!this.trackerExists) {
+      this.log("Rewind aborted - tracker doesn't exist");
       return false;
     }
     
     try {
-      // 1. Reset tracker offset in our object
-      this.tracker.offset = 0;
-      this.log(`Rewind requested, resetting offset to 0`);
+      this.log("REWIND - Beginning rewind operation");
       
-      // 2. Save tracker state with reset offset
-      await this.saveTrackerState();
+      // Step 1: Directly remove ALL trackers for this book from storage
       
-      // 3. Set the rewind flag in BookPipe before initializing
-      if (this.reader) {
+      // 1a. Remove our own tracker
+      const trackerKey = `book_tracker_${this.tracker.studyLanguage}_${this.tracker.bookTitle}`;
+      this.log(`REWIND - Removing tracker with key: ${trackerKey}`);
+      await AsyncStorage.removeItem(trackerKey);
+      
+      // 1b. If we have a reader, remove its tracker too
+      if (this.reader && this.readerBookTitle) {
         const bookSource = bookSources.find(book => book.title === this.readerBookTitle);
         if (bookSource) {
-          // Set the rewind flag before handling the rewind
-          this.reader.isRewindRequested = true;
-          this.log(`Set rewind flag in BookPipe: isRewindRequested=true`);
+          const bookPipeTrackerKey = `book_tracker_${bookSource.id}`;
+          this.log(`REWIND - Removing BookPipe tracker with key: ${bookPipeTrackerKey}`);
+          await AsyncStorage.removeItem(bookPipeTrackerKey);
         }
       }
       
-      // 4. Reload the book from the beginning
-      return this.handleLoadBook(this.tracker.studyLanguage, this.tracker.bookTitle);
+      // Step 2: Reset the tracker in memory but keep track of book/language
+      const studyLanguage = this.tracker.studyLanguage;
+      const bookTitle = this.tracker.bookTitle;
       
+      // Step 3: Reset the reader
+      if (this.reader) {
+        this.log("REWIND - Resetting BookPipe");
+        this.reader.thorough_reset(); // This does a deep reset but doesn't touch storage
+        this.reader = null;         // Disconnect from the reader 
+      }
+      
+      // Step 4: Reset our own state fully
+      this.reset();
+      
+      // Step 5: Reload the book from the beginning (this will recreate trackers with offset 0)
+      this.log(`REWIND - Reloading book: ${bookTitle} in ${studyLanguage}`);
+      await this.handleLoadBook(studyLanguage, bookTitle);
+      
+      this.log("REWIND - Rewind operation completed successfully");
+      return true;
     } catch (error) {
-      this.log(`Error during rewind: ${error.message}`);
+      this.log(`REWIND ERROR: ${error.message}`);
       return false;
     }
   }
@@ -456,6 +476,8 @@ class BookReader {
   
   // Reset all state
   reset() {
+    this.log(`Resetting BookReader state`);
+    
     this.tracker = {
       studyLanguage: null,
       bookTitle: null,

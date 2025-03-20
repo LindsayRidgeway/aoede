@@ -25,6 +25,10 @@ class BookPipe {
     this.debugMode = true;       // Enable debug logging
     this.isRewindRequested = false; // Flag to indicate if rewind was requested
     this.lastInitializedBookId = null; // Track which book was last initialized
+    
+    // Additional debugging info
+    this.lastOperation = null;
+    this.rewindAttempts = 0;
   }
 
   // Debug logging helper
@@ -34,6 +38,21 @@ class BookPipe {
     }
   }
 
+  // ENHANCED DEBUGGING: Track what happens during the rewind process
+  logRewindState(stage) {
+    console.log(`===== REWIND STATE (${stage}) =====`);
+    console.log(`bookId: ${this.bookId}`);
+    console.log(`currentReadPosition: ${this.currentReadPosition}`);
+    console.log(`isRewindRequested: ${this.isRewindRequested}`);
+    console.log(`shouldSavePosition: ${this.shouldSavePosition}`);
+    console.log(`lastInitializedBookId: ${this.lastInitializedBookId}`);
+    console.log(`nextSentenceIndex: ${this.nextSentenceIndex}`);
+    console.log(`sentences.length: ${this.sentences.length}`);
+    console.log(`lastOperation: ${this.lastOperation}`);
+    console.log(`rewindAttempts: ${this.rewindAttempts}`);
+    console.log(`===== END REWIND STATE =====`);
+  }
+
   // Initialize the pipe with a book ID
   async initialize(bookId) {
     if (!bookId) {
@@ -41,10 +60,16 @@ class BookPipe {
     }
 
     this.log(`Initializing book ID: ${bookId}`);
+    this.lastOperation = "initialize";
     
     // Check if rewind was explicitly requested
     const shouldRewind = this.isRewindRequested;
     this.log(`Rewind requested: ${shouldRewind}`);
+    
+    if (shouldRewind) {
+      this.rewindAttempts++;
+      this.logRewindState("before-reset");
+    }
     
     // Always reset before initializing to ensure a clean state
     this.reset();
@@ -81,6 +106,7 @@ class BookPipe {
         // If rewind was requested, force position to 0
         this.currentReadPosition = 0;
         this.log(`Rewind requested - forcing position to 0`);
+        this.logRewindState("during-rewind");
         
         // Clear the rewind flag after handling it
         this.isRewindRequested = false;
@@ -104,6 +130,11 @@ class BookPipe {
       this.nextSentenceIndex = 0;
       
       if (this.isInitialized) {
+        // If this was a rewind operation, log the final state
+        if (shouldRewind) {
+          this.logRewindState("after-rewind");
+        }
+        
         return {
           title: this.bookTitle,
           language: this.bookLanguage,
@@ -129,24 +160,34 @@ class BookPipe {
     try {
       // Set the rewind flag - this will be checked during initialize
       this.isRewindRequested = true;
+      this.lastOperation = "resetBookPosition";
       
       // Remember current book ID
       const currentBookId = this.bookId;
       this.log(`Resetting book position for: ${currentBookId}, setting isRewindRequested=true`);
       
+      console.log(`===== REWIND STATE (BEFORE STORAGE CLEAR) =====`);
+      console.log(`Storage keys to be cleared: book_tracker_${this.bookId}`);
+      console.log(`Storage state will be cleared completely for book ${this.bookId}`);
+      
       // Delete ALL storage for this book
       await bookPipeStorage.clearAllStorage(this);
+      
+      console.log(`===== STORAGE CLEAR COMPLETED =====`);
       
       // Full reset - return the singleton to its initial state
       this.thorough_reset();
       
       // Make sure rewind flag is still set after thorough reset
       this.isRewindRequested = true;
+      this.logRewindState("after-reset-position");
       
       // The rewind will be completed when initialize is called
       return true;
     } catch (error) {
       this.log(`Error during reset: ${error.message}`);
+      console.log(`===== REWIND ERROR =====`);
+      console.log(error);
       return false;
     }
   }
@@ -157,6 +198,8 @@ class BookPipe {
     const bookId = this.bookId;
     const isRewindRequested = this.isRewindRequested;
     const lastInitializedBookId = this.lastInitializedBookId;
+    const lastOperation = this.lastOperation;
+    const rewindAttempts = this.rewindAttempts;
     
     this.log(`Performing thorough reset, current bookId: ${bookId}, isRewindRequested: ${isRewindRequested}`);
     
@@ -183,6 +226,10 @@ class BookPipe {
     // Preserve knowledge of the last initialized book
     this.lastInitializedBookId = lastInitializedBookId;
     
+    // Preserve debug info
+    this.lastOperation = `thorough_reset (after ${lastOperation})`;
+    this.rewindAttempts = rewindAttempts;
+    
     // Don't reset debug mode
     
     this.log(`After thorough reset: currentReadPosition=${this.currentReadPosition}, shouldSavePosition=${this.shouldSavePosition}, isRewindRequested=${this.isRewindRequested}`);
@@ -200,6 +247,7 @@ class BookPipe {
     let endIdx = Math.min(startIdx + batchSize, this.sentences.length);
     
     this.log(`Getting next batch: startIdx=${startIdx}, endIdx=${endIdx}, totalSentences=${this.sentences.length}`);
+    this.lastOperation = "getNextBatch";
     
     // If we don't have enough sentences and there's more content, process another chunk
     if (endIdx - startIdx < batchSize && this.hasMoreContent) {
@@ -232,6 +280,7 @@ class BookPipe {
     const oldValue = this.shouldSavePosition;
     this.shouldSavePosition = true;
     this.log(`enablePositionSaving called: shouldSavePosition changed from ${oldValue} to ${this.shouldSavePosition}`);
+    this.lastOperation = "enablePositionSaving";
   }
 
   // Check if there are more sentences available
@@ -259,6 +308,7 @@ class BookPipe {
   // Reset the pipe for a new book - basic version, not thorough
   reset() {
     this.log(`Basic reset called`);
+    this.lastOperation = "reset";
     // Note: This is not a thorough reset - see thorough_reset for that
     this.bookId = null;
     this.bookTitle = '';
