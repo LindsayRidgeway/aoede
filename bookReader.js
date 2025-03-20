@@ -9,9 +9,6 @@ import { Platform } from 'react-native';
 // Constants
 const BLOCK_SIZE = 10000; // Size of text chunks to process at once
 
-// Debug flag - set to false to disable debug logging
-const DEBUG = false;
-
 class BookReader {
   constructor() {
     // Tracker structure
@@ -39,18 +36,10 @@ class BookReader {
     this.onSentenceProcessed = null;
   }
   
-  // Debug logging helper
-  log(message) {
-    if (DEBUG) {
-      console.log(`[BookReader] ${message}`);
-    }
-  }
-  
   // Initialize the reader with callback for sentence processing
   initialize(callback, userLanguage = 'en') {
     this.onSentenceProcessed = callback;
     this.userLanguage = userLanguage;
-    this.log(`Reader initialized with userLanguage: ${userLanguage}, platform: ${Platform.OS}`);
     return this;
   }
   
@@ -61,12 +50,9 @@ class BookReader {
   
   // Handle Load Book button
   async handleLoadBook(studyLanguage, bookTitle) {
-    this.log(`Loading book: ${bookTitle} in ${studyLanguage}`);
-    
     // Save the current book tracker if we're switching to a new book
     if (this.trackerExists && 
         (this.tracker.studyLanguage !== studyLanguage || this.tracker.bookTitle !== bookTitle)) {
-      this.log(`Switching from book ${this.tracker.bookTitle} to ${bookTitle}, saving current state`);
       await this.saveTrackerState();
     }
     
@@ -77,7 +63,6 @@ class BookReader {
     
     // Try to find existing tracker in persistent store
     const trackerKey = `book_tracker_${studyLanguage}_${bookTitle}`;
-    this.log(`Looking for tracker with key: ${trackerKey}`);
     
     try {
       const savedTracker = await AsyncStorage.getItem(trackerKey);
@@ -85,12 +70,10 @@ class BookReader {
       if (savedTracker) {
         try {
           const parsedTracker = JSON.parse(savedTracker);
-          this.log(`Found existing tracker with offset: ${parsedTracker.offset}`);
           this.tracker = parsedTracker;
           this.trackerExists = true;
         } catch (parseError) {
           // Create new tracker if parsing fails
-          this.log(`Error parsing tracker: ${parseError.message}, creating new tracker`);
           this.tracker = {
             studyLanguage: studyLanguage,
             bookTitle: bookTitle,
@@ -103,7 +86,6 @@ class BookReader {
         }
       } else {
         // Create new tracker
-        this.log(`No tracker found for key: ${trackerKey}, creating new tracker`);
         this.tracker = {
           studyLanguage: studyLanguage,
           bookTitle: bookTitle,
@@ -116,7 +98,6 @@ class BookReader {
       }
     } catch (error) {
       // Create new tracker on error
-      this.log(`Error accessing tracker: ${error.message}, creating new tracker`);
       this.tracker = {
         studyLanguage: studyLanguage,
         bookTitle: bookTitle,
@@ -145,17 +126,15 @@ class BookReader {
         
         // Make sure we sync the tracker with BookPipe by saving it with BookPipe's expected key format
         try {
-          this.log(`Syncing tracker to BookPipe with key: ${trackerKey} and offset: ${this.tracker.offset}`);
           await AsyncStorage.setItem(trackerKey, JSON.stringify({ 
             bookId: bookId, 
             offset: this.tracker.offset 
           }));
         } catch (syncError) {
-          this.log(`Error syncing tracker to BookPipe: ${syncError.message}`);
+          // Silent error handling
         }
         
         // Initialize BookPipe with book ID
-        this.log(`Initializing BookPipe with book ID: ${bookId}`);
         await BookPipe.initialize(bookId);
         this.reader = BookPipe;
         this.readerStudyLanguage = studyLanguage;
@@ -183,12 +162,10 @@ class BookReader {
     // Check if we have more sentences in the current simple array
     if (this.simpleIndex < (this.simpleArray.length - 1)) {
       this.simpleIndex++;
-      this.log(`Advanced to next sentence in buffer, index: ${this.simpleIndex}`);
     } else {
       // IMPORTANT: Update tracker offset BEFORE loading more content
       // This ensures we maintain the correct position within content that has already been read
       this.tracker.offset += this.rawSentenceSize;
-      this.log(`About to load more content, updated offset to: ${this.tracker.offset}`);
       
       // Save the updated tracker to persistent storage immediately
       await this.saveTrackerState();
@@ -211,18 +188,14 @@ class BookReader {
   // Handle Rewind button
   async handleRewind() {
     if (!this.trackerExists) {
-      this.log("Rewind aborted - tracker doesn't exist");
       return false;
     }
     
     try {
-      this.log("REWIND - Beginning rewind operation");
-      
       // Step 1: Directly remove ALL trackers for this book from storage
       
       // 1a. Remove our own tracker
       const trackerKey = `book_tracker_${this.tracker.studyLanguage}_${this.tracker.bookTitle}`;
-      this.log(`REWIND - Removing tracker with key: ${trackerKey}`);
       await AsyncStorage.removeItem(trackerKey);
       
       // 1b. If we have a reader, remove its tracker too
@@ -230,7 +203,6 @@ class BookReader {
         const bookSource = bookSources.find(book => book.title === this.readerBookTitle);
         if (bookSource) {
           const bookPipeTrackerKey = `book_tracker_${bookSource.id}`;
-          this.log(`REWIND - Removing BookPipe tracker with key: ${bookPipeTrackerKey}`);
           await AsyncStorage.removeItem(bookPipeTrackerKey);
         }
       }
@@ -241,7 +213,6 @@ class BookReader {
       
       // Step 3: Reset the reader
       if (this.reader) {
-        this.log("REWIND - Resetting BookPipe");
         this.reader.thorough_reset(); // This does a deep reset but doesn't touch storage
         this.reader = null;         // Disconnect from the reader 
       }
@@ -250,13 +221,10 @@ class BookReader {
       this.reset();
       
       // Step 5: Reload the book from the beginning (this will recreate trackers with offset 0)
-      this.log(`REWIND - Reloading book: ${bookTitle} in ${studyLanguage}`);
       await this.handleLoadBook(studyLanguage, bookTitle);
       
-      this.log("REWIND - Rewind operation completed successfully");
       return true;
     } catch (error) {
-      this.log(`REWIND ERROR: ${error.message}`);
       return false;
     }
   }
@@ -296,29 +264,21 @@ class BookReader {
       // Find the book source to get its original language
       const bookSource = bookSources.find(book => book.title === this.readerBookTitle);
       
-      // DEBUG: Log the book's language and study language
-      this.log(`LANGUAGE DEBUG - Book language: ${bookSource?.language}, Study language: ${this.readerStudyLanguage}`);
-      
       if (bookSource) {
         // Get language codes for translation
         const sourceLanguageCode = bookSource.language;
         const targetLanguageCode = detectLanguageCode(this.readerStudyLanguage);
         
-        this.log(`TRANSLATION DEBUG - Converting book from ${sourceLanguageCode} to ${targetLanguageCode}`);
-        
         // Only translate if languages are different
         if (sourceLanguageCode && targetLanguageCode && sourceLanguageCode !== targetLanguageCode) {
           try {
-            this.log(`Translating from ${sourceLanguageCode} to ${targetLanguageCode}`);
             const translatedText = await translateBatch([rawText], sourceLanguageCode, targetLanguageCode);
             
             if (translatedText && translatedText.length > 0) {
               textForSimplification = translatedText[0];
-              this.log(`Successfully translated book text to ${targetLanguageCode}`);
             }
           } catch (error) {
             // Continue with original text as fallback
-            this.log(`Error translating to study language: ${error.message}`);
           }
         }
       }
@@ -329,22 +289,13 @@ class BookReader {
         // Get proper language code for the study language
         const targetLang = detectLanguageCode(this.readerStudyLanguage);
         
-        this.log(`SIMPLIFICATION DEBUG - Calling processSourceText with language: ${targetLang}, level: ${this.readingLevel}`);
         processedText = await processSourceText(textForSimplification, targetLang, this.readingLevel);
-        
-        if (processedText && processedText.length > 0) {
-          this.log(`Successfully simplified text, length: ${processedText.length}`);
-        } else {
-          this.log(`processSourceText returned empty text`);
-        }
       } catch (error) {
-        this.log(`Error during simplification: ${error.message}`);
         processedText = null;
       }
       
       if (!processedText || processedText.length === 0) {
         // Use the text we have as fallback (already in study language from previous step)
-        this.log(`Using fallback for simplification`);
         this.simpleArray = parseIntoSentences(textForSimplification);
       } else {
         // Split the processed text into individual sentences
@@ -354,20 +305,13 @@ class BookReader {
         
         // If that didn't work well, try another method
         if (this.simpleArray.length < 3) {
-          this.log(`Few sentences from split, using parseIntoSentences instead`);
           this.simpleArray = parseIntoSentences(processedText);
         }
-      }
-      
-      this.log(`Created ${this.simpleArray.length} simple sentences`);
-      if (this.simpleArray.length > 0) {
-        this.log(`First simplified sentence: "${this.simpleArray[0].substring(0, 30)}..."`);
       }
       
       // 3. TRANSLATE the simplified sentences to user's language for display
       // First, make a deep copy of the simple array as a fallback
       this.translatedArray = [...this.simpleArray];
-      this.log(`TRANSLATION DEBUG - Translating from ${this.readerStudyLanguage} to ${this.userLanguage}`);
       
       // Only translate if the languages are different
       if (this.readerStudyLanguage !== this.userLanguage) {
@@ -375,8 +319,6 @@ class BookReader {
           // Get proper language codes for translation
           const sourceLang = detectLanguageCode(this.readerStudyLanguage);
           const targetLang = detectLanguageCode(this.userLanguage);
-          
-          this.log(`TRANSLATION DEBUG - Converting from ${sourceLang} to ${targetLang}`);
           
           // Use translateBatch for better Android compatibility
           const translations = await translateBatch(
@@ -386,24 +328,16 @@ class BookReader {
           );
           
           if (translations && translations.length > 0) {
-            this.log(`Translated ${translations.length} sentences to ${targetLang}`);
-            this.log(`TRANSLATION DEBUG - First translated: "${translations[0].substring(0, 30)}..."`);
-            
             // Store translations in the translated array
             this.translatedArray = translations;
-          } else {
-            this.log(`TRANSLATION ERROR - Translation API returned no results`);
           }
         } catch (error) {
-          this.log(`TRANSLATION ERROR: ${error.message}, using fallback`);
+          // Use fallback if translation fails
         }
-      } else {
-        this.log(`No translation needed, languages match: ${this.readerStudyLanguage} === ${this.userLanguage}`);
       }
       
       this.simpleIndex = 0;
     } catch (error) {
-      this.log(`Error in loadRawSentence: ${error.message}`);
       this.simpleArray = [`Error loading content: ${error.message}`];
       this.translatedArray = [`Error loading content: ${error.message}`];
       this.simpleIndex = 0;
@@ -421,11 +355,6 @@ class BookReader {
     const currentSentence = this.simpleArray[this.simpleIndex];
     const currentTranslation = this.translatedArray[this.simpleIndex] || currentSentence;
     
-    // DEBUG: Log what we're sending to the UI
-    this.log(`DISPLAY DEBUG - showing sentence ${this.simpleIndex + 1}/${this.simpleArray.length}`);
-    this.log(`DISPLAY DEBUG - foreign: "${currentSentence.substring(0, 30)}..."`);
-    this.log(`DISPLAY DEBUG - translation: "${currentTranslation.substring(0, 30)}..."`);
-    
     // Submit to the callback for display and TTS
     if (typeof this.onSentenceProcessed === 'function') {
       this.onSentenceProcessed(currentSentence, currentTranslation);
@@ -440,7 +369,6 @@ class BookReader {
       const trackerKey = `book_tracker_${this.tracker.studyLanguage}_${this.tracker.bookTitle}`;
       const trackerJSON = JSON.stringify(this.tracker);
       
-      this.log(`Saving tracker state with key: ${trackerKey}, offset: ${this.tracker.offset}`);
       await AsyncStorage.setItem(trackerKey, trackerJSON);
       
       // For compatibility with BookPipe, also save to its expected format
@@ -453,12 +381,11 @@ class BookReader {
             offset: this.tracker.offset
           };
           
-          this.log(`Syncing with BookPipe tracker key: ${bookPipeTrackerKey}, offset: ${this.tracker.offset}`);
           await AsyncStorage.setItem(bookPipeTrackerKey, JSON.stringify(bookPipeTracker));
         }
       }
     } catch (error) {
-      this.log(`Error saving tracker state: ${error.message}`);
+      // Silent error handling
     }
   }
   
@@ -476,8 +403,6 @@ class BookReader {
   
   // Reset all state
   reset() {
-    this.log(`Resetting BookReader state`);
-    
     this.tracker = {
       studyLanguage: null,
       bookTitle: null,
