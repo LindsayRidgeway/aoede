@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { processSourceText, translateBatch } from './apiServices';
 import { parseIntoSentences, detectLanguageCode, translateSentences } from './textProcessing';
 import { bookSources, getBookSourceById } from './bookSources';
-import BookPipe from './bookPipe';
+import BookPipe from './bookPipeCore';
 
 // Constants
 const BLOCK_SIZE = 10000; // Size of text chunks to process at once
@@ -33,6 +33,16 @@ class BookReader {
     
     // Callback for sentence processing
     this.onSentenceProcessed = null;
+    
+    // Debug logging
+    this.debugMode = true;
+  }
+  
+  // Debug logging helper
+  log(message) {
+    if (this.debugMode) {
+      console.log(`[BookReader] ${message}`);
+    }
   }
   
   // Initialize the reader with callback for sentence processing
@@ -49,6 +59,15 @@ class BookReader {
   
   // Handle Load Book button
   async handleLoadBook(studyLanguage, bookTitle) {
+    this.log(`Loading book: ${bookTitle} in ${studyLanguage}`);
+    
+    // Save the current book tracker if we're switching to a new book
+    if (this.trackerExists && 
+        (this.tracker.studyLanguage !== studyLanguage || this.tracker.bookTitle !== bookTitle)) {
+      this.log(`Switching from book ${this.tracker.bookTitle} to ${bookTitle}, saving current state`);
+      await this.saveTrackerState();
+    }
+    
     // Reset state
     this.simpleArray = [];
     this.translatedArray = [];
@@ -56,17 +75,20 @@ class BookReader {
     
     // Try to find existing tracker in persistent store
     const trackerKey = `book_tracker_${studyLanguage}_${bookTitle}`;
+    this.log(`Looking for tracker with key: ${trackerKey}`);
     
     try {
-      const allKeys = await AsyncStorage.getAllKeys();
       const savedTracker = await AsyncStorage.getItem(trackerKey);
       
       if (savedTracker) {
         try {
-          this.tracker = JSON.parse(savedTracker);
+          const parsedTracker = JSON.parse(savedTracker);
+          this.log(`Found existing tracker with offset: ${parsedTracker.offset}`);
+          this.tracker = parsedTracker;
           this.trackerExists = true;
         } catch (parseError) {
           // Create new tracker if parsing fails
+          this.log(`Error parsing tracker: ${parseError.message}, creating new tracker`);
           this.tracker = {
             studyLanguage: studyLanguage,
             bookTitle: bookTitle,
@@ -79,6 +101,7 @@ class BookReader {
         }
       } else {
         // Create new tracker
+        this.log(`No tracker found for key: ${trackerKey}, creating new tracker`);
         this.tracker = {
           studyLanguage: studyLanguage,
           bookTitle: bookTitle,
@@ -91,6 +114,7 @@ class BookReader {
       }
     } catch (error) {
       // Create new tracker on error
+      this.log(`Error accessing tracker: ${error.message}, creating new tracker`);
       this.tracker = {
         studyLanguage: studyLanguage,
         bookTitle: bookTitle,
@@ -100,12 +124,6 @@ class BookReader {
       
       // Immediately save the newly created tracker to persistent storage
       await this.saveTrackerState();
-    }
-    
-    // Close existing reader if we have one
-    if (this.reader !== null) {
-      BookPipe.reset();
-      this.reader = null;
     }
     
     // Initialize the reader with the book
@@ -119,34 +137,27 @@ class BookReader {
       
       const bookId = bookSource.id;
       
-      // Initialize BookPipe with book ID
-      await BookPipe.initialize(bookId);
-      
-      // Set reader to initialized state
-      this.reader = BookPipe;
-      this.readerStudyLanguage = studyLanguage;
-      this.readerBookTitle = bookTitle;
-      
-      // IMPORTANT: If we have a saved offset, explicitly skip forward
-      if (this.tracker.offset > 0) {
-        // Since BookPipe doesn't have a direct skip method, we need to simulate it
-        // by manipulating the internal state or processing chunks until we reach
-        // the desired position
+      // Set up BookPipe with the current offset from the tracker
+      if (this.reader !== BookPipe || this.readerBookTitle !== bookTitle) {
+        const trackerKey = `book_tracker_${bookId}`;
         
-        // For this implementation, we'll use BookPipe's internal saved position
-        // mechanism which is keyed by bookId
-        const storageKey = `book_position_${bookId}`;
-        
+        // Make sure we sync the tracker with BookPipe by saving it with BookPipe's expected key format
         try {
-          // Store the offset in BookPipe's expected storage key
-          await AsyncStorage.setItem(storageKey, this.tracker.offset.toString());
-          
-          // Force BookPipe to reload with this position
-          await BookPipe.reset();
-          await BookPipe.initialize(bookId);
-        } catch (positionError) {
-          // Continue without position - at least we tried
+          this.log(`Syncing tracker to BookPipe with key: ${trackerKey} and offset: ${this.tracker.offset}`);
+          await AsyncStorage.setItem(trackerKey, JSON.stringify({ 
+            bookId: bookId, 
+            offset: this.tracker.offset 
+          }));
+        } catch (syncError) {
+          this.log(`Error syncing tracker to BookPipe: ${syncError.message}`);
         }
+        
+        // Initialize BookPipe with book ID
+        this.log(`Initializing BookPipe with book ID: ${bookId}`);
+        await BookPipe.initialize(bookId);
+        this.reader = BookPipe;
+        this.readerStudyLanguage = studyLanguage;
+        this.readerBookTitle = bookTitle;
       }
     } catch (error) {
       throw error;
@@ -170,12 +181,19 @@ class BookReader {
     // Check if we have more sentences in the current simple array
     if (this.simpleIndex < (this.simpleArray.length - 1)) {
       this.simpleIndex++;
+      this.log(`Advanced to next sentence in buffer, index: ${this.simpleIndex}`);
     } else {
       // Update offset in tracker
       this.tracker.offset += this.rawSentenceSize;
+      this.log(`Loading more content, updated offset to: ${this.tracker.offset}`);
       
-      // Save the updated tracker to persistent storage
+      // IMPORTANT: Save the updated tracker to persistent storage immediately
       await this.saveTrackerState();
+      
+      // Also enable position saving in BookPipe
+      if (this.reader) {
+        this.reader.enablePositionSaving();
+      }
       
       // Load the next sentence
       await this.loadRawSentence();
@@ -196,23 +214,18 @@ class BookReader {
     try {
       // 1. Reset tracker offset in our object
       this.tracker.offset = 0;
+      this.log(`Rewind requested, resetting offset to 0`);
       
       // 2. Save tracker state with reset offset
       await this.saveTrackerState();
       
-      // 3. IMPORTANT: Reset BookPipe's internal position tracking
+      // 3. Set the rewind flag in BookPipe before initializing
       if (this.reader) {
         const bookSource = bookSources.find(book => book.title === this.readerBookTitle);
         if (bookSource) {
-          const bookId = bookSource.id;
-          const storageKey = `book_position_${bookId}`;
-          
-          // Force position to 0 in BookPipe's storage
-          await AsyncStorage.removeItem(storageKey);
-          await AsyncStorage.setItem(storageKey, "0");
-          
-          // Reset the BookPipe object
-          BookPipe.reset();
+          // Set the rewind flag before handling the rewind
+          this.reader.isRewindRequested = true;
+          this.log(`Set rewind flag in BookPipe`);
         }
       }
       
@@ -220,6 +233,7 @@ class BookReader {
       return this.handleLoadBook(this.tracker.studyLanguage, this.tracker.bookTitle);
       
     } catch (error) {
+      this.log(`Error during rewind: ${error.message}`);
       return false;
     }
   }
@@ -438,9 +452,25 @@ class BookReader {
       const trackerKey = `book_tracker_${this.tracker.studyLanguage}_${this.tracker.bookTitle}`;
       const trackerJSON = JSON.stringify(this.tracker);
       
+      this.log(`Saving tracker state with key: ${trackerKey}, offset: ${this.tracker.offset}`);
       await AsyncStorage.setItem(trackerKey, trackerJSON);
+      
+      // For compatibility with BookPipe, also save to its expected format
+      if (this.readerBookTitle) {
+        const bookSource = bookSources.find(book => book.title === this.readerBookTitle);
+        if (bookSource) {
+          const bookPipeTrackerKey = `book_tracker_${bookSource.id}`;
+          const bookPipeTracker = {
+            bookId: bookSource.id,
+            offset: this.tracker.offset
+          };
+          
+          this.log(`Syncing with BookPipe tracker key: ${bookPipeTrackerKey}, offset: ${this.tracker.offset}`);
+          await AsyncStorage.setItem(bookPipeTrackerKey, JSON.stringify(bookPipeTracker));
+        }
+      }
     } catch (error) {
-      // Silent error handling
+      this.log(`Error saving tracker state: ${error.message}`);
     }
   }
   
@@ -466,8 +496,7 @@ class BookReader {
     this.trackerExists = false;
     
     if (this.reader) {
-      // Close the reader
-      BookPipe.reset();
+      // Just set to null, don't reset BookPipe directly
       this.reader = null;
     }
     
