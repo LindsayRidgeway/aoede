@@ -9,6 +9,16 @@ import BookReader from './bookReader';
 import { bookSources } from './bookSources';
 import Constants from 'expo-constants';
 
+// Debug flag - set to false to disable debug logging
+const DEBUG = false;
+
+// Debug logging helper
+const log = (message) => {
+  if (DEBUG) {
+    console.log(`[App] ${message}`);
+  }
+};
+
 // Get API key using both old and new Expo Constants paths for compatibility
 const getConstantValue = (key) => {
   // Try the new path (expoConfig.extra) first - Expo SDK 46+
@@ -42,6 +52,12 @@ const directTranslate = async (text, sourceLang, targetLang) => {
   if (!text || sourceLang === targetLang) return text;
   
   try {
+    // Convert language names to codes if needed
+    const sourceCode = detectLanguageCode(sourceLang);
+    const targetCode = detectLanguageCode(targetLang);
+    
+    log(`Direct translate from ${sourceCode} to ${targetCode}`);
+    
     const response = await fetch(
       `https://translation.googleapis.com/language/translate/v2?key=${GOOGLE_API_KEY}`,
       {
@@ -49,8 +65,8 @@ const directTranslate = async (text, sourceLang, targetLang) => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           q: text,
-          source: sourceLang,
-          target: targetLang,
+          source: sourceCode,
+          target: targetCode,
           format: "text"
         })
       }
@@ -64,6 +80,7 @@ const directTranslate = async (text, sourceLang, targetLang) => {
     
     return text;
   } catch (error) {
+    log(`Error in directTranslate: ${error.message}`);
     return text;
   }
 };
@@ -156,6 +173,7 @@ export default function App() {
           }
         } catch (error) {
           // Silent error handling
+          log(`Error loading stored settings: ${error.message}`);
         }
         
         const language = await ListeningSpeed.getStoredStudyLanguage();
@@ -165,6 +183,7 @@ export default function App() {
         BookReader.initialize(handleSentenceProcessed, userLanguage);
       } catch (error) {
         // Silent error handling
+        log(`Error during initialization: ${error.message}`);
       }
     };
     
@@ -184,6 +203,7 @@ export default function App() {
           translatedElements[key] = translated;
         } catch (error) {
           translatedElements[key] = value;
+          log(`Error translating UI element '${key}': ${error.message}`);
         }
       }
       
@@ -195,6 +215,7 @@ export default function App() {
           translatedBooks[book.id] = translatedTitle;
         } catch (error) {
           translatedBooks[book.id] = book.title;
+          log(`Error translating book title '${book.title}': ${error.message}`);
         }
       }
       
@@ -203,6 +224,7 @@ export default function App() {
       
     } catch (error) {
       // Silent error handling
+      log(`Error in translateUiElements: ${error.message}`);
     }
   };
   
@@ -267,6 +289,7 @@ export default function App() {
       await AsyncStorage.setItem("selectedBook", bookId);
     } catch (error) {
       // Silent error handling
+      log(`Error saving book selection: ${error.message}`);
     }
   };
   
@@ -278,6 +301,7 @@ export default function App() {
       await AsyncStorage.setItem("readingLevel", level.toString());
     } catch (error) {
       // Silent error handling
+      log(`Error saving reading level: ${error.message}`);
     }
   };
   
@@ -288,6 +312,7 @@ export default function App() {
       await AsyncStorage.setItem("showText", value.toString());
     } catch (error) {
       // Silent error handling
+      log(`Error saving show text preference: ${error.message}`);
     }
   };
   
@@ -298,6 +323,7 @@ export default function App() {
       await AsyncStorage.setItem("showTranslation", value.toString());
     } catch (error) {
       // Silent error handling
+      log(`Error saving show translation preference: ${error.message}`);
     }
   };
   
@@ -370,8 +396,8 @@ export default function App() {
         throw new Error(`Book with ID ${bookId} not found`);
       }
       
-      // Set source language from study language
-      setSourceLanguage(detectLanguageCode(studyLanguage));
+      // Set source language from book language
+      setSourceLanguage(book.language);
       
       // Set reading level in BookReader
       BookReader.setReadingLevel(readingLevel);

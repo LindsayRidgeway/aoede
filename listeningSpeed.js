@@ -2,6 +2,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { Audio } from 'expo-av';
 
+// Debug flag - set to false to disable debug logging
+const DEBUG = false;
+
 // Export the language code variable
 export let detectedLanguageCode = null;
 
@@ -9,7 +12,6 @@ export let detectedLanguageCode = null;
 let currentSound = null; // Track the current sound object
 let cachedVoicesByLanguage = {}; // Cache for TTS voices by language
 let supportedVoiceLanguageCodes = new Set(); // Set of all supported language codes (with regions)
-let languageAliases = new Map(); // Map of language code aliases discovered during initialization
 
 // Safely access API keys with optional chaining
 const GOOGLE_TTS_API_KEY = Constants.expoConfig?.extra?.EXPO_PUBLIC_GOOGLE_API_KEY || "";
@@ -18,37 +20,44 @@ const GOOGLE_TTS_API_KEY = Constants.expoConfig?.extra?.EXPO_PUBLIC_GOOGLE_API_K
 let availableVoices = null;
 let languageInitialized = false; // Track if we've initialized voice data
 
-// Known language code variants that need special handling
-const knownLanguageVariants = {
-  'no': 'nb', // Norwegian -> Norwegian Bokmål
-  'he': 'iw', // Hebrew (new code -> old code)
-  'iw': 'he', // Hebrew (old code -> new code)
-  'jw': 'jv', // Javanese (old code -> new code)
-  'ji': 'yi'  // Yiddish (old code -> new code)
+// Function to log debug messages
+const log = (message) => {
+  if (DEBUG) {
+    console.log(`[ListeningSpeed] ${message}`);
+  }
 };
 
 // Function to fetch available voices from Google TTS API
-async function fetchAvailableVoices() {
+function fetchAvailableVoices() {
   if (!GOOGLE_TTS_API_KEY) {
-    console.warn("[TTS] No Google API key found");
+    log("No Google API key found");
     return null;
   }
 
   try {
-    const response = await fetch(
+    // We're using a synchronous approach, so we'll return a promise that will be resolved later
+    const promise = fetch(
       `https://texttospeech.googleapis.com/v1/voices?key=${GOOGLE_TTS_API_KEY}`
-    );
-
-    if (!response.ok) {
-      console.warn("[TTS] Failed to fetch voices:", response.status, response.statusText);
+    )
+    .then(response => {
+      if (!response.ok) {
+        log(`Failed to fetch voices: ${response.status} ${response.statusText}`);
+        return null;
+      }
+      return response.json();
+    })
+    .then(data => {
+      return data.voices || null;
+    })
+    .catch(error => {
+      log(`Error fetching voices: ${error.message}`);
       return null;
-    }
-
-    const data = await response.json();
-    return data.voices || null;
+    });
+    
+    return promise;
   } catch (error) {
-    console.warn("[TTS] Error fetching voices:", error);
-    return null;
+    log(`Error in fetchAvailableVoices: ${error.message}`);
+    return Promise.resolve(null);
   }
 }
 
@@ -65,7 +74,6 @@ export const initializeVoices = async () => {
       // Clear existing cache
       cachedVoicesByLanguage = {};
       supportedVoiceLanguageCodes.clear();
-      languageAliases.clear();
       
       // Process and categorize all voices
       for (const voice of availableVoices) {
@@ -96,61 +104,23 @@ export const initializeVoices = async () => {
         }
       }
       
-      // Add aliases for language variants
-      // For example, if 'nb' has voices but 'no' doesn't, add an alias from 'no' to 'nb'
-      for (const [variantCode, standardCode] of Object.entries(knownLanguageVariants)) {
-        // If the variant doesn't have voices but the standard code does, add an alias
-        if (!cachedVoicesByLanguage[variantCode] && cachedVoicesByLanguage[standardCode]) {
-          languageAliases.set(variantCode, standardCode);
-        }
-        // Also check the reverse mapping
-        else if (!cachedVoicesByLanguage[standardCode] && cachedVoicesByLanguage[variantCode]) {
-          languageAliases.set(standardCode, variantCode);
-        }
-      }
-      
       languageInitialized = true;
+      log(`Voice initialization complete. Found ${availableVoices.length} voices.`);
     }
     
     return availableVoices;
   } catch (error) {
-    console.warn("[TTS] Error initializing voices:", error);
+    log(`Error initializing voices: ${error.message}`);
     return null;
   }
-};
-
-// Resolve any language code aliases to their supported version
-const resolveLanguageCode = (languageCode) => {
-  if (!languageCode) return null;
-  
-  const normalizedCode = languageCode.toLowerCase().trim();
-  
-  // Special case for Norwegian - if 'no' is used, check if we should use 'nb' or 'nn'
-  if (normalizedCode === 'no') {
-    if (cachedVoicesByLanguage['nb'] && cachedVoicesByLanguage['nb'].length > 0) {
-      return 'nb';
-    }
-    
-    if (cachedVoicesByLanguage['nn'] && cachedVoicesByLanguage['nn'].length > 0) {
-      return 'nn';
-    }
-  }
-  
-  // Check other known aliases
-  if (languageAliases.has(normalizedCode)) {
-    const resolvedCode = languageAliases.get(normalizedCode);
-    return resolvedCode;
-  }
-  
-  return normalizedCode;
 };
 
 // Find a supported language code based on the input language
 const findSupportedLanguageCode = (inputLanguage) => {
   if (!inputLanguage) return null;
   
-  // Normalize to lowercase and resolve any aliases
-  const normalizedCode = resolveLanguageCode(inputLanguage);
+  // Normalize to lowercase
+  const normalizedCode = inputLanguage.toLowerCase().trim();
   
   // Check if this language is directly supported, either as a base code or with a region
   if (supportedVoiceLanguageCodes.has(normalizedCode)) {
@@ -171,16 +141,21 @@ const findSupportedLanguageCode = (inputLanguage) => {
     return firstVoice.matchedLanguageCode;
   }
   
-  // No match found
-  return null;
+  // No match found - just return the input code
+  return normalizedCode;
 };
 
 // Get the best voice for a language
 const getBestVoiceForLanguage = (languageCode) => {
   if (!languageCode) return null;
   
-  // Normalize to lowercase and resolve any aliases
-  const normalizedCode = resolveLanguageCode(languageCode);
+  // Normalize to lowercase
+  const normalizedCode = languageCode.toLowerCase().trim();
+  
+  // Handle case where we don't have voices cached yet
+  if (!cachedVoicesByLanguage || Object.keys(cachedVoicesByLanguage).length === 0) {
+    return null;
+  }
   
   // Check if we have any voices for this base language
   if (cachedVoicesByLanguage[normalizedCode] && cachedVoicesByLanguage[normalizedCode].length > 0) {
@@ -269,7 +244,7 @@ export const stopSpeaking = async () => {
       await currentSound.stopAsync();
       await currentSound.unloadAsync();
     } catch (error) {
-      console.warn("[TTS] Error stopping speech:", error);
+      log(`Error stopping speech: ${error.message}`);
     } finally {
       currentSound = null;
     }
@@ -285,9 +260,9 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
   // Stop any currently playing audio first
   await stopSpeaking();
 
-  // Ensure voices are initialized
+  // Ensure voices are initialized - but don't wait for it
   if (!languageInitialized || !availableVoices) {
-    await initializeVoices();
+    initializeVoices();
   }
 
   const speakingRate = Math.max(0.5, Math.min(1.5, (listeningSpeed - 0.5) * 1));
@@ -307,16 +282,19 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
     ttsLanguageCode = findSupportedLanguageCode(detectedLanguageCode);
   }
   
-  // If we still don't have a language code, fall back to English
-  if (!ttsLanguageCode) {
-    console.log("[TTS] No supported language found, falling back to English");
+  // If we still don't have a language code, use what we have
+  if (!ttsLanguageCode && detectedLanguageCode) {
+    log(`No matched language code found, using provided code: ${detectedLanguageCode}`);
+    ttsLanguageCode = detectedLanguageCode;
+  } else if (!ttsLanguageCode) {
+    log(`No language code available, using en-US as default`);
     ttsLanguageCode = "en-US";
   }
 
   try {
     // Check if we have a Google API key before attempting the API call
     if (!GOOGLE_TTS_API_KEY) {
-      console.warn("[TTS] No Google API key found");
+      log("No Google API key found");
       if (onFinish) onFinish();
       return;
     }
@@ -336,6 +314,8 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
       requestBody.voice.name = voiceName;
     }
 
+    log(`Sending TTS request with language: ${ttsLanguageCode}`);
+    
     const response = await fetch(
       `https://texttospeech.googleapis.com/v1/text:synthesize?key=${GOOGLE_TTS_API_KEY}`,
       {
@@ -347,14 +327,14 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.error("[TTS] API error:", JSON.stringify(errorData));
+      log(`API error: ${JSON.stringify(errorData)}`);
       if (onFinish) onFinish();
       return;
     }
 
     const data = await response.json();
     if (!data.audioContent) {
-      console.warn("[TTS] No audio content in response");
+      log("No audio content in response");
       if (onFinish) onFinish();
       return;
     }
@@ -381,7 +361,7 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
                 currentSound = null;
               }
             } catch (error) {
-              console.warn("[TTS] Error cleaning up sound:", error);
+              log(`Error cleaning up sound: ${error.message}`);
             } finally {
               if (onFinish) onFinish();
             }
@@ -391,7 +371,7 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
       
       await sound.playAsync();
     } catch (error) {
-      console.warn("[TTS] Error playing sound:", error);
+      log(`Error playing sound: ${error.message}`);
       if (sound === currentSound) {
         try {
           await sound.unloadAsync();
@@ -403,12 +383,12 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
       if (onFinish) onFinish();
     }
   } catch (error) {
-    console.warn("[TTS] Error in speech synthesis:", error);
+    log(`Error in speech synthesis: ${error.message}`);
     if (onFinish) onFinish(); // Call onFinish even on error
   }
 };
 
-// Call initializeVoices during module loading to start fetching voices
+// Start voice initialization during module loading, but don't await it
 initializeVoices();
 
 // Add a default export with all functions

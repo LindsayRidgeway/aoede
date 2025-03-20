@@ -9,6 +9,9 @@ import { Platform } from 'react-native';
 // Constants
 const BLOCK_SIZE = 10000; // Size of text chunks to process at once
 
+// Debug flag - set to false to disable debug logging
+const DEBUG = false;
+
 class BookReader {
   constructor() {
     // Tracker structure
@@ -34,14 +37,11 @@ class BookReader {
     
     // Callback for sentence processing
     this.onSentenceProcessed = null;
-    
-    // Debug logging
-    this.debugMode = true;
   }
   
   // Debug logging helper
   log(message) {
-    if (this.debugMode) {
+    if (DEBUG) {
       console.log(`[BookReader] ${message}`);
     }
   }
@@ -273,30 +273,22 @@ class BookReader {
       // 1. FIRST TRANSLATE to the study language if the book is not already in that language
       let textForSimplification = rawText;
       
+      // Find the book source to get its original language
       const bookSource = bookSources.find(book => book.title === this.readerBookTitle);
       
       // DEBUG: Log the book's language and study language
       this.log(`LANGUAGE DEBUG - Book language: ${bookSource?.language}, Study language: ${this.readerStudyLanguage}`);
       
-      if (bookSource && bookSource.language !== this.readerStudyLanguage) {
-        try {
-          // Get language codes directly from the book source and study language
-          const sourceLanguageCode = bookSource.language;
-          // Check if we need to convert studyLanguage to a language code
-          let targetLanguageCode = this.readerStudyLanguage;
-          
-          // Attempt to fix common language name issues
-          if (targetLanguageCode === "Russian") targetLanguageCode = "ru";
-          if (targetLanguageCode === "French") targetLanguageCode = "fr";
-          if (targetLanguageCode === "Spanish") targetLanguageCode = "es";
-          if (targetLanguageCode === "German") targetLanguageCode = "de";
-          if (targetLanguageCode === "Italian") targetLanguageCode = "it";
-          if (targetLanguageCode === "English") targetLanguageCode = "en";
-          
-          this.log(`TRANSLATION DEBUG - Converting book from ${sourceLanguageCode} to ${targetLanguageCode}`);
-          
-          // If we have valid language codes, proceed with translation
-          if (sourceLanguageCode && targetLanguageCode && sourceLanguageCode !== targetLanguageCode) {
+      if (bookSource) {
+        // Get language codes for translation
+        const sourceLanguageCode = bookSource.language;
+        const targetLanguageCode = detectLanguageCode(this.readerStudyLanguage);
+        
+        this.log(`TRANSLATION DEBUG - Converting book from ${sourceLanguageCode} to ${targetLanguageCode}`);
+        
+        // Only translate if languages are different
+        if (sourceLanguageCode && targetLanguageCode && sourceLanguageCode !== targetLanguageCode) {
+          try {
             this.log(`Translating from ${sourceLanguageCode} to ${targetLanguageCode}`);
             const translatedText = await translateBatch([rawText], sourceLanguageCode, targetLanguageCode);
             
@@ -304,24 +296,18 @@ class BookReader {
               textForSimplification = translatedText[0];
               this.log(`Successfully translated book text to ${targetLanguageCode}`);
             }
+          } catch (error) {
+            // Continue with original text as fallback
+            this.log(`Error translating to study language: ${error.message}`);
           }
-        } catch (error) {
-          // Continue with original text as fallback
-          this.log(`Error translating to study language: ${error.message}`);
         }
       }
       
       // 2. THEN SIMPLIFY the text in the study language
       let processedText;
       try {
-        // Check if we need to convert readerStudyLanguage to a language code
-        let targetLang = this.readerStudyLanguage;
-        if (targetLang === "Russian") targetLang = "ru";
-        if (targetLang === "French") targetLang = "fr";
-        if (targetLang === "Spanish") targetLang = "es";
-        if (targetLang === "German") targetLang = "de";
-        if (targetLang === "Italian") targetLang = "it";
-        if (targetLang === "English") targetLang = "en";
+        // Get proper language code for the study language
+        const targetLang = detectLanguageCode(this.readerStudyLanguage);
         
         this.log(`SIMPLIFICATION DEBUG - Calling processSourceText with language: ${targetLang}, level: ${this.readingLevel}`);
         processedText = await processSourceText(textForSimplification, targetLang, this.readingLevel);
@@ -359,8 +345,6 @@ class BookReader {
       }
       
       // 3. TRANSLATE the simplified sentences to user's language for display
-      // This is critical for Android compatibility
-      
       // First, make a deep copy of the simple array as a fallback
       this.translatedArray = [...this.simpleArray];
       this.log(`TRANSLATION DEBUG - Translating from ${this.readerStudyLanguage} to ${this.userLanguage}`);
@@ -368,23 +352,9 @@ class BookReader {
       // Only translate if the languages are different
       if (this.readerStudyLanguage !== this.userLanguage) {
         try {
-          // Check if we need to convert language names to codes
-          let sourceLang = this.readerStudyLanguage;
-          let targetLang = this.userLanguage;
-          
-          if (sourceLang === "Russian") sourceLang = "ru";
-          if (sourceLang === "French") sourceLang = "fr";
-          if (sourceLang === "Spanish") sourceLang = "es";
-          if (sourceLang === "German") sourceLang = "de"; 
-          if (sourceLang === "Italian") sourceLang = "it";
-          if (sourceLang === "English") sourceLang = "en";
-          
-          if (targetLang === "Russian") targetLang = "ru";
-          if (targetLang === "French") targetLang = "fr";
-          if (targetLang === "Spanish") targetLang = "es";
-          if (targetLang === "German") targetLang = "de";
-          if (targetLang === "Italian") targetLang = "it";
-          if (targetLang === "English") targetLang = "en";
+          // Get proper language codes for translation
+          const sourceLang = detectLanguageCode(this.readerStudyLanguage);
+          const targetLang = detectLanguageCode(this.userLanguage);
           
           this.log(`TRANSLATION DEBUG - Converting from ${sourceLang} to ${targetLang}`);
           
