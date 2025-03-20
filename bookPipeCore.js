@@ -42,25 +42,14 @@ class BookPipe {
 
     this.log(`Initializing book ID: ${bookId}`);
     
-    // Check if we're initializing with a rewind request or a different book
+    // Check if rewind was explicitly requested
     const shouldRewind = this.isRewindRequested;
-    const isDifferentBook = this.lastInitializedBookId !== bookId;
-    
-    // If this is the same book and not a rewind, we can skip expensive reinitialization
-    if (!isDifferentBook && !shouldRewind && this.isInitialized) {
-      this.log(`Same book already initialized, skipping reinitialization: ${bookId}`);
-      return {
-        title: this.bookTitle,
-        language: this.bookLanguage,
-        totalSentences: this.sentences.length,
-        resumedFromPosition: this.currentReadPosition > 0
-      };
-    }
+    this.log(`Rewind requested: ${shouldRewind}`);
     
     // Always reset before initializing to ensure a clean state
     this.reset();
     
-    // Set the rewind request flag back to its stored value
+    // Preserve the rewind request flag through the reset
     this.isRewindRequested = shouldRewind;
     
     this.bookId = bookId;
@@ -87,18 +76,21 @@ class BookPipe {
       await bookPipeProcess.findAnchorPosition(this);
       this.log(`Found anchor at position: ${this.anchorPosition}`);
       
-      // Only load the saved reading position if this is not a rewind request
-      if (!this.isRewindRequested) {
-        await bookPipeStorage.loadReadingPosition(this);
-        this.log(`After loading position: currentReadPosition=${this.currentReadPosition}`);
-      } else {
-        // If this is a rewind, ensure position is 0 and clear the rewind flag
+      // Check if this is a rewind operation
+      if (this.isRewindRequested) {
+        // If rewind was requested, force position to 0
         this.currentReadPosition = 0;
+        this.log(`Rewind requested - forcing position to 0`);
+        
+        // Clear the rewind flag after handling it
         this.isRewindRequested = false;
-        this.log(`Rewind request handled: currentReadPosition set to 0, isRewindRequested cleared`);
         
         // Clear the stored position to ensure it stays at 0 for future loads
         await bookPipeStorage.clearSavedPosition(this);
+      } else {
+        // If NOT a rewind, load the saved position
+        await bookPipeStorage.loadReadingPosition(this);
+        this.log(`Normal load - loaded position: ${this.currentReadPosition}`);
       }
       
       // Process the first chunk of text starting from the anchor position plus saved read position
@@ -148,8 +140,10 @@ class BookPipe {
       // Full reset - return the singleton to its initial state
       this.thorough_reset();
       
+      // Make sure rewind flag is still set after thorough reset
+      this.isRewindRequested = true;
+      
       // The rewind will be completed when initialize is called
-      // The calling code will need to re-initialize with the same book ID
       return true;
     } catch (error) {
       this.log(`Error during reset: ${error.message}`);
@@ -280,6 +274,7 @@ class BookPipe {
     this.error = null;
     this.hasMoreContent = true;
     this.shouldSavePosition = false;
+    // Don't reset isRewindRequested here - it's preserved through reset
   }
 }
 
