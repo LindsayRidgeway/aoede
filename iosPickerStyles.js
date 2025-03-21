@@ -1,8 +1,12 @@
-// iosPickerStyles.js - iOS-specific styles for custom picker modals
-import { StyleSheet } from 'react-native';
+// iosPickerStyles.js - iOS-specific styles for modal pickers
+import { StyleSheet, Dimensions } from 'react-native';
+
+// Get screen dimensions for proper sizing
+const { width, height } = Dimensions.get('window');
 
 // iOS-specific styles for the modal picker components
 export const iosPickerStyles = StyleSheet.create({
+  // Selector button styles
   inputButton: {
     height: 40,
     borderColor: '#ddd',
@@ -10,7 +14,8 @@ export const iosPickerStyles = StyleSheet.create({
     borderRadius: 5,
     paddingHorizontal: 10,
     backgroundColor: '#fff',
-    justifyContent: 'center'
+    justifyContent: 'center',
+    width: '100%'
   },
   inputButtonText: {
     fontSize: 16,
@@ -19,16 +24,24 @@ export const iosPickerStyles = StyleSheet.create({
   placeholderText: {
     color: '#999'
   },
-  modalContainer: {
+  disabledButton: {
+    opacity: 0.5
+  },
+  
+  // Modal container styles
+  modalOverlay: {
     flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
     justifyContent: 'flex-end',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)'
+    alignItems: 'center'
   },
   modalContent: {
+    width: width,
     backgroundColor: '#fff',
     borderTopLeftRadius: 10,
     borderTopRightRadius: 10,
-    maxHeight: '80%'
+    paddingBottom: 30, // Extra padding for iOS home indicator
+    maxHeight: height * 0.8
   },
   modalHeader: {
     flexDirection: 'row',
@@ -39,9 +52,11 @@ export const iosPickerStyles = StyleSheet.create({
     borderBottomColor: '#eee'
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333'
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#333',
+    textAlign: 'center',
+    flex: 1
   },
   closeButton: {
     padding: 5
@@ -49,7 +64,7 @@ export const iosPickerStyles = StyleSheet.create({
   closeButtonText: {
     fontSize: 16,
     color: '#007AFF',
-    fontWeight: '500'
+    fontWeight: '400'
   },
   doneButton: {
     padding: 5
@@ -59,21 +74,28 @@ export const iosPickerStyles = StyleSheet.create({
     color: '#007AFF',
     fontWeight: '600'
   },
+  
+  // Search input styles
+  searchContainer: {
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee'
+  },
   searchInput: {
     height: 40,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 5,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
     paddingHorizontal: 10,
-    margin: 10,
-    backgroundColor: '#f9f9f9'
+    fontSize: 16
   },
-  itemList: {
-    paddingBottom: 20
+  
+  // List styles
+  listContainer: {
+    flexGrow: 1
   },
   item: {
-    paddingVertical: 12,
-    paddingHorizontal: 15,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#eee'
   },
@@ -88,7 +110,15 @@ export const iosPickerStyles = StyleSheet.create({
     color: '#007AFF',
     fontWeight: '500'
   },
-  disabledButton: {
-    opacity: 0.5
+  
+  // Empty state
+  emptyContainer: {
+    padding: 20,
+    alignItems: 'center'
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#999',
+    textAlign: 'center'
   }
 });
