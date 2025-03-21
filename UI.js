@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { 
-  Text, View, TouchableOpacity, TextInput, Switch, 
+  Text, View, TouchableOpacity, TextInput, 
   ActivityIndicator, Platform, Alert, Animated, 
   Modal, FlatList, SafeAreaView, ScrollView,
   Image
@@ -9,8 +9,19 @@ import { Picker } from '@react-native-picker/picker';
 import { styles } from './styles';  
 import ListeningSpeed from './listeningSpeed';
 import { bookSources } from './bookSources';
+import ContentDisplay from './ContentDisplay';
 import * as Font from 'expo-font';
 import Constants from 'expo-constants';
+
+// Import iOS-specific components conditionally
+let IosPickers = null;
+let iosPickerStyles = null;
+
+// Only import iOS components if on iOS platform
+if (Platform.OS === 'ios') {
+  IosPickers = require('./IosPickers');
+  iosPickerStyles = require('./iosPickerStyles').iosPickerStyles;
+}
 
 // Get API key using both old and new Expo Constants paths for compatibility
 const getConstantValue = (key) => {
@@ -76,6 +87,18 @@ export function MainUI({
   const [showLanguageModal, setShowLanguageModal] = useState(false);
   const [displayLanguage, setDisplayLanguage] = useState(studyLanguage || uiText.enterLanguage || "Select language");
   
+  // State for iOS modals
+  const [showIosBookModal, setShowIosBookModal] = useState(false);
+  const [showIosLanguageModal, setShowIosLanguageModal] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const [filteredLanguages, setFilteredLanguages] = useState([]);
+  const [filteredBooks, setFilteredBooks] = useState([]);
+  const [tempSelectedLanguage, setTempSelectedLanguage] = useState(null);
+  const [tempSelectedBook, setTempSelectedBook] = useState(null);
+  
+  // Animation ref for Next button
+  const nextButtonAnimation = useRef(new Animated.Value(1)).current;
+  
   // Load languages from the Google Translate API
   useEffect(() => {
     const loadLanguages = async () => {
@@ -100,7 +123,12 @@ export function MainUI({
           const result = await response.json();
           
           if (result.data && result.data.languages) {
-            setLanguages(result.data.languages);
+            // Sort languages alphabetically
+            const sortedLanguages = [...result.data.languages].sort((a, b) => 
+              a.name.localeCompare(b.name)
+            );
+            setLanguages(sortedLanguages);
+            setFilteredLanguages(sortedLanguages);
           }
         }
       } catch (error) {
@@ -110,6 +138,32 @@ export function MainUI({
     
     loadLanguages();
   }, []);
+  
+  // Update filtered books when search text changes
+  useEffect(() => {
+    if (searchText) {
+      const filtered = bookSources.filter(book => 
+        getBookTitle(book).toLowerCase().includes(searchText.toLowerCase()) ||
+        book.author.toLowerCase().includes(searchText.toLowerCase())
+      );
+      setFilteredBooks(filtered);
+    } else {
+      setFilteredBooks(bookSources);
+    }
+  }, [searchText, uiText]);
+  
+  // Update filtered languages when search text changes
+  useEffect(() => {
+    if (languages.length > 0 && searchText) {
+      const filtered = languages.filter(lang => 
+        lang.name.toLowerCase().includes(searchText.toLowerCase()) ||
+        lang.language.toLowerCase().includes(searchText.toLowerCase())
+      );
+      setFilteredLanguages(filtered);
+    } else {
+      setFilteredLanguages(languages);
+    }
+  }, [searchText, languages]);
   
   // Update displayed language when studyLanguage changes
   useEffect(() => {
@@ -200,14 +254,6 @@ export function MainUI({
     }
   }, [selectedBook, uiText]);
   
-  // Speed options for circle buttons - only 5 speeds
-  const speedOptions = [1.0, 1.25, 1.5, 1.75, 2.0];
-
-  const updateListeningSpeed = async (speed) => {
-    setListeningSpeed(speed);
-    await ListeningSpeed.saveListeningSpeed(speed);
-  };
-  
   // Get translated book titles from uiText for dropdown
   const getBookTitle = (book) => {
     // Try to get translated title from uiText
@@ -237,9 +283,7 @@ export function MainUI({
     }
   };
   
-  // Animation for Next button
-  const nextButtonAnimation = useRef(new Animated.Value(1)).current;
-  
+  // Animate the Next button
   const animateNextButton = () => {
     // Sequence of animations: shrink then grow
     Animated.sequence([
@@ -272,6 +316,34 @@ export function MainUI({
         setDisplayBookTitle(getBookTitle(book));
       }
     }
+  };
+  
+  // Handle iOS language selection
+  const handleIosLanguageSelect = (language) => {
+    setTempSelectedLanguage(language);
+  };
+  
+  // Handle iOS book selection
+  const handleIosBookSelect = (book) => {
+    setTempSelectedBook(book);
+  };
+  
+  // Apply iOS language selection
+  const applyIosLanguageSelection = () => {
+    if (tempSelectedLanguage) {
+      handleLanguageChange(tempSelectedLanguage);
+    }
+    setShowIosLanguageModal(false);
+    setSearchText('');
+  };
+  
+  // Apply iOS book selection
+  const applyIosBookSelection = () => {
+    if (tempSelectedBook) {
+      handleBookChange(tempSelectedBook.id);
+    }
+    setShowIosBookModal(false);
+    setSearchText('');
   };
 
   // Handle rewind button press with confirmation
@@ -307,6 +379,33 @@ export function MainUI({
 
   // Render language selection component
   const renderLanguagePicker = () => {
+    // iOS needs special handling
+    if (Platform.OS === 'ios') {
+      return (
+        <IosPickers.IosSelectorButton
+          value={displayLanguage}
+          placeholder={uiText.enterLanguage || "Select language"}
+          onPress={() => {
+            if (!loadingBook) {
+              setShowIosLanguageModal(true);
+              setSearchText('');
+              setTempSelectedLanguage(null);
+              
+              // Find the current language in our list to pre-select
+              if (studyLanguage) {
+                const currentLang = languages.find(l => l.language === studyLanguage);
+                if (currentLang) {
+                  setTempSelectedLanguage(currentLang);
+                }
+              }
+            }
+          }}
+          disabled={loadingBook}
+        />
+      );
+    }
+    
+    // Android uses its own modal approach
     if (Platform.OS === 'android') {
       return (
         <TouchableOpacity
@@ -325,7 +424,7 @@ export function MainUI({
       );
     }
     
-    // For iOS and Web, use the standard Picker but styled like a text input
+    // For Web, use the standard Picker styled like a text input
     return (
       <View style={[styles.studyLangInput, { paddingHorizontal: 0, overflow: 'hidden' }]}>
         <Picker
@@ -356,6 +455,40 @@ export function MainUI({
 
   // This function handles showing the Picker differently based on platform
   const renderBookPicker = () => {
+    // iOS needs special handling
+    if (Platform.OS === 'ios') {
+      return (
+        <View style={{
+          flex: 1,
+          marginRight: 10,
+          height: 40,
+        }}>
+          <IosPickers.IosSelectorButton
+            value={displayBookTitle}
+            placeholder={uiText.enterBook || "Select a book"}
+            onPress={() => {
+              if (!loadingBook) {
+                setShowIosBookModal(true);
+                setSearchText('');
+                setTempSelectedBook(null);
+                setFilteredBooks(bookSources);
+                
+                // Find the current book to pre-select
+                if (selectedBook) {
+                  const currentBook = bookSources.find(b => b.id === selectedBook);
+                  if (currentBook) {
+                    setTempSelectedBook(currentBook);
+                  }
+                }
+              }
+            }}
+            disabled={loadingBook}
+          />
+        </View>
+      );
+    }
+    
+    // Android uses its own modal approach
     if (Platform.OS === 'android') {
       return (
         <View style={{
@@ -430,7 +563,7 @@ export function MainUI({
       );
     }
     
-    // For iOS and Web, use the standard Picker
+    // For Web, use the standard Picker
     return (
       <View style={styles.pickerContainer}>
         <Picker
@@ -449,23 +582,6 @@ export function MainUI({
           ))}
         </Picker>
       </View>
-    );
-  };
-
-  // Render a consistent rewind button for all platforms
-  const renderRewindButton = () => {
-    if (!showControls) return null;
-    
-    return (
-      <TouchableOpacity
-        style={styles.rewindButton}
-        onPress={handleRewindPress}
-        disabled={loadingBook}
-      >
-        <Text style={styles.rewindButtonText}>
-          {uiText.rewindConfirmTitle || "Rewind"}
-        </Text>
-      </TouchableOpacity>
     );
   };
 
@@ -568,6 +684,24 @@ export function MainUI({
                   </SafeAreaView>
                 </Modal>
               )}
+              
+              {/* iOS Language Selection Modal */}
+              {Platform.OS === 'ios' && (
+                <IosPickers.IosLanguagePicker
+                  visible={showIosLanguageModal}
+                  onCancel={() => {
+                    setShowIosLanguageModal(false);
+                    setSearchText('');
+                  }}
+                  onDone={applyIosLanguageSelection}
+                  languages={filteredLanguages}
+                  searchText={searchText}
+                  onSearchChange={setSearchText}
+                  selectedLanguage={tempSelectedLanguage}
+                  onSelectLanguage={handleIosLanguageSelect}
+                  uiText={uiText}
+                />
+              )}
             </View>
 
             {/* Redesigned Reading Level Row */}
@@ -628,94 +762,47 @@ export function MainUI({
                 )}
               </TouchableOpacity>
             </View>
+            
+            {/* iOS Book Selection Modal */}
+            {Platform.OS === 'ios' && (
+              <IosPickers.IosBookPicker
+                visible={showIosBookModal}
+                onCancel={() => {
+                  setShowIosBookModal(false);
+                  setSearchText('');
+                }}
+                onDone={applyIosBookSelection}
+                books={filteredBooks}
+                searchText={searchText}
+                onSearchChange={setSearchText}
+                selectedBook={tempSelectedBook}
+                onSelectBook={handleIosBookSelect}
+                getBookTitle={getBookTitle}
+                uiText={uiText}
+              />
+            )}
           </View>
 
-          {showContent && showControls && (
-            <>
-              <View style={styles.controlsContainer}>
-                <View style={styles.controls}>
-                  <TouchableOpacity 
-                    style={[
-                      styles.controlButton, 
-                      isSpeaking ? styles.activeButton : null,
-                      loadingBook ? styles.disabledButton : null
-                    ]} 
-                    onPress={speakSentence} 
-                    disabled={loadingBook}
-                  >
-                    <Text style={styles.buttonText}>{isSpeaking ? (uiText.stop || "Stop") : (uiText.listen || "Listen")}</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity 
-                    style={[
-                      styles.controlButton, 
-                      (loadingBook || isAtEndOfBook) ? styles.disabledButton : null
-                    ]} 
-                    onPress={handleNextButtonPress} 
-                    disabled={loadingBook || isAtEndOfBook}
-                  >
-                    {loadingBook ? (
-                      <View style={styles.nextButtonContent}>
-                        <ActivityIndicator size="small" color="#ffffff" style={styles.buttonSpinner} />
-                        <Text style={[styles.buttonText, styles.buttonTextWithSpinner]}>
-                          {uiText.next || "Next Sentence"}
-                        </Text>
-                      </View>
-                    ) : (
-                      <Animated.View style={{transform: [{scale: nextButtonAnimation}]}}>
-                        <Text style={styles.buttonText}>{uiText.next || "Next Sentence"}</Text>
-                      </Animated.View>
-                    )}
-                  </TouchableOpacity>
-                </View>
-                
-                {/* Render rewind button consistently across platforms */}
-                {renderRewindButton()}
-              </View>
-              
-              {/* Speed Control with Inline Circle Buttons - Only 5 speeds */}
-              <View style={styles.speedControlRow}>
-                <Text style={styles.speedLabel}>{uiText.readingSpeed || "Listening Speed"}:</Text>
-                <View style={styles.speedCircleContainer}>
-                  {speedOptions.map((speed) => (
-                    <TouchableOpacity
-                      key={speed}
-                      style={[
-                        styles.speedCircle,
-                        Math.abs(listeningSpeed - speed) < 0.1 ? styles.speedCircleActive : null
-                      ]}
-                      onPress={() => updateListeningSpeed(speed)}
-                    />
-                  ))}
-                </View>
-              </View>
-
-              <View style={styles.toggleContainer}>
-                <View style={styles.toggleItem}>
-                  <Text style={styles.toggleLabel}>{uiText.showText || "Show Study Language"}</Text>
-                  <Switch value={showText} onValueChange={setShowText} />
-                </View>
-                <View style={styles.toggleItem}>
-                  <Text style={styles.toggleLabel}>{uiText.showTranslation || "Show System Language"}</Text>
-                  <Switch value={showTranslation} onValueChange={setShowTranslation} />
-                </View>
-              </View>
-              
-              {/* Content Container without fixed height */}
-              <View style={styles.contentContainer}>
-                {showText && (
-                  <View style={styles.sentenceWrapper}>
-                    <Text style={styles.foreignSentence}>{sentence}</Text>
-                  </View>
-                )}
-                {showTranslation && translatedSentence && (
-                  <View style={showText ? styles.translationWrapper : styles.soloTranslationWrapper}>
-                    <Text style={styles.translation}>{translatedSentence}</Text>
-                  </View>
-                )}
-              </View>
-            </>
-          )}
+          {/* Content display component */}
+          <ContentDisplay 
+            showControls={showControls}
+            sentence={sentence}
+            translatedSentence={translatedSentence}
+            showText={showText}
+            showTranslation={showTranslation}
+            setShowText={setShowText}
+            setShowTranslation={setShowTranslation}
+            speakSentence={speakSentence}
+            nextSentence={handleNextButtonPress}
+            loadingBook={loadingBook}
+            listeningSpeed={listeningSpeed}
+            setListeningSpeed={setListeningSpeed}
+            isSpeaking={isSpeaking}
+            rewindBook={handleRewindPress}
+            nextButtonAnimation={nextButtonAnimation}
+            isAtEndOfBook={isAtEndOfBook}
+            uiText={uiText}
+          />
         </View>
       </ScrollView>
     </SafeAreaView>
