@@ -3,101 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Aoede - Adaptive Listening-Based Language Learning App">
-    <meta name="keywords" content="language learning, listening practice, adaptive learning, Aoede">
-    <meta name="author" content="Lindsay Ridgeway">
     <title>AOEDE</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            text-align: center;
-            margin: 0;
-            padding: 0;
+            margin: 40px;
+            line-height: 1.6;
             background-color: #f4f4f4;
-        }
-        .container {
-            max-width: 900px;
-            margin: auto;
-            padding: 20px;
-            background: white;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-            border-radius: 10px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        img.logo {
-            max-width: 100px;
+            color: #333;
         }
         h1 {
+            text-align: center;
+            font-size: 3em;
             color: #333;
         }
         .content {
             display: flex;
-            justify-content: space-between;
             align-items: flex-start;
-            margin-top: 20px;
-            width: 100%;
+            justify-content: space-between;
+            flex-wrap: nowrap;
         }
-        .features {
-            text-align: left;
+        .left-column {
             flex: 1;
             margin-right: 20px;
         }
-        .screenshot {
-            flex: 1;
+        .left-column ul {
+            margin-top: 0;
         }
-        .screenshot img {
-            max-width: 40%;
-            border-radius: 5px;
-            box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.1);
+        img {
+            width: 250px;
+            height: auto;
+            box-shadow: 3px 3px 8px rgba(0,0,0,0.5);
         }
-        .cta {
-            margin-top: 20px;
-        }
-        .cta a {
-            display: inline-block;
-            padding: 10px 20px;
-            background: #007BFF;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-        }
-        .features h2, .cta h2 {
+        .highlight {
+            font-weight: bold;
             color: #aaaaaa;
             font-style: italic;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <img class="logo" src="aoede_logo.png" alt="Aoede Logo">
-        <h1>AOEDE (ay-EE-dee) - Language Study Reinvented</h1>
-        <p>AOEDE was the name of an ancient Greek muse, a source of creative inspiration</p>
-        <p>Now experience your own inspiration with the AOEDE app, a revolutionary tool for studying <em><u>any</u></em> language through reading, and <em><u>listening</u></em>, practice</p>
-        
-        <div class="content">
-            <div class="screenshot">
-                <img src="aoede_screenshot.jpg" alt="Aoede App Screenshot">
-            </div>
 
-            <div class="features">
-                <h2>Key Features:</h2>
-                <ul>
-                    <li>The AOEDE app automatically displays in your own language.</li>
-                    <li>To get started with AOEDE, select the language you want to study, your desired reading level (from beginner to advanced), and any of dozens of classic literary choices. Then click Load Book to see the first sentence, simplified according to your selected reading level. Click Next Sentence to proceed onto the next sentence.</li>
-                    <li>AOEDE allows you to view each sentence in your study language, or your own language, or both. You can even practice listening for comprehension without seeing the written sentences at all.</li>
-                    <li>AOEDE's Listen button plays each foreign sentence with the simulated voice of a native speaker, adjustable from slow to fast.</li>
-                    <li>AOEDE remembers where you are in each book, even across sessions. Read as many books as you like, at the same time, or one after another. These are complete books. You'll never run out of interesting material to practice with.</li>
-                </ul>
-            </div>
-        </div>
+<h1>AOEDE</h1>
 
-        <div class="cta">
-            <h2>Download AOEDE Now:</h2>
-            <a href="#">Google Play (Coming Soon)</a>
-            <a href="#">Apple App Store (Coming Soon)</a>
-        </div>
+<div class="content">
+    <div class="left-column">
+        <p class="highlight">Key Features:</p>
+        <p>The AOEDE app automatically adapts to your native language, ensuring ease of use for learners around the globe. Simply choose your preferred study language, reading level, and source material. As you progress, the app remembers your place, enabling seamless transitions between sessions.</p>
+        <ul>
+            <li>Automatic language detection for user interface</li>
+            <li>Easy toggling of sentence visibility and translations</li>
+            <li>Adjustable reading speeds to suit individual learning paces</li>
+            <li>Convenient "Rewind" feature to revisit earlier parts of the text</li>
+            <li>Persistent memory of your progress across multiple books and sessions</li>
+        </ul>
+        <p class="highlight">Download AOEDE Now:</p>
+        <ul>
+            <li><strong>For Android users:</strong> Visit the Google Play Store and search "AOEDE".</li>
+            <li><strong>For iOS users:</strong> Visit the Apple App Store and search "AOEDE".</li>
+            <li><strong>For web users:</strong> Use AOEDE directly through your web browser.</li>
+        </ul>
     </div>
+    <img src="aoede_screenshot.jpg" alt="AOEDE Screenshot">
+</div>
+
 </body>
 </html>
