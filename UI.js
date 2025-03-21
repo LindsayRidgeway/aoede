@@ -15,12 +15,10 @@ import Constants from 'expo-constants';
 
 // Import iOS-specific components conditionally
 let IosPickers = null;
-let iosPickerStyles = null;
 
 // Only import iOS components if on iOS platform
 if (Platform.OS === 'ios') {
   IosPickers = require('./IosPickers');
-  iosPickerStyles = require('./iosPickerStyles').iosPickerStyles;
 }
 
 // Get API key using both old and new Expo Constants paths for compatibility
@@ -87,14 +85,9 @@ export function MainUI({
   const [showLanguageModal, setShowLanguageModal] = useState(false);
   const [displayLanguage, setDisplayLanguage] = useState(studyLanguage || uiText.enterLanguage || "Select language");
   
-  // State for iOS modals
-  const [showIosBookModal, setShowIosBookModal] = useState(false);
-  const [showIosLanguageModal, setShowIosLanguageModal] = useState(false);
-  const [searchText, setSearchText] = useState('');
-  const [filteredLanguages, setFilteredLanguages] = useState([]);
-  const [filteredBooks, setFilteredBooks] = useState([]);
-  const [tempSelectedLanguage, setTempSelectedLanguage] = useState(null);
-  const [tempSelectedBook, setTempSelectedBook] = useState(null);
+  // State for iOS pickers
+  const [showIosLanguagePicker, setShowIosLanguagePicker] = useState(false);
+  const [showIosBookPicker, setShowIosBookPicker] = useState(false);
   
   // Animation ref for Next button
   const nextButtonAnimation = useRef(new Animated.Value(1)).current;
@@ -128,7 +121,6 @@ export function MainUI({
               a.name.localeCompare(b.name)
             );
             setLanguages(sortedLanguages);
-            setFilteredLanguages(sortedLanguages);
           }
         }
       } catch (error) {
@@ -138,32 +130,6 @@ export function MainUI({
     
     loadLanguages();
   }, []);
-  
-  // Update filtered books when search text changes
-  useEffect(() => {
-    if (searchText) {
-      const filtered = bookSources.filter(book => 
-        getBookTitle(book).toLowerCase().includes(searchText.toLowerCase()) ||
-        book.author.toLowerCase().includes(searchText.toLowerCase())
-      );
-      setFilteredBooks(filtered);
-    } else {
-      setFilteredBooks(bookSources);
-    }
-  }, [searchText, uiText]);
-  
-  // Update filtered languages when search text changes
-  useEffect(() => {
-    if (languages.length > 0 && searchText) {
-      const filtered = languages.filter(lang => 
-        lang.name.toLowerCase().includes(searchText.toLowerCase()) ||
-        lang.language.toLowerCase().includes(searchText.toLowerCase())
-      );
-      setFilteredLanguages(filtered);
-    } else {
-      setFilteredLanguages(languages);
-    }
-  }, [searchText, languages]);
   
   // Update displayed language when studyLanguage changes
   useEffect(() => {
@@ -282,6 +248,23 @@ export function MainUI({
       handleClearContent(); // Clear content when language changes
     }
   };
+
+  // Handle direct iOS language selection
+  const handleIosLanguageChange = (itemValue) => {
+    if (itemValue) {
+      const language = languages.find(l => l.language === itemValue);
+      if (language) {
+        handleLanguageChange(language);
+      }
+    }
+    setShowIosLanguagePicker(false);
+  };
+  
+  // Handle direct iOS book selection
+  const handleIosBookChange = (itemValue) => {
+    handleBookChange(itemValue);
+    setShowIosBookPicker(false);
+  };
   
   // Animate the Next button
   const animateNextButton = () => {
@@ -316,34 +299,6 @@ export function MainUI({
         setDisplayBookTitle(getBookTitle(book));
       }
     }
-  };
-  
-  // Handle iOS language selection
-  const handleIosLanguageSelect = (language) => {
-    setTempSelectedLanguage(language);
-  };
-  
-  // Handle iOS book selection
-  const handleIosBookSelect = (book) => {
-    setTempSelectedBook(book);
-  };
-  
-  // Apply iOS language selection
-  const applyIosLanguageSelection = () => {
-    if (tempSelectedLanguage) {
-      handleLanguageChange(tempSelectedLanguage);
-    }
-    setShowIosLanguageModal(false);
-    setSearchText('');
-  };
-  
-  // Apply iOS book selection
-  const applyIosBookSelection = () => {
-    if (tempSelectedBook) {
-      handleBookChange(tempSelectedBook.id);
-    }
-    setShowIosBookModal(false);
-    setSearchText('');
   };
 
   // Handle rewind button press with confirmation
@@ -382,26 +337,64 @@ export function MainUI({
     // iOS needs special handling
     if (Platform.OS === 'ios') {
       return (
-        <IosPickers.IosSelectorButton
-          value={displayLanguage}
-          placeholder={uiText.enterLanguage || "Select language"}
-          onPress={() => {
-            if (!loadingBook) {
-              setShowIosLanguageModal(true);
-              setSearchText('');
-              setTempSelectedLanguage(null);
-              
-              // Find the current language in our list to pre-select
-              if (studyLanguage) {
-                const currentLang = languages.find(l => l.language === studyLanguage);
-                if (currentLang) {
-                  setTempSelectedLanguage(currentLang);
-                }
+        <View style={{ flex: 1 }}>
+          {/* Direct iOS picker button */}
+          <TouchableOpacity
+            style={{
+              height: 40,
+              borderColor: '#ddd',
+              borderWidth: 1,
+              borderRadius: 5,
+              paddingHorizontal: 10,
+              backgroundColor: '#fff',
+              justifyContent: 'center'
+            }}
+            onPress={() => {
+              if (!loadingBook) {
+                setShowIosLanguagePicker(true);
               }
-            }
-          }}
-          disabled={loadingBook}
-        />
+            }}
+            disabled={loadingBook}
+          >
+            <Text style={{ 
+              fontSize: 16,
+              color: studyLanguage ? '#333' : '#999' 
+            }}>
+              {displayLanguage}
+            </Text>
+          </TouchableOpacity>
+
+          {/* iOS native picker */}
+          {showIosLanguagePicker && (
+            <View style={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: '#ffffff',
+              height: 215,
+              zIndex: 1000
+            }}>
+              <Picker
+                selectedValue={studyLanguage}
+                onValueChange={handleIosLanguageChange}
+                itemStyle={{ height: 120, fontSize: 16 }}
+              >
+                <Picker.Item 
+                  label={uiText.enterLanguage || "Select language"} 
+                  value="" 
+                />
+                {languages.map((lang) => (
+                  <Picker.Item 
+                    key={lang.language} 
+                    label={lang.name} 
+                    value={lang.language} 
+                  />
+                ))}
+              </Picker>
+            </View>
+          )}
+        </View>
       );
     }
     
@@ -463,27 +456,62 @@ export function MainUI({
           marginRight: 10,
           height: 40,
         }}>
-          <IosPickers.IosSelectorButton
-            value={displayBookTitle}
-            placeholder={uiText.enterBook || "Select a book"}
+          {/* Direct iOS picker button */}
+          <TouchableOpacity
+            style={{
+              height: 40,
+              borderColor: '#ddd',
+              borderWidth: 1,
+              borderRadius: 5,
+              paddingHorizontal: 10,
+              backgroundColor: '#fff',
+              justifyContent: 'center'
+            }}
             onPress={() => {
               if (!loadingBook) {
-                setShowIosBookModal(true);
-                setSearchText('');
-                setTempSelectedBook(null);
-                setFilteredBooks(bookSources);
-                
-                // Find the current book to pre-select
-                if (selectedBook) {
-                  const currentBook = bookSources.find(b => b.id === selectedBook);
-                  if (currentBook) {
-                    setTempSelectedBook(currentBook);
-                  }
-                }
+                setShowIosBookPicker(true);
               }
             }}
             disabled={loadingBook}
-          />
+          >
+            <Text style={{ 
+              fontSize: 16,
+              color: selectedBook ? '#333' : '#999' 
+            }}>
+              {displayBookTitle}
+            </Text>
+          </TouchableOpacity>
+
+          {/* iOS native picker */}
+          {showIosBookPicker && (
+            <View style={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: '#ffffff',
+              height: 215,
+              zIndex: 1000
+            }}>
+              <Picker
+                selectedValue={selectedBook}
+                onValueChange={handleIosBookChange}
+                itemStyle={{ height: 120, fontSize: 16 }}
+              >
+                <Picker.Item 
+                  label={uiText.enterBook || "Select a book"} 
+                  value="" 
+                />
+                {bookSources.map((book) => (
+                  <Picker.Item 
+                    key={book.id} 
+                    label={getBookTitle(book)} 
+                    value={book.id} 
+                  />
+                ))}
+              </Picker>
+            </View>
+          )}
         </View>
       );
     }
@@ -684,24 +712,6 @@ export function MainUI({
                   </SafeAreaView>
                 </Modal>
               )}
-              
-              {/* iOS Language Selection Modal */}
-              {Platform.OS === 'ios' && (
-                <IosPickers.IosLanguagePicker
-                  visible={showIosLanguageModal}
-                  onCancel={() => {
-                    setShowIosLanguageModal(false);
-                    setSearchText('');
-                  }}
-                  onDone={applyIosLanguageSelection}
-                  languages={filteredLanguages}
-                  searchText={searchText}
-                  onSearchChange={setSearchText}
-                  selectedLanguage={tempSelectedLanguage}
-                  onSelectLanguage={handleIosLanguageSelect}
-                  uiText={uiText}
-                />
-              )}
             </View>
 
             {/* Redesigned Reading Level Row */}
@@ -762,25 +772,6 @@ export function MainUI({
                 )}
               </TouchableOpacity>
             </View>
-            
-            {/* iOS Book Selection Modal */}
-            {Platform.OS === 'ios' && (
-              <IosPickers.IosBookPicker
-                visible={showIosBookModal}
-                onCancel={() => {
-                  setShowIosBookModal(false);
-                  setSearchText('');
-                }}
-                onDone={applyIosBookSelection}
-                books={filteredBooks}
-                searchText={searchText}
-                onSearchChange={setSearchText}
-                selectedBook={tempSelectedBook}
-                onSelectBook={handleIosBookSelect}
-                getBookTitle={getBookTitle}
-                uiText={uiText}
-              />
-            )}
           </View>
 
           {/* Content display component */}
