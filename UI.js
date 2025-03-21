@@ -635,7 +635,7 @@ export function MainUI({
               <Text style={getHeaderTextStyle()}>
                 {uiText.appName || "Aoede"}
               </Text>
-		<Text style={styles.headerPronunciation}>(ay-EE-dee) 16:21</Text>
+		<Text style={styles.headerPronunciation}>(ay-EE-dee)</Text>
             </View>
           </View>
 
