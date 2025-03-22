@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Alert, Platform } from 'react-native';
+import { Alert, Platform, NativeModules } from 'react-native';
 import { MainUI } from './UI';
 import ListeningSpeed from './listeningSpeed';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -85,12 +85,61 @@ const directTranslate = async (text, sourceLang, targetLang) => {
   }
 };
 
-export default function App() {
-  // Get the user's language from browser or device
-  const userLanguage = (typeof navigator !== 'undefined' && navigator.language) 
-    ? navigator.language.split('-')[0] 
-    : "en";
+// Get the user's preferred locale/language using multiple methods for better reliability
+const getDeviceLanguage = async () => {
+  try {
+    // First try reading from AsyncStorage (user's previous selection)
+    try {
+      const storedLang = await AsyncStorage.getItem('userLanguage');
+      if (storedLang) {
+        log(`Using stored language preference: ${storedLang}`);
+        return storedLang;
+      }
+    } catch (error) {
+      log(`Error reading stored language: ${error.message}`);
+    }
+    
+    // Try to get device language from React Native's NativeModules
+    if (Platform.OS !== 'web') {
+      // iOS
+      if (Platform.OS === 'ios' && NativeModules.SettingsManager?.settings?.AppleLocale) {
+        const deviceLocale = NativeModules.SettingsManager.settings.AppleLocale;
+        const langCode = deviceLocale.split('_')[0];
+        log(`Detected iOS device locale: ${langCode}`);
+        return langCode;
+      }
+      
+      // Android
+      if (Platform.OS === 'android' && NativeModules.I18nManager) {
+        const isRTL = NativeModules.I18nManager.isRTL;
+        const localeIdentifier = NativeModules.I18nManager.localeIdentifier;
+        
+        if (localeIdentifier) {
+          const langCode = localeIdentifier.split('_')[0];
+          log(`Detected Android device locale: ${langCode} (RTL: ${isRTL})`);
+          return langCode;
+        }
+      }
+    }
+    
+    // For Web, use navigator.language
+    if (typeof navigator !== 'undefined' && navigator.language) {
+      const navLang = navigator.language.split('-')[0];
+      log(`Using navigator language: ${navLang}`);
+      return navLang;
+    }
+    
+    // Log the fallback to English
+    log('No language detected, falling back to English');
+  } catch (error) {
+    log(`Error detecting language: ${error.message}`);
+  }
   
+  // Default fallback
+  return 'en';
+};
+
+export default function App() {
   // Basic UI text in English
   const defaultUiText = {
     appName: "Aoede",
@@ -134,14 +183,28 @@ export default function App() {
   const [sourceLanguage, setSourceLanguage] = useState("en");
   const [readingLevel, setReadingLevel] = useState(6);
   const [isAtEndOfBook, setIsAtEndOfBook] = useState(false);
+  const [appLanguage, setAppLanguage] = useState('en'); // Default to English until we load
   
   // Initialize the app
   useEffect(() => {
     const initialize = async () => {
       try {
-        // Translate UI if not English
-        if (userLanguage !== 'en') {
-          translateUiElements();
+        // Get device language
+        const deviceLang = await getDeviceLanguage();
+        setAppLanguage(deviceLang);
+        
+        // Store detected language for future use
+        if (deviceLang && deviceLang !== 'en') {
+          try {
+            await AsyncStorage.setItem('userLanguage', deviceLang);
+            log(`Stored user language: ${deviceLang}`);
+          } catch (error) {
+            log(`Error storing user language: ${error.message}`);
+          }
+          
+          // Translate UI elements to the detected language
+          log(`Translating UI to ${deviceLang}`);
+          await translateUiToLanguage(deviceLang);
         }
         
         // Load stored settings
@@ -180,7 +243,7 @@ export default function App() {
         setStudyLanguage(language);
         
         // Initialize BookReader
-        BookReader.initialize(handleSentenceProcessed, userLanguage);
+        BookReader.initialize(handleSentenceProcessed, deviceLang || 'en');
       } catch (error) {
         // Silent error handling
         log(`Error during initialization: ${error.message}`);
@@ -190,16 +253,16 @@ export default function App() {
     initialize();
   }, []);
   
-  // Direct translation of UI elements
-  const translateUiElements = async () => {
-    if (userLanguage === 'en') return;
+  // Translate UI to specified language
+  const translateUiToLanguage = async (targetLang) => {
+    if (!targetLang || targetLang === 'en') return;
     
     try {
       // Translate basic UI elements
       const translatedElements = {};
       for (const [key, value] of Object.entries(defaultUiText)) {
         try {
-          const translated = await directTranslate(value, 'en', userLanguage);
+          const translated = await directTranslate(value, 'en', targetLang);
           translatedElements[key] = translated;
         } catch (error) {
           translatedElements[key] = value;
@@ -211,7 +274,7 @@ export default function App() {
       const translatedBooks = {};
       for (const book of bookSources) {
         try {
-          const translatedTitle = await directTranslate(book.title, 'en', userLanguage);
+          const translatedTitle = await directTranslate(book.title, 'en', targetLang);
           translatedBooks[book.id] = translatedTitle;
         } catch (error) {
           translatedBooks[book.id] = book.title;
@@ -224,7 +287,7 @@ export default function App() {
       
     } catch (error) {
       // Silent error handling
-      log(`Error in translateUiElements: ${error.message}`);
+      log(`Error in translateUiToLanguage: ${error.message}`);
     }
   };
   
@@ -359,6 +422,19 @@ export default function App() {
     }
   };
   
+  // Handle language change for the app
+  const handleAppLanguageChange = async (language) => {
+    if (language && language !== appLanguage) {
+      setAppLanguage(language);
+      await translateUiToLanguage(language);
+      try {
+        await AsyncStorage.setItem('userLanguage', language);
+      } catch (error) {
+        log(`Error saving app language: ${error.message}`);
+      }
+    }
+  };
+  
   // Handle load book button click
   const handleLoadBook = async () => {
     // Reset previous state
@@ -447,6 +523,8 @@ export default function App() {
       readingLevel={readingLevel}
       setReadingLevel={handleReadingLevelChange}
       isAtEndOfBook={isAtEndOfBook}
+      appLanguage={appLanguage}
+      setAppLanguage={handleAppLanguageChange}
     />
   );
 }
