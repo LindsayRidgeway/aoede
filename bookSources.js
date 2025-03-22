@@ -186,6 +186,14 @@ export const bookSources = [
     format: "text"
   },
   {
+    id: "emma",
+    title: "Emma by Jane Austen",
+    author: "Jane Austen",
+    url: "https://www.gutenberg.org/files/158/158-h/158-h.htm#chap01",
+    language: "en",
+    format: "text"
+  },
+  {
     id: "frankenstein", 
     title: "Frankenstein by Mary Shelley",
     author: "Mary Shelley",
@@ -253,6 +261,16 @@ export const bookSources = [
     title: "*The Iliad by Homer",
     author: "Homer",
     url: "https://www.gutenberg.org/files/6130/6130-h/6130-h.htm#book01",
+    language: "en",
+    format: "text"
+    },
+    */
+    /*
+  {
+    id: "importanceofbeingearnest",
+    title: "The Importance of Being Earnest by Oscar Wilde",
+    author: "Oscar Wilde",
+    url: "https://www.gutenberg.org/files/844/844-h/844-h.htm#1",
     language: "en",
     format: "text"
     },
@@ -327,11 +345,37 @@ export const bookSources = [
     language: "en",
     format: "text"
   },
+    /*
+  {
+    id: "northangerabbey",
+    title: "Northanger Abbey by Jane Austen",
+    author: "Jane Austen",
+    url: "https://www.gutenberg.org/files/121/121-h/121-h.htm#chap01",
+    language: "en",
+    format: "text"
+    },
+    */
   {
     id: "odyssey", 
     title: "The Odyssey by Homer",
     author: "Homer",
     url: "https://www.gutenberg.org/files/1727/1727-h/1727-h.htm#chap01",
+    language: "en",
+    format: "text"
+  },
+  {
+    id: "olivertwist",
+    title: "Oliver Twist by Charles Dickens",
+    author: "Charles Dickens",
+    url: "https://www.gutenberg.org/files/730/730-h/730-h.htm#chap1",
+    language: "en",
+    format: "text"
+  },
+  {
+    id: "persuasion",
+    title: "Persuasion by Jane Austen",
+    author: "Jane Austen",
+    url: "https://www.gutenberg.org/files/105/105-h/105-h.htm#chap01",
     language: "en",
     format: "text"
   },
@@ -345,16 +389,14 @@ export const bookSources = [
     format: "text"
   },
     */
-    /*
   {
-    id: "doriangray",
-    title: "*The Picture of Dorian Gray by Oscar Wilde",
+    id: "pictureofdoriangray",
+    title: "The Picture of Dorian Gray by Oscar Wilde",
     author: "Oscar Wilde",
-    url: "https://www.gutenberg.org/files/174/174-h/174-h.htm",
+    url: "https://www.gutenberg.org/files/174/174-h/174-h.htm#chap1",
     language: "en",
     format: "text"
   },
-    */
   {
     id: "prideandprejudice", 
     title: "Pride and Prejudice by Jane Austen",
@@ -386,6 +428,14 @@ export const bookSources = [
     title: "The Scarlet Letter by Nathaniel Hawthorne",
     author: "Nathaniel Hawthorne",
     url: "https://www.gutenberg.org/files/25344/25344-h/25344-h.htm#I",
+    language: "en",
+    format: "text"
+  },
+  {
+    id: "senseandsensibility",
+    title: "Sense and Sensibility by Jane Austen",
+    author: "Jane Austen",
+    url: "https://www.gutenberg.org/files/161/161-h/161-h.htm#chap01",
     language: "en",
     format: "text"
   },
@@ -461,6 +511,16 @@ export const bookSources = [
   },
     /*
   {
+    id: "wutheringheights",
+    title: "Wuthering Heights by Emily Brontë",
+    author: "Emily Brontë",
+    url: "https://www.gutenberg.org/files/768/768-h/768-h.htm#chap01",
+    language: "en",
+    format: "text"
+    },
+    */
+    /*
+  {
     id: "yellowwallpaper",
     title: "*The Yellow Wallpaper by Charlotte Perkins Gilman",
     author: "Charlotte Perkins Gilman",
@@ -468,116 +528,6 @@ export const bookSources = [
     language: "en",
     format: "text"
   }
-    */
-
-    /*
-  
-  // New additions - French Classics
-  {
-    id: "lesmiserables-fr",
-    title: "Les Misérables (Tome I: Fantine) by Victor Hugo",
-    author: "Victor Hugo",
-    url: "https://www.gutenberg.org/files/17489/17489-h/17489-h.htm#livre1",
-    language: "fr",
-    format: "text"
-  },
-  {
-    id: "lesmiserables-fr2",
-    title: "Les Misérables (Tome II: Cosette) by Victor Hugo",
-    author: "Victor Hugo",
-    url: "https://www.gutenberg.org/files/17493/17493-h/17493-h.htm#livre1",
-    language: "fr",
-    format: "text"
-  },
-  {
-    id: "lesmiserables-fr3",
-    title: "Les Misérables (Tome III: Marius) by Victor Hugo",
-    author: "Victor Hugo",
-    url: "https://www.gutenberg.org/files/17494/17494-h/17494-h.htm#livre1",
-    language: "fr",
-    format: "text"
-  },
-  {
-    id: "lesmiserables-fr5",
-    title: "Les Misérables (Tome V: Jean Valjean) by Victor Hugo",
-    author: "Victor Hugo",
-    url: "https://www.gutenberg.org/files/17519/17519-h/17519-h.htm#livre1",
-    language: "fr",
-    format: "text"
-  },
-  {
-    id: "donquixote-esp",
-    title: "Don Quijote de la Mancha by Miguel de Cervantes",
-    author: "Miguel de Cervantes",
-    url: "https://www.gutenberg.org/files/2000/2000-h/2000-h.htm#parte1",
-    language: "es",
-    format: "text"
-  },
-  {
-    id: "zapiski-rus",
-    title: "Записки из подполья (Notes from Underground) by Fyodor Dostoyevsky",
-    author: "Fyodor Dostoyevsky",
-    url: "https://www.gutenberg.org/files/14414/14414-h/14414-h.htm",
-    language: "ru",
-    format: "text"
-  },
-  {
-    id: "idiot-ger",
-    title: "Der Idiot by Fyodor Dostoyevsky",
-    author: "Fyodor Dostoyevsky",
-    url: "https://www.gutenberg.org/files/45148/45148-h/45148-h.htm#teil01",
-    language: "de",
-    format: "text"
-  },
-  {
-    id: "nachtlager-ger",
-    title: "Ein Nachtlager in Granada by Konrad Kreutzer",
-    author: "Konrad Kreutzer",
-    url: "https://www.gutenberg.org/files/15767/15767-h/15767-h.htm",
-    language: "de",
-    format: "text"
-  },
-  {
-    id: "faust-ger",
-    title: "Faust by Johann Wolfgang von Goethe",
-    author: "Johann Wolfgang von Goethe",
-    url: "https://www.gutenberg.org/files/21000/21000-h/21000-h.htm",
-    language: "de",
-    format: "text"
-  },
-  {
-    id: "trois-mousquetaires-fr",
-    title: "Les Trois Mousquetaires by Alexandre Dumas",
-    author: "Alexandre Dumas",
-    url: "https://www.gutenberg.org/files/13951/13951-h/13951-h.htm#CHAPITRE_PREMIER",
-    language: "fr",
-    format: "text"
-  },
-  {
-    id: "pere-goriot-fr",
-    title: "Le Père Goriot by Honoré de Balzac",
-    author: "Honoré de Balzac",
-    url: "https://www.gutenberg.org/files/1656/1656-h/1656-h.htm",
-    language: "fr",
-    format: "text"
-  },
-  {
-    id: "candide-fr",
-    title: "Candide by Voltaire",
-    author: "Voltaire",
-    url: "https://www.gutenberg.org/files/4650/4650-h/4650-h.htm",
-    language: "fr",
-    format: "text"
-  },
-  {
-    id: "madame-bovary-fr",
-    title: "Madame Bovary by Gustave Flaubert",
-    author: "Gustave Flaubert",
-    url: "https://www.gutenberg.org/files/14155/14155-h/14155-h.htm",
-    language: "fr",
-    format: "text"
-    }
-
     */
 ]
 
