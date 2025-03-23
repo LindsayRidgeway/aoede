@@ -1,11 +1,15 @@
-// IosPickers.js - iOS-specific modal picker components
+// IosPickers.js - Updated with fixed iOS modal layout issues
 import React, { useState, useEffect } from 'react';
 import { 
   View, Text, TouchableOpacity, TextInput, 
   Modal, FlatList, SafeAreaView, 
-  Keyboard, TouchableWithoutFeedback
+  Keyboard, TouchableWithoutFeedback,
+  Dimensions
 } from 'react-native';
 import { iosPickerStyles } from './iosPickerStyles';
+
+// Get screen dimensions for proper modal sizing
+const { width, height } = Dimensions.get('window');
 
 // iOS selector button component
 export const IosSelectorButton = ({
@@ -51,15 +55,25 @@ export const IosLanguagePicker = ({
 }) => {
   // When keyboard appears, adjust UI
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [modalHeight, setModalHeight] = useState(height * 0.8);
   
   // Listen for keyboard events
   useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
+    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', (event) => {
       setKeyboardVisible(true);
+      // Adjust modal height when keyboard appears
+      const keyboardHeight = event.endCoordinates.height;
+      setModalHeight(height - keyboardHeight - 20); // 20px buffer
     });
+    
     const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
       setKeyboardVisible(false);
+      // Reset modal height when keyboard disappears
+      setModalHeight(height * 0.8);
     });
+
+    // Set initial modal height
+    setModalHeight(height * 0.8);
 
     return () => {
       keyboardDidShowListener.remove();
@@ -83,7 +97,10 @@ export const IosLanguagePicker = ({
     >
       <TouchableWithoutFeedback onPress={dismissKeyboard}>
         <View style={iosPickerStyles.modalOverlay}>
-          <SafeAreaView style={iosPickerStyles.modalContent}>
+          <SafeAreaView style={[
+            iosPickerStyles.modalContent,
+            { maxHeight: modalHeight }
+          ]}>
             <View style={iosPickerStyles.modalHeader}>
               <TouchableOpacity
                 style={iosPickerStyles.closeButton}
@@ -160,6 +177,10 @@ export const IosLanguagePicker = ({
                   </View>
                 ) : null
               }
+              // Make sure the list takes available space after search box and header
+              style={{ flex: 1 }}
+              initialNumToRender={20}
+              windowSize={10}
             />
           </SafeAreaView>
         </View>
@@ -183,15 +204,25 @@ export const IosBookPicker = ({
 }) => {
   // When keyboard appears, adjust UI
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [modalHeight, setModalHeight] = useState(height * 0.8);
   
   // Listen for keyboard events
   useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
+    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', (event) => {
       setKeyboardVisible(true);
+      // Adjust modal height when keyboard appears
+      const keyboardHeight = event.endCoordinates.height;
+      setModalHeight(height - keyboardHeight - 20); // 20px buffer
     });
+    
     const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
       setKeyboardVisible(false);
+      // Reset modal height when keyboard disappears
+      setModalHeight(height * 0.8);
     });
+
+    // Set initial modal height
+    setModalHeight(height * 0.8);
 
     return () => {
       keyboardDidShowListener.remove();
@@ -215,7 +246,10 @@ export const IosBookPicker = ({
     >
       <TouchableWithoutFeedback onPress={dismissKeyboard}>
         <View style={iosPickerStyles.modalOverlay}>
-          <SafeAreaView style={iosPickerStyles.modalContent}>
+          <SafeAreaView style={[
+            iosPickerStyles.modalContent,
+            { maxHeight: modalHeight }
+          ]}>
             <View style={iosPickerStyles.modalHeader}>
               <TouchableOpacity
                 style={iosPickerStyles.closeButton}
@@ -291,6 +325,10 @@ export const IosBookPicker = ({
                   </View>
                 ) : null
               }
+              // Make sure the list takes available space after search box and header
+              style={{ flex: 1 }}
+              initialNumToRender={20}
+              windowSize={10}
             />
           </SafeAreaView>
         </View>
