@@ -1,4 +1,4 @@
-// ContentDisplay.js - Component for displaying content and controls
+// ContentDisplay.js - Updated to use integer values for speed buttons
 import React from 'react';
 import {
   Text, View, TouchableOpacity, Switch, ActivityIndicator,
@@ -24,7 +24,8 @@ const ContentDisplay = ({
   nextButtonAnimation,
   isAtEndOfBook,
   uiText,
-  speedOptions = [1.0, 1.25, 1.5, 1.75, 2.0]
+  // Use integer values 1-5 for the speed options
+  speedOptions = [1, 2, 3, 4, 5]
 }) => {
   // Handle rewind button press
   const handleRewindPress = () => {
@@ -33,7 +34,7 @@ const ContentDisplay = ({
     }
   };
 
-  // Update listening speed
+  // Update listening speed - directly use integer values
   const updateListeningSpeed = (speed) => {
     setListeningSpeed(speed);
   };
@@ -94,7 +95,7 @@ const ContentDisplay = ({
         </TouchableOpacity>
       </View>
       
-      {/* Speed Control with Inline Circle Buttons */}
+      {/* Speed Control with Inline Circle Buttons using integer values */}
       <View style={styles.speedControlRow}>
         <Text style={styles.speedLabel}>{uiText.readingSpeed || "Listening Speed"}:</Text>
         <View style={styles.speedCircleContainer}>
@@ -103,7 +104,7 @@ const ContentDisplay = ({
               key={speed}
               style={[
                 styles.speedCircle,
-                Math.abs(listeningSpeed - speed) < 0.1 ? styles.speedCircleActive : null
+                listeningSpeed === speed ? styles.speedCircleActive : null
               ]}
               onPress={() => updateListeningSpeed(speed)}
             />
