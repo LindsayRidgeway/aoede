@@ -1,4 +1,4 @@
-// listeningSpeed.js - With optimized speed range and debugging disabled
+// listeningSpeed.js - Hybrid approach to support both common and uncommon languages
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { Audio } from 'expo-av';
@@ -146,8 +146,10 @@ const findSupportedLanguageCode = (inputLanguage) => {
   return normalizedCode;
 };
 
-// Get the best STANDARD voice for a language (avoiding HD/Chirp voices)
-const getBestStandardVoiceForLanguage = (languageCode) => {
+// Get the best voice for a language with the hybrid approach:
+// 1. Try to find a Standard voice first (good for common languages)
+// 2. If no Standard voice is found, use any available voice (for uncommon languages)
+const getBestVoiceForLanguage = (languageCode) => {
   if (!languageCode) return null;
   
   // Normalize to lowercase
@@ -162,28 +164,37 @@ const getBestStandardVoiceForLanguage = (languageCode) => {
   if (cachedVoicesByLanguage[normalizedCode] && cachedVoicesByLanguage[normalizedCode].length > 0) {
     const voices = cachedVoicesByLanguage[normalizedCode];
     
-    // Filter to only include Standard voices (avoid HD and Chirp voices entirely)
+    // First try to get Standard voices (filter out HD/Chirp/Studio voices)
     const standardVoices = voices.filter(voice => 
       !voice.name.includes('HD') && 
       !voice.name.includes('Chirp') &&
-      !voice.name.includes('Studio') // Studio voices might also have limitations
+      !voice.name.includes('Studio')
     );
     
-    // Try WaveNet voices first (better quality) if available
-    const waveNetVoices = standardVoices.filter(voice => 
-      voice.name.includes('WaveNet')
-    );
-    
-    // If no standard voices found, fall back to all voices
-    let filteredVoices = standardVoices.length > 0 ? standardVoices : voices;
-    
-    // Prefer WaveNet voices if available
-    if (waveNetVoices.length > 0) {
-      filteredVoices = waveNetVoices;
+    // If Standard voices are available, use them
+    if (standardVoices.length > 0) {
+      // Prefer female Standard voices when available
+      const femaleStandardVoices = standardVoices.filter(
+        voice => voice.ssmlGender === 'FEMALE'
+      );
+      
+      if (femaleStandardVoices.length > 0) {
+        return {
+          name: femaleStandardVoices[0].name,
+          languageCode: femaleStandardVoices[0].matchedLanguageCode
+        };
+      }
+      
+      // Fall back to any Standard voice
+      return {
+        name: standardVoices[0].name,
+        languageCode: standardVoices[0].matchedLanguageCode
+      };
     }
     
+    // If no Standard voices are found, try any voice (for uncommon languages)
     // Prefer female voices when available
-    const femaleVoices = filteredVoices.filter(
+    const femaleVoices = voices.filter(
       voice => voice.ssmlGender === 'FEMALE'
     );
     
@@ -194,9 +205,10 @@ const getBestStandardVoiceForLanguage = (languageCode) => {
       };
     }
     
+    // Last resort: use any available voice
     return {
-      name: filteredVoices[0].name,
-      languageCode: filteredVoices[0].matchedLanguageCode
+      name: voices[0].name,
+      languageCode: voices[0].matchedLanguageCode
     };
   }
   
@@ -302,8 +314,8 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
   // Get the speaking rate from our scale
   const speakingRate = speedScale[speedIndex];
   
-  // First, try to find the best STANDARD voice for this language
-  const bestVoice = getBestStandardVoiceForLanguage(detectedLanguageCode);
+  // Find the best voice for this language using our hybrid approach
+  const bestVoice = getBestVoiceForLanguage(detectedLanguageCode);
   
   // If we found a voice, use its matched language code
   let ttsLanguageCode = null;
@@ -360,8 +372,7 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
     );
 
     if (!response.ok) {
-      // If the first request failed (even with standard voices),
-      // retry with a simplified request (no voice name, no speaking rate)
+      // If the first request failed, try without speed control
       const simplifiedBody = {
         input: { text: sentence },
         voice: { 
@@ -373,6 +384,11 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
         }
       };
       
+      // Keep the voice name if we had one
+      if (voiceName) {
+        simplifiedBody.voice.name = voiceName;
+      }
+      
       const retryResponse = await fetch(
         `https://texttospeech.googleapis.com/v1/text:synthesize?key=${GOOGLE_TTS_API_KEY}`,
         {
@@ -383,6 +399,85 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
       );
       
       if (!retryResponse.ok) {
+        // If that fails too, try one last approach without specific voice name
+        if (voiceName) {
+          const lastAttemptBody = {
+            input: { text: sentence },
+            voice: { 
+              languageCode: ttsLanguageCode,
+              ssmlGender: "FEMALE"
+            },
+            audioConfig: { 
+              audioEncoding: "MP3"
+            }
+          };
+          
+          const lastResponse = await fetch(
+            `https://texttospeech.googleapis.com/v1/text:synthesize?key=${GOOGLE_TTS_API_KEY}`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(lastAttemptBody),
+            }
+          );
+          
+          if (!lastResponse.ok) {
+            if (onFinish) onFinish();
+            return;
+          }
+          
+          const lastData = await lastResponse.json();
+          if (!lastData.audioContent) {
+            if (onFinish) onFinish();
+            return;
+          }
+          
+          // Use the successful last attempt data
+          const sound = new Audio.Sound();
+          currentSound = sound;
+          
+          try {
+            const audioUri = `data:audio/mp3;base64,${lastData.audioContent}`;
+            await sound.loadAsync({ uri: audioUri });
+            
+            // Set up a listener for when playback finishes
+            sound.setOnPlaybackStatusUpdate(status => {
+              if (status.didJustFinish) {
+                sound.setOnPlaybackStatusUpdate(null);
+                
+                // Clean up
+                (async () => {
+                  try {
+                    if (sound === currentSound) {
+                      await sound.unloadAsync();
+                      currentSound = null;
+                    }
+                  } catch (error) {
+                    log(`Error cleaning up sound: ${error.message}`);
+                  } finally {
+                    if (onFinish) onFinish();
+                  }
+                })();
+              }
+            });
+            
+            await sound.playAsync();
+          } catch (error) {
+            if (sound === currentSound) {
+              try {
+                await sound.unloadAsync();
+              } catch (e) {
+                // Ignore errors during cleanup
+              }
+              currentSound = null;
+            }
+            if (onFinish) onFinish();
+          }
+          
+          return;
+        }
+        
+        // If we've tried everything and still failed
         if (onFinish) onFinish();
         return;
       }
