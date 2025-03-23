@@ -1,3 +1,4 @@
+// listeningSpeed.js - Fixed for HD voice pace control incompatibility
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { Audio } from 'expo-av';
@@ -145,8 +146,8 @@ const findSupportedLanguageCode = (inputLanguage) => {
   return normalizedCode;
 };
 
-// Get the best voice for a language
-const getBestVoiceForLanguage = (languageCode) => {
+// Get the best voice for a language with pace control support
+const getBestVoiceForLanguage = (languageCode, needsPaceControl = true) => {
   if (!languageCode) return null;
   
   // Normalize to lowercase
@@ -159,8 +160,27 @@ const getBestVoiceForLanguage = (languageCode) => {
   
   // Check if we have any voices for this base language
   if (cachedVoicesByLanguage[normalizedCode] && cachedVoicesByLanguage[normalizedCode].length > 0) {
+    const voices = cachedVoicesByLanguage[normalizedCode];
+    
+    // Filter voices based on pace control compatibility
+    // HD voices only support pace control in English, so avoid them for non-English languages
+    let filteredVoices = voices;
+    
+    if (needsPaceControl && normalizedCode !== 'en') {
+      // For non-English languages with pace control, avoid HD voices
+      filteredVoices = voices.filter(voice => 
+        !voice.name.includes('HD') && 
+        !voice.name.includes('Chirp')  // Chirp voices are HD and have pace control limitations
+      );
+    }
+    
+    // If no voices match our criteria, fall back to all available voices
+    if (filteredVoices.length === 0) {
+      filteredVoices = voices;
+    }
+    
     // Prefer female voices when available
-    const femaleVoices = cachedVoicesByLanguage[normalizedCode].filter(
+    const femaleVoices = filteredVoices.filter(
       voice => voice.ssmlGender === 'FEMALE'
     );
     
@@ -172,8 +192,8 @@ const getBestVoiceForLanguage = (languageCode) => {
     }
     
     return {
-      name: cachedVoicesByLanguage[normalizedCode][0].name,
-      languageCode: cachedVoicesByLanguage[normalizedCode][0].matchedLanguageCode
+      name: filteredVoices[0].name,
+      languageCode: filteredVoices[0].matchedLanguageCode
     };
   }
   
@@ -260,15 +280,18 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
   // Stop any currently playing audio first
   await stopSpeaking();
 
-  // Ensure voices are initialized - but don't wait for it
+  // Ensure voices are initialized - but don't await it
   if (!languageInitialized || !availableVoices) {
     initializeVoices();
   }
 
-  const speakingRate = Math.max(0.5, Math.min(1.5, (listeningSpeed - 0.5) * 1));
+  // Calculate if pace control is needed based on listening speed
+  const usesPaceControl = Math.abs(listeningSpeed - 1.0) > 0.01;
+  const speakingRate = usesPaceControl ? Math.max(0.5, Math.min(1.5, (listeningSpeed - 0.5) * 1)) : 1.0;
   
   // First, try to find the best voice and language code for this language
-  const bestVoice = getBestVoiceForLanguage(detectedLanguageCode);
+  // Only mention that we need pace control if the speed isn't 1.0
+  const bestVoice = getBestVoiceForLanguage(detectedLanguageCode, usesPaceControl);
   
   // If we found a voice, use its matched language code
   let ttsLanguageCode = null;
@@ -284,10 +307,8 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
   
   // If we still don't have a language code, use what we have
   if (!ttsLanguageCode && detectedLanguageCode) {
-    log(`No matched language code found, using provided code: ${detectedLanguageCode}`);
     ttsLanguageCode = detectedLanguageCode;
   } else if (!ttsLanguageCode) {
-    log(`No language code available, using en-US as default`);
     ttsLanguageCode = "en-US";
   }
 
@@ -306,16 +327,23 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
         languageCode: ttsLanguageCode,
         ssmlGender: "FEMALE"
       },
-      audioConfig: { audioEncoding: "MP3", speakingRate: speakingRate }
+      audioConfig: { audioEncoding: "MP3" }
     };
+    
+    // Only add speaking rate if we're using pace control
+    if (usesPaceControl) {
+      // For non-English voices, be extra careful with Chirp and HD voices
+      if (ttsLanguageCode.startsWith('en') || 
+          (!voiceName || (!voiceName.includes('Chirp') && !voiceName.includes('HD')))) {
+        requestBody.audioConfig.speakingRate = speakingRate;
+      }
+    }
     
     // If we have a specific voice name, use it
     if (voiceName) {
       requestBody.voice.name = voiceName;
     }
 
-    log(`Sending TTS request with language: ${ttsLanguageCode}`);
-    
     const response = await fetch(
       `https://texttospeech.googleapis.com/v1/text:synthesize?key=${GOOGLE_TTS_API_KEY}`,
       {
@@ -326,10 +354,89 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
     );
 
     if (!response.ok) {
-      const errorData = await response.json();
-      log(`API error: ${JSON.stringify(errorData)}`);
-      if (onFinish) onFinish();
-      return;
+      // If we got an error and we're using pace control, try again without it
+      if (usesPaceControl && response.status === 400) {
+        log("Request failed with pace control, retrying without it");
+        
+        // Remove pace control and retry
+        if (requestBody.audioConfig.speakingRate) {
+          delete requestBody.audioConfig.speakingRate;
+        }
+        
+        const retryResponse = await fetch(
+          `https://texttospeech.googleapis.com/v1/text:synthesize?key=${GOOGLE_TTS_API_KEY}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(requestBody),
+          }
+        );
+        
+        if (!retryResponse.ok) {
+          const errorData = await retryResponse.json();
+          log(`Retry API error: ${JSON.stringify(errorData)}`);
+          if (onFinish) onFinish();
+          return;
+        }
+        
+        const retryData = await retryResponse.json();
+        if (!retryData.audioContent) {
+          log("No audio content in retry response");
+          if (onFinish) onFinish();
+          return;
+        }
+        
+        // Use the successful retry data
+        const sound = new Audio.Sound();
+        currentSound = sound;
+        
+        try {
+          const audioUri = `data:audio/mp3;base64,${retryData.audioContent}`;
+          await sound.loadAsync({ uri: audioUri });
+          
+          // Set up a listener for when playback finishes
+          sound.setOnPlaybackStatusUpdate(status => {
+            if (status.didJustFinish) {
+              sound.setOnPlaybackStatusUpdate(null);
+              
+              // Clean up
+              (async () => {
+                try {
+                  if (sound === currentSound) {
+                    await sound.unloadAsync();
+                    currentSound = null;
+                  }
+                } catch (error) {
+                  log(`Error cleaning up sound: ${error.message}`);
+                } finally {
+                  if (onFinish) onFinish();
+                }
+              })();
+            }
+          });
+          
+          await sound.playAsync();
+        } catch (error) {
+          log(`Error playing sound: ${error.message}`);
+          if (sound === currentSound) {
+            try {
+              await sound.unloadAsync();
+            } catch (e) {
+              // Ignore errors during cleanup
+            }
+            currentSound = null;
+          }
+          if (onFinish) onFinish();
+        }
+        
+        return;
+      } else {
+        // Handle other types of errors
+        const errorData = await response.json();
+        log(`API error: ${JSON.stringify(errorData)}`);
+        if (onFinish) onFinish();
+        return;
+      }
     }
 
     const data = await response.json();
