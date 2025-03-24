@@ -1,4 +1,4 @@
-// listeningSpeed.js - Hybrid approach to support both common and uncommon languages
+// listeningSpeed.js - Updated with silent mode override for iOS
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { Audio } from 'expo-av';
@@ -14,6 +14,9 @@ let currentSound = null; // Track the current sound object
 let cachedVoicesByLanguage = {}; // Cache for TTS voices by language
 let supportedVoiceLanguageCodes = new Set(); // Set of all supported language codes (with regions)
 
+// Flag to track if audio session is configured
+let isAudioSessionConfigured = false;
+
 // Safely access API keys with optional chaining
 const GOOGLE_TTS_API_KEY = Constants.expoConfig?.extra?.EXPO_PUBLIC_GOOGLE_API_KEY || "";
 
@@ -25,6 +28,28 @@ let languageInitialized = false; // Track if we've initialized voice data
 const log = (message) => {
   if (DEBUG) {
     console.log(`[ListeningSpeed] ${message}`);
+  }
+};
+
+// Configure audio session to play in silent mode on iOS
+const configureAudioSession = async () => {
+  if (isAudioSessionConfigured) return;
+  
+  try {
+    await Audio.setAudioModeAsync({
+      allowsRecordingIOS: false,
+      playsInSilentModeIOS: true, // This enables playback when silent switch is on
+      shouldDuckAndroid: true,
+      interruptionModeIOS: Audio.INTERRUPTION_MODE_IOS_DO_NOT_MIX,
+      interruptionModeAndroid: Audio.INTERRUPTION_MODE_ANDROID_DO_NOT_MIX,
+      playThroughEarpieceAndroid: false,
+      staysActiveInBackground: false
+    });
+    
+    isAudioSessionConfigured = true;
+    log('Audio session configured to play in silent mode');
+  } catch (error) {
+    log(`Error configuring audio session: ${error.message}`);
   }
 };
 
@@ -293,6 +318,9 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
     if (onFinish) onFinish();
     return;
   }
+
+  // Configure audio session to play in silent mode (mainly for iOS)
+  await configureAudioSession();
 
   // Stop any currently playing audio first
   await stopSpeaking();
@@ -585,6 +613,9 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
     if (onFinish) onFinish(); // Call onFinish even on error
   }
 };
+
+// Configure audio session early
+configureAudioSession();
 
 // Start voice initialization during module loading, but don't await it
 initializeVoices();
