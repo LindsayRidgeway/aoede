@@ -10,6 +10,7 @@
     "@react-native-community/slider": "4.5.5",
     "@react-native-picker/picker": "2.9.0",
     "axios": "^1.8.3",
+    "dotenv": "^16.4.7",
     "expo": "~52.0.38",
     "expo-asset": "^11.0.4",
     "expo-av": "^15.0.2",

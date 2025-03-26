@@ -1,4 +1,5 @@
-import Constants from 'expo-constants';
+// apiServices.js - API service functions for Aoede
+import { getConstantValue, logKeyDetails } from './apiUtils';
 
 // Import all simplification prompts statically
 import getSimplificationPrompt6 from './simplifiers/simplify6';
@@ -7,35 +8,15 @@ import getSimplificationPrompt12 from './simplifiers/simplify12';
 import getSimplificationPrompt15 from './simplifiers/simplify15';
 import getSimplificationPrompt18 from './simplifiers/simplify18';
 
-// Get API keys using both old and new Expo Constants paths for compatibility
-const getConstantValue = (key) => {
-  // Try the new path (expoConfig.extra) first - Expo SDK 46+
-  if (Constants?.expoConfig?.extra && Constants.expoConfig.extra[key] !== undefined) {
-    return Constants.expoConfig.extra[key];
-  }
-  
-  // Fallback to old path (manifest.extra) - before Expo SDK 46
-  if (Constants?.manifest?.extra && Constants.manifest.extra[key] !== undefined) {
-    return Constants.manifest.extra[key];
-  }
-  
-  // For Expo Go and other environments - check extra at top level
-  if (Constants?.extra && Constants.extra[key] !== undefined) {
-    return Constants.extra[key];
-  }
-  
-  // Check the direct path in Constants as last resort
-  if (Constants && Constants[key] !== undefined) {
-    return Constants[key];
-  }
-  
-  return null;
-};
-
-// Get API keys from Expo Constants
+// Get API keys using updated function
 const anthropicKey = getConstantValue('EXPO_PUBLIC_ANTHROPIC_API_KEY');
 const googleKey = getConstantValue('EXPO_PUBLIC_GOOGLE_API_KEY');
 export const CORS_PROXY = getConstantValue('EXPO_PUBLIC_CORS_PROXY') || '';
+
+// Log API keys availability (safe version)
+logKeyDetails('ANTHROPIC_API_KEY', anthropicKey);
+logKeyDetails('GOOGLE_API_KEY', googleKey);
+logKeyDetails('CORS_PROXY', CORS_PROXY);
 
 // Function to get the appropriate simplification prompt based on reading level
 export const getPromptForLevel = (readingLevel) => {
@@ -59,6 +40,7 @@ export const getPromptForLevel = (readingLevel) => {
 export const processSourceText = async (sourceText, targetLanguage, readingLevel = 6) => {
   try {
     if (!anthropicKey) {
+      console.log('[API] No Anthropic API key available for simplification');
       return null;
     }
     
@@ -102,16 +84,19 @@ export const processSourceText = async (sourceText, targetLanguage, readingLevel
     
     if (!response.ok) {
       const responseText = await response.text();
+      console.log(`[API] Anthropic API error: ${response.status} - ${responseText}`);
       return null;
     }
     
     const data = await response.json();
     
     if (data.error) {
+      console.log(`[API] Anthropic API returned error: ${JSON.stringify(data.error)}`);
       return null;
     }
     
     if (!data.content || data.content.length === 0) {
+      console.log('[API] No content in Anthropic API response');
       return null;
     }
     
@@ -123,6 +108,7 @@ export const processSourceText = async (sourceText, targetLanguage, readingLevel
     
     return cleanedText;
   } catch (error) {
+    console.log(`[API] Error in processSourceText: ${error.message}`);
     return null;
   }
 };
@@ -130,6 +116,7 @@ export const processSourceText = async (sourceText, targetLanguage, readingLevel
 // Translate a batch of sentences using Google Translate
 export const translateBatch = async (textArray, sourceLang, targetLang) => {
   if (!googleKey) {
+    console.log('[API] No Google API key available for translation');
     return textArray; // Return original text as fallback
   }
   
@@ -150,19 +137,28 @@ export const translateBatch = async (textArray, sourceLang, targetLang) => {
       }
     );
     
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.log(`[API] Google Translate API error: ${response.status} - ${errorText}`);
+      return textArray; // Return original text as fallback
+    }
+    
     const data = await response.json();
     
     // Handle API errors
     if (data.error) {
+      console.log(`[API] Google Translate API returned error: ${JSON.stringify(data.error)}`);
       return textArray; // Return original text as fallback
     }
     
     if (!data.data?.translations || data.data.translations.length === 0) {
+      console.log('[API] No translations in Google API response');
       return textArray; // Return original text as fallback
     }
     
     return data.data.translations.map(t => t.translatedText);
   } catch (error) {
+    console.log(`[API] Error in translateBatch: ${error.message}`);
     return textArray; // Return original text as fallback
   }
 };
