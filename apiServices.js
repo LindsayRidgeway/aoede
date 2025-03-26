@@ -8,10 +8,23 @@ import getSimplificationPrompt12 from './simplifiers/simplify12';
 import getSimplificationPrompt15 from './simplifiers/simplify15';
 import getSimplificationPrompt18 from './simplifiers/simplify18';
 
+// Store API call results for debugging - this will be accessible from the debug UI
+export const apiDebugResults = {
+  lastAnthropicAttempt: null,
+  lastGoogleAttempt: null,
+  initialized: false
+};
+
 // Get API keys using updated function
 const anthropicKey = getConstantValue('EXPO_PUBLIC_ANTHROPIC_API_KEY');
 const googleKey = getConstantValue('EXPO_PUBLIC_GOOGLE_API_KEY');
 export const CORS_PROXY = getConstantValue('EXPO_PUBLIC_CORS_PROXY') || '';
+
+// Store initial values for debugging
+apiDebugResults.initialized = true;
+apiDebugResults.anthropicKey = anthropicKey;
+apiDebugResults.googleKey = googleKey;
+apiDebugResults.corsProxy = CORS_PROXY;
 
 // Log API keys availability (safe version)
 logKeyDetails('ANTHROPIC_API_KEY', anthropicKey);
@@ -41,6 +54,10 @@ export const processSourceText = async (sourceText, targetLanguage, readingLevel
   try {
     if (!anthropicKey) {
       console.log('[API] No Anthropic API key available for simplification');
+      apiDebugResults.lastAnthropicAttempt = {
+        error: 'No API key available',
+        time: new Date().toISOString()
+      };
       return null;
     }
     
@@ -58,6 +75,14 @@ export const processSourceText = async (sourceText, targetLanguage, readingLevel
     }
     
     const apiUrl = `${CORS_PROXY}https://api.anthropic.com/v1/messages`;
+    
+    // Store API call details for debugging
+    apiDebugResults.lastAnthropicAttempt = {
+      time: new Date().toISOString(),
+      url: apiUrl,
+      apiKey: anthropicKey,
+      cors: CORS_PROXY
+    };
     
     // Get the appropriate prompt function based on reading level
     const getPrompt = getPromptForLevel(readingLevel);
@@ -85,6 +110,13 @@ export const processSourceText = async (sourceText, targetLanguage, readingLevel
     if (!response.ok) {
       const responseText = await response.text();
       console.log(`[API] Anthropic API error: ${response.status} - ${responseText}`);
+      
+      // Store error for debugging
+      apiDebugResults.lastAnthropicAttempt.error = {
+        status: response.status,
+        text: responseText
+      };
+      
       return null;
     }
     
@@ -92,13 +124,24 @@ export const processSourceText = async (sourceText, targetLanguage, readingLevel
     
     if (data.error) {
       console.log(`[API] Anthropic API returned error: ${JSON.stringify(data.error)}`);
+      
+      // Store error for debugging
+      apiDebugResults.lastAnthropicAttempt.error = data.error;
+      
       return null;
     }
     
     if (!data.content || data.content.length === 0) {
       console.log('[API] No content in Anthropic API response');
+      
+      // Store error for debugging
+      apiDebugResults.lastAnthropicAttempt.error = 'No content in response';
+      
       return null;
     }
+    
+    // Success! Store for debugging
+    apiDebugResults.lastAnthropicAttempt.success = true;
     
     // Get the processed text
     const processedText = data.content[0].text.trim();
@@ -109,6 +152,12 @@ export const processSourceText = async (sourceText, targetLanguage, readingLevel
     return cleanedText;
   } catch (error) {
     console.log(`[API] Error in processSourceText: ${error.message}`);
+    
+    // Store error for debugging
+    if (apiDebugResults.lastAnthropicAttempt) {
+      apiDebugResults.lastAnthropicAttempt.error = error.message;
+    }
+    
     return null;
   }
 };
@@ -117,12 +166,29 @@ export const processSourceText = async (sourceText, targetLanguage, readingLevel
 export const translateBatch = async (textArray, sourceLang, targetLang) => {
   if (!googleKey) {
     console.log('[API] No Google API key available for translation');
+    
+    apiDebugResults.lastGoogleAttempt = {
+      error: 'No API key available',
+      time: new Date().toISOString()
+    };
+    
     return textArray; // Return original text as fallback
   }
   
   try {
+    const apiUrl = `https://translation.googleapis.com/language/translate/v2?key=${googleKey}`;
+    
+    // Store API call details for debugging
+    apiDebugResults.lastGoogleAttempt = {
+      time: new Date().toISOString(),
+      url: apiUrl,
+      apiKey: googleKey,
+      sourceLang,
+      targetLang
+    };
+    
     const response = await fetch(
-      `https://translation.googleapis.com/language/translate/v2?key=${googleKey}`,
+      apiUrl,
       {
         method: "POST",
         headers: {
@@ -140,6 +206,13 @@ export const translateBatch = async (textArray, sourceLang, targetLang) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.log(`[API] Google Translate API error: ${response.status} - ${errorText}`);
+      
+      // Store error for debugging
+      apiDebugResults.lastGoogleAttempt.error = {
+        status: response.status,
+        text: errorText
+      };
+      
       return textArray; // Return original text as fallback
     }
     
@@ -148,17 +221,34 @@ export const translateBatch = async (textArray, sourceLang, targetLang) => {
     // Handle API errors
     if (data.error) {
       console.log(`[API] Google Translate API returned error: ${JSON.stringify(data.error)}`);
+      
+      // Store error for debugging
+      apiDebugResults.lastGoogleAttempt.error = data.error;
+      
       return textArray; // Return original text as fallback
     }
     
     if (!data.data?.translations || data.data.translations.length === 0) {
       console.log('[API] No translations in Google API response');
+      
+      // Store error for debugging
+      apiDebugResults.lastGoogleAttempt.error = 'No translations in response';
+      
       return textArray; // Return original text as fallback
     }
+    
+    // Success! Store for debugging
+    apiDebugResults.lastGoogleAttempt.success = true;
     
     return data.data.translations.map(t => t.translatedText);
   } catch (error) {
     console.log(`[API] Error in translateBatch: ${error.message}`);
+    
+    // Store error for debugging
+    if (apiDebugResults.lastGoogleAttempt) {
+      apiDebugResults.lastGoogleAttempt.error = error.message;
+    }
+    
     return textArray; // Return original text as fallback
   }
 };

@@ -10,6 +10,7 @@ import { styles } from './styles';
 import ListeningSpeed from './listeningSpeed';
 import { bookSources } from './bookSources';
 import ContentDisplay from './ContentDisplay';
+import DebugPanel from './DebugPanel';
 import * as Font from 'expo-font';
 import Constants from 'expo-constants';
 
@@ -638,6 +639,8 @@ export function MainUI({
 		<Text style={styles.headerPronunciation}>(ay-EE-dee)</Text>
             </View>
           </View>
+
+          <DebugPanel />
 
           {/* Input container is always visible */}
           <View style={styles.inputContainer}>

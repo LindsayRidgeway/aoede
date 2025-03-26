@@ -1,0 +1,16 @@
+ 2074  brew install git-filter-repo
+ 2075  git filter-repo --path .env --invert-paths
+ 2076  git filter-repo --path .env --invert-paths --force
+ 2077  git push origin --force
+ 2078  git push --set-upstream origin main --force
+ 2079  git remote -v
+ 2080  git remote add origin https://github.com/LindsayRidgeway/aoede.git
+ 2081  git push --set-upstream origin main --force
+ 2082  EXPO_NO_CACHE=1 eas build -p ios
+ 2083  eas submit -p ios
+ 2084  npx expo start --clear
+ 2085  npx expo start --dev-client
+ 2086  history | grep -A 10 "eas build"
+ 2087  history | grep -A 10 "eas build -p android"
+ 2088  history | grep -A 10 "EXPO_NO_CACHE=1 eas build -p android"
+ 2089  history | grep -A 10 "build.*android"
