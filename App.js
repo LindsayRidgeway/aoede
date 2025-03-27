@@ -32,7 +32,7 @@ const getConstantValue = (key) => {
   }
   
   // For Expo Go and other environments - check extra at top level
-  if (Constants?.extra && Constants.extra[key] !== undefined) {
+  if (Constants?.extra && Constants?.extra[key] !== undefined) {
     return Constants.extra[key];
   }
   

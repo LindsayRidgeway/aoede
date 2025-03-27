@@ -17,8 +17,33 @@ let supportedVoiceLanguageCodes = new Set(); // Set of all supported language co
 // Flag to track if audio session is configured
 let isAudioSessionConfigured = false;
 
-// Safely access API keys with optional chaining
-const GOOGLE_TTS_API_KEY = Constants.expoConfig?.extra?.EXPO_PUBLIC_GOOGLE_API_KEY || "";
+// Get API key using helper function for consistency
+const getConstantValue = (key) => {
+  // Try the new path (expoConfig.extra) first - Expo SDK 46+
+  if (Constants?.expoConfig?.extra && Constants.expoConfig.extra[key] !== undefined) {
+    return Constants.expoConfig.extra[key];
+  }
+  
+  // Fallback to old path (manifest.extra) - before Expo SDK 46
+  if (Constants?.manifest?.extra && Constants.manifest.extra[key] !== undefined) {
+    return Constants.manifest.extra[key];
+  }
+  
+  // For Expo Go and other environments - check extra at top level
+  if (Constants?.extra && Constants.extra[key] !== undefined) {
+    return Constants.extra[key];
+  }
+  
+  // Check the direct path in Constants as last resort
+  if (Constants && Constants[key] !== undefined) {
+    return Constants[key];
+  }
+  
+  return null;
+};
+
+// Safely access API keys directly from Constants
+const GOOGLE_TTS_API_KEY = getConstantValue('EXPO_PUBLIC_GOOGLE_API_KEY');
 
 // Keep track of available voices
 let availableVoices = null;

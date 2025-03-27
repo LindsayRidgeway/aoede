@@ -9,11 +9,6 @@ import { apiDebugResults } from './apiServices';
 const getAllVersionsOfKey = (key) => {
   const versions = {};
   
-  // Direct process.env access
-  if (typeof process !== 'undefined' && process.env && process.env[key]) {
-    versions.processEnv = process.env[key];
-  }
-  
   // Constants paths
   if (Constants?.expoConfig?.extra && Constants.expoConfig.extra[key] !== undefined) {
     versions.expoConfigExtra = Constants.expoConfig.extra[key];
