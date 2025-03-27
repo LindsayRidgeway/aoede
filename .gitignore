@@ -30,7 +30,7 @@ yarn-error.*
 *.pem
 
 # local app.json and .env files
-app.json
+#app.json
 .env
 .env*.local
 

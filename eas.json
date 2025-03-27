@@ -1,24 +1,19 @@
 {
-  "cli": {
-    "version": ">= 15.0.12",
-    "appVersionSource": "remote"
-  },
   "build": {
-    "development": {
-      "developmentClient": true,
-      "distribution": "internal",
-      "channel": "development"
-    },
-    "preview": {
-      "distribution": "internal",
-      "channel": "preview"
-    },
     "production": {
-      "autoIncrement": true,
-      "channel": "production"
+      "ios": {
+        "resourceClass": "default"
+      },
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_NO_CACHE": "1"
+      },
+      "autoIncrement": true
     }
   },
-  "submit": {
-    "production": {}
+  "cli": {
+    "appVersionSource": "remote"
   }
 }

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import Constants from 'expo-constants';
-import { getConstantValue } from './apiUtils';
+import { getConstantValue } from './apiUtilsXXX';
 import { apiDebugResults } from './apiServices';
 
 // Function to get all possible versions of a key
