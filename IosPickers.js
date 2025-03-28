@@ -1,10 +1,10 @@
-// IosPickers.js - Updated with fixed iOS modal layout issues
+// IosPickers.js - Simplified version for iOS
 import React, { useState, useEffect } from 'react';
 import { 
   View, Text, TouchableOpacity, TextInput, 
   Modal, FlatList, SafeAreaView, 
   Keyboard, TouchableWithoutFeedback,
-  Dimensions
+  Dimensions, StyleSheet
 } from 'react-native';
 import { iosPickerStyles } from './iosPickerStyles';
 
@@ -55,25 +55,16 @@ export const IosLanguagePicker = ({
 }) => {
   // When keyboard appears, adjust UI
   const [keyboardVisible, setKeyboardVisible] = useState(false);
-  const [modalHeight, setModalHeight] = useState(height * 0.8);
   
   // Listen for keyboard events
   useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', (event) => {
+    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
       setKeyboardVisible(true);
-      // Adjust modal height when keyboard appears
-      const keyboardHeight = event.endCoordinates.height;
-      setModalHeight(height - keyboardHeight - 20); // 20px buffer
     });
     
     const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
       setKeyboardVisible(false);
-      // Reset modal height when keyboard disappears
-      setModalHeight(height * 0.8);
     });
-
-    // Set initial modal height
-    setModalHeight(height * 0.8);
 
     return () => {
       keyboardDidShowListener.remove();
@@ -91,100 +82,76 @@ export const IosLanguagePicker = ({
   return (
     <Modal
       visible={visible}
-      transparent
+      transparent={false}
       animationType="slide"
       onRequestClose={onCancel}
     >
-      <TouchableWithoutFeedback onPress={dismissKeyboard}>
-        <View style={iosPickerStyles.modalOverlay}>
-          <SafeAreaView style={[
-            iosPickerStyles.modalContent,
-            { maxHeight: modalHeight }
-          ]}>
-            <View style={iosPickerStyles.modalHeader}>
+      <SafeAreaView style={{flex: 1, backgroundColor: 'white'}}>
+        <View style={simpleStyles.header}>
+          <TouchableOpacity onPress={onCancel}>
+            <Text style={simpleStyles.cancelText}>Cancel</Text>
+          </TouchableOpacity>
+          
+          <Text style={simpleStyles.title}>
+            {uiText.studyLanguage || "Study Language"}
+          </Text>
+          
+          <TouchableOpacity 
+            onPress={onDone}
+            disabled={!selectedLanguage}
+          >
+            <Text style={[
+              simpleStyles.doneText,
+              !selectedLanguage && {opacity: 0.5}
+            ]}>
+              Done
+            </Text>
+          </TouchableOpacity>
+        </View>
+        
+        <TextInput
+          style={simpleStyles.searchInput}
+          placeholder="Search languages..."
+          placeholderTextColor="#999"
+          value={searchText}
+          onChangeText={onSearchChange}
+          clearButtonMode="while-editing"
+        />
+        
+        <FlatList
+          data={languages}
+          keyExtractor={item => item.language}
+          renderItem={({item}) => {
+            const isSelected = selectedLanguage && 
+                          selectedLanguage.language === item.language;
+            return (
               <TouchableOpacity
-                style={iosPickerStyles.closeButton}
-                onPress={onCancel}
-                hitSlop={{top: 10, right: 10, bottom: 10, left: 10}}
-              >
-                <Text style={iosPickerStyles.closeButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              
-              <Text style={iosPickerStyles.modalTitle}>
-                {uiText.studyLanguage || "Study Language"}
-              </Text>
-              
-              <TouchableOpacity
-                style={iosPickerStyles.doneButton}
-                onPress={onDone}
-                disabled={!selectedLanguage}
-                hitSlop={{top: 10, right: 10, bottom: 10, left: 10}}
+                style={[
+                  simpleStyles.item,
+                  isSelected && simpleStyles.selectedItem
+                ]}
+                onPress={() => onSelectLanguage(item)}
               >
                 <Text style={[
-                  iosPickerStyles.doneButtonText,
-                  !selectedLanguage && iosPickerStyles.disabledButton
+                  simpleStyles.itemText,
+                  isSelected && simpleStyles.selectedText
                 ]}>
-                  Done
+                  {item.name}
                 </Text>
               </TouchableOpacity>
-            </View>
-            
-            <View style={iosPickerStyles.searchContainer}>
-              <TextInput
-                style={iosPickerStyles.searchInput}
-                placeholder="Search languages..."
-                placeholderTextColor="#999"
-                value={searchText}
-                onChangeText={onSearchChange}
-                clearButtonMode="while-editing"
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-            </View>
-            
-            <FlatList
-              data={languages}
-              keyExtractor={item => item.language}
-              renderItem={({item}) => {
-                const isSelected = selectedLanguage && 
-                                selectedLanguage.language === item.language;
-                return (
-                  <TouchableOpacity
-                    style={[
-                      iosPickerStyles.item,
-                      isSelected && iosPickerStyles.selectedItem
-                    ]}
-                    onPress={() => onSelectLanguage(item)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[
-                      iosPickerStyles.itemText,
-                      isSelected && iosPickerStyles.selectedItemText
-                    ]}>
-                      {item.name}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              }}
-              contentContainerStyle={iosPickerStyles.listContainer}
-              keyboardShouldPersistTaps="handled"
-              ListEmptyComponent={
-                searchText ? (
-                  <View style={iosPickerStyles.emptyContainer}>
-                    <Text style={iosPickerStyles.emptyText}>
-                      No languages found matching "{searchText}"
-                    </Text>
-                  </View>
-                ) : null
-              }
-              // Make sure the list takes available space after search box and header
-              style={{ flex: 1 }}
-              initialNumToRender={20}
-              windowSize={10}
-            />
-          </SafeAreaView>
-        </View>
-      </TouchableWithoutFeedback>
+            );
+          }}
+          ListEmptyComponent={
+            searchText ? (
+              <View style={simpleStyles.emptyContainer}>
+                <Text style={simpleStyles.emptyText}>
+                  No languages found matching "{searchText}"
+                </Text>
+              </View>
+            ) : null
+          }
+        />
+      </SafeAreaView>
     </Modal>
   );
 };
@@ -204,25 +171,16 @@ export const IosBookPicker = ({
 }) => {
   // When keyboard appears, adjust UI
   const [keyboardVisible, setKeyboardVisible] = useState(false);
-  const [modalHeight, setModalHeight] = useState(height * 0.8);
   
   // Listen for keyboard events
   useEffect(() => {
-    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', (event) => {
+    const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
       setKeyboardVisible(true);
-      // Adjust modal height when keyboard appears
-      const keyboardHeight = event.endCoordinates.height;
-      setModalHeight(height - keyboardHeight - 20); // 20px buffer
     });
     
     const keyboardDidHideListener = Keyboard.addListener('keyboardDidHide', () => {
       setKeyboardVisible(false);
-      // Reset modal height when keyboard disappears
-      setModalHeight(height * 0.8);
     });
-
-    // Set initial modal height
-    setModalHeight(height * 0.8);
 
     return () => {
       keyboardDidShowListener.remove();
@@ -240,99 +198,135 @@ export const IosBookPicker = ({
   return (
     <Modal
       visible={visible}
-      transparent
+      transparent={false}
       animationType="slide"
       onRequestClose={onCancel}
     >
-      <TouchableWithoutFeedback onPress={dismissKeyboard}>
-        <View style={iosPickerStyles.modalOverlay}>
-          <SafeAreaView style={[
-            iosPickerStyles.modalContent,
-            { maxHeight: modalHeight }
-          ]}>
-            <View style={iosPickerStyles.modalHeader}>
+      <SafeAreaView style={{flex: 1, backgroundColor: 'white'}}>
+        <View style={simpleStyles.header}>
+          <TouchableOpacity onPress={onCancel}>
+            <Text style={simpleStyles.cancelText}>Cancel</Text>
+          </TouchableOpacity>
+          
+          <Text style={simpleStyles.title}>
+            {uiText.bookSelection || "Book Selection"}
+          </Text>
+          
+          <TouchableOpacity 
+            onPress={onDone}
+            disabled={!selectedBook}
+          >
+            <Text style={[
+              simpleStyles.doneText,
+              !selectedBook && {opacity: 0.5}
+            ]}>
+              Done
+            </Text>
+          </TouchableOpacity>
+        </View>
+        
+        <TextInput
+          style={simpleStyles.searchInput}
+          placeholder="Search books..."
+          placeholderTextColor="#999"
+          value={searchText}
+          onChangeText={onSearchChange}
+          clearButtonMode="while-editing"
+        />
+        
+        <FlatList
+          data={books}
+          keyExtractor={item => item.id}
+          renderItem={({item}) => {
+            const isSelected = selectedBook && selectedBook.id === item.id;
+            return (
               <TouchableOpacity
-                style={iosPickerStyles.closeButton}
-                onPress={onCancel}
-                hitSlop={{top: 10, right: 10, bottom: 10, left: 10}}
-              >
-                <Text style={iosPickerStyles.closeButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              
-              <Text style={iosPickerStyles.modalTitle}>
-                {uiText.bookSelection || "Book Selection"}
-              </Text>
-              
-              <TouchableOpacity
-                style={iosPickerStyles.doneButton}
-                onPress={onDone}
-                disabled={!selectedBook}
-                hitSlop={{top: 10, right: 10, bottom: 10, left: 10}}
+                style={[
+                  simpleStyles.item,
+                  isSelected && simpleStyles.selectedItem
+                ]}
+                onPress={() => onSelectBook(item)}
               >
                 <Text style={[
-                  iosPickerStyles.doneButtonText,
-                  !selectedBook && iosPickerStyles.disabledButton
+                  simpleStyles.itemText,
+                  isSelected && simpleStyles.selectedText
                 ]}>
-                  Done
+                  {getBookTitle(item)}
                 </Text>
               </TouchableOpacity>
-            </View>
-            
-            <View style={iosPickerStyles.searchContainer}>
-              <TextInput
-                style={iosPickerStyles.searchInput}
-                placeholder="Search books..."
-                placeholderTextColor="#999"
-                value={searchText}
-                onChangeText={onSearchChange}
-                clearButtonMode="while-editing"
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-            </View>
-            
-            <FlatList
-              data={books}
-              keyExtractor={item => item.id}
-              renderItem={({item}) => {
-                const isSelected = selectedBook && selectedBook.id === item.id;
-                return (
-                  <TouchableOpacity
-                    style={[
-                      iosPickerStyles.item,
-                      isSelected && iosPickerStyles.selectedItem
-                    ]}
-                    onPress={() => onSelectBook(item)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[
-                      iosPickerStyles.itemText,
-                      isSelected && iosPickerStyles.selectedItemText
-                    ]}>
-                      {getBookTitle(item)}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              }}
-              contentContainerStyle={iosPickerStyles.listContainer}
-              keyboardShouldPersistTaps="handled"
-              ListEmptyComponent={
-                searchText ? (
-                  <View style={iosPickerStyles.emptyContainer}>
-                    <Text style={iosPickerStyles.emptyText}>
-                      No books found matching "{searchText}"
-                    </Text>
-                  </View>
-                ) : null
-              }
-              // Make sure the list takes available space after search box and header
-              style={{ flex: 1 }}
-              initialNumToRender={20}
-              windowSize={10}
-            />
-          </SafeAreaView>
-        </View>
-      </TouchableWithoutFeedback>
+            );
+          }}
+          ListEmptyComponent={
+            searchText ? (
+              <View style={simpleStyles.emptyContainer}>
+                <Text style={simpleStyles.emptyText}>
+                  No books found matching "{searchText}"
+                </Text>
+              </View>
+            ) : null
+          }
+        />
+      </SafeAreaView>
     </Modal>
   );
 };
+
+// Simple inline styles to avoid any dependency issues
+const simpleStyles = StyleSheet.create({
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee'
+  },
+  title: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#333',
+    textAlign: 'center'
+  },
+  cancelText: {
+    fontSize: 16,
+    color: '#007AFF'
+  },
+  doneText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#007AFF'
+  },
+  searchInput: {
+    height: 40,
+    margin: 10,
+    paddingHorizontal: 10,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8
+  },
+  item: {
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee'
+  },
+  selectedItem: {
+    backgroundColor: '#f0f9ff'
+  },
+  itemText: {
+    fontSize: 16,
+    color: '#333'
+  },
+  selectedText: {
+    color: '#007AFF',
+    fontWeight: '500'
+  },
+  emptyContainer: {
+    padding: 20,
+    alignItems: 'center'
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#999',
+    textAlign: 'center'
+  }
+});
