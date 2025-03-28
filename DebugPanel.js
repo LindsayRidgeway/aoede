@@ -1,31 +1,116 @@
-// DebugPanel.js - Component to display debug info in the UI
+// DebugPanel.js - Component to display debug info in the UI (with API key protection)
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import Constants from 'expo-constants';
 import { getConstantValue } from './apiUtilsXXX';
 import { apiDebugResults } from './apiServices';
 
-// Function to get all possible versions of a key
+// Helper function to censor sensitive values like API keys
+const censorValue = (key, value) => {
+  // If the value is null, undefined, or empty, just return it
+  if (!value) return value;
+  
+  // Check if this is sensitive data that should be censored
+  const sensitiveKeys = ['api_key', 'apikey', 'key', 'token', 'secret', 'password', 'auth'];
+  
+  // For API keys specifically
+  if (key.toLowerCase().includes('api_key') || 
+      key.toLowerCase().includes('apikey') ||
+      key.toLowerCase().includes('token') ||
+      key.toLowerCase().includes('auth') ||
+      key.toLowerCase().includes('key')) {
+    // Show just the first 4 and last 4 characters if long enough
+    if (typeof value === 'string' && value.length > 12) {
+      return `${value.substring(0, 4)}...${value.substring(value.length - 4)}`;
+    }
+    // Otherwise just hide it completely
+    return "[API KEY HIDDEN]";
+  }
+  
+  // For URLs that might contain API keys as parameters
+  if (typeof value === 'string' && 
+     (value.includes('key=') || value.includes('api_key=') || value.includes('apikey='))) {
+    // Try to censor just the key parameter
+    return value.replace(/([?&](api_?)?key=)[^&]+/gi, '$1[API KEY HIDDEN]');
+  }
+  
+  return value;
+};
+
+// Function to get all possible versions of a key (with censoring)
 const getAllVersionsOfKey = (key) => {
   const versions = {};
   
   // Constants paths
   if (Constants?.expoConfig?.extra && Constants.expoConfig.extra[key] !== undefined) {
-    versions.expoConfigExtra = Constants.expoConfig.extra[key];
+    versions.expoConfigExtra = censorValue(key, Constants.expoConfig.extra[key]);
   }
   
   if (Constants?.manifest?.extra && Constants.manifest.extra[key] !== undefined) {
-    versions.manifestExtra = Constants.manifest.extra[key];
+    versions.manifestExtra = censorValue(key, Constants.manifest.extra[key]);
   }
   
   if (Constants?.extra && Constants.extra[key] !== undefined) {
-    versions.constantsExtra = Constants.extra[key];
+    versions.constantsExtra = censorValue(key, Constants.extra[key]);
   }
   
   // Get the value that would be used by getConstantValue
-  versions.actualUsed = getConstantValue(key);
+  versions.actualUsed = censorValue(key, getConstantValue(key));
   
   return versions;
+};
+
+// Function to sanitize debug data to remove sensitive information
+const sanitizeDebugData = (data) => {
+  if (!data) return null;
+  
+  // Deep clone the object to avoid modifying the original
+  const sanitized = JSON.parse(JSON.stringify(data));
+  
+  // Sanitize API results if present
+  if (sanitized.apiDebugResults) {
+    // Sanitize Anthropic API results
+    if (sanitized.apiDebugResults.lastAnthropicAttempt) {
+      const attempt = sanitized.apiDebugResults.lastAnthropicAttempt;
+      
+      if (attempt.apiKey) {
+        attempt.apiKey = censorValue('apiKey', attempt.apiKey);
+      }
+      
+      if (attempt.url && attempt.url.includes('key=')) {
+        attempt.url = censorValue('url', attempt.url);
+      }
+    }
+    
+    // Sanitize Google API results
+    if (sanitized.apiDebugResults.lastGoogleAttempt) {
+      const attempt = sanitized.apiDebugResults.lastGoogleAttempt;
+      
+      if (attempt.apiKey) {
+        attempt.apiKey = censorValue('apiKey', attempt.apiKey);
+      }
+      
+      if (attempt.url && attempt.url.includes('key=')) {
+        attempt.url = censorValue('url', attempt.url);
+      }
+    }
+    
+    // Sanitize any stored API keys
+    if (sanitized.apiDebugResults.anthropicKey) {
+      sanitized.apiDebugResults.anthropicKey = censorValue('anthropicKey', sanitized.apiDebugResults.anthropicKey);
+    }
+    
+    if (sanitized.apiDebugResults.googleKey) {
+      sanitized.apiDebugResults.googleKey = censorValue('googleKey', sanitized.apiDebugResults.googleKey);
+    }
+    
+    if (sanitized.apiDebugResults.corsProxy) {
+      // Not sensitive but for consistency
+      sanitized.apiDebugResults.corsProxy = sanitized.apiDebugResults.corsProxy;
+    }
+  }
+  
+  return sanitized;
 };
 
 const DebugPanel = () => {
@@ -46,7 +131,7 @@ const DebugPanel = () => {
         anthropicVersions,
         googleVersions,
         corsProxyVersions,
-        apiDebugResults: {...apiDebugResults}
+        apiDebugResults: sanitizeDebugData({...apiDebugResults})
       });
     };
     
@@ -99,29 +184,19 @@ const DebugPanel = () => {
       <ScrollView style={styles.scrollView}>
         <Text style={styles.heading}>Platform: {Constants.platform?.ios ? 'iOS' : Constants.platform?.android ? 'Android' : 'Web'}</Text>
         
-        <Text style={styles.heading}>Anthropic API Key:</Text>
-        {Object.keys(anthropicVersions).map(source => (
-          <View key={`anthropic-${source}`} style={styles.keyItem}>
-            <Text style={styles.source}>{source}:</Text>
-            <Text style={styles.keyValue}>{anthropicVersions[source]}</Text>
-          </View>
-        ))}
-        
-        <Text style={styles.heading}>Google API Key:</Text>
-        {Object.keys(googleVersions).map(source => (
-          <View key={`google-${source}`} style={styles.keyItem}>
-            <Text style={styles.source}>{source}:</Text>
-            <Text style={styles.keyValue}>{googleVersions[source]}</Text>
-          </View>
-        ))}
-        
-        <Text style={styles.heading}>CORS Proxy:</Text>
-        {Object.keys(corsProxyVersions).map(source => (
-          <View key={`cors-${source}`} style={styles.keyItem}>
-            <Text style={styles.source}>{source}:</Text>
-            <Text style={styles.keyValue}>{corsProxyVersions[source]}</Text>
-          </View>
-        ))}
+        <Text style={styles.heading}>API Keys Status:</Text>
+        <View style={styles.keyItem}>
+          <Text style={styles.source}>Anthropic API Key:</Text>
+          <Text style={styles.keyValue}>Available: {anthropicVersions.actualUsed ? 'YES' : 'NO'}</Text>
+        </View>
+        <View style={styles.keyItem}>
+          <Text style={styles.source}>Google API Key:</Text>
+          <Text style={styles.keyValue}>Available: {googleVersions.actualUsed ? 'YES' : 'NO'}</Text>
+        </View>
+        <View style={styles.keyItem}>
+          <Text style={styles.source}>CORS Proxy:</Text>
+          <Text style={styles.keyValue}>{corsProxyVersions.actualUsed || 'Not configured'}</Text>
+        </View>
         
         <Text style={styles.heading}>API Debugging:</Text>
         
@@ -131,11 +206,8 @@ const DebugPanel = () => {
           <View style={styles.apiResultContainer}>
             <Text style={styles.source}>Time: {debugData.apiDebugResults.lastAnthropicAttempt.time}</Text>
             <Text style={styles.source}>Success: {debugData.apiDebugResults.lastAnthropicAttempt.success ? 'YES' : 'NO'}</Text>
-            {debugData.apiDebugResults.lastAnthropicAttempt.url && (
-              <Text style={styles.keyValue}>URL: {debugData.apiDebugResults.lastAnthropicAttempt.url}</Text>
-            )}
-            {debugData.apiDebugResults.lastAnthropicAttempt.apiKey && (
-              <Text style={styles.keyValue}>API Key: {debugData.apiDebugResults.lastAnthropicAttempt.apiKey}</Text>
+            {debugData.apiDebugResults.lastAnthropicAttempt.cors && (
+              <Text style={styles.keyValue}>CORS Proxy: {debugData.apiDebugResults.lastAnthropicAttempt.cors}</Text>
             )}
             {debugData.apiDebugResults.lastAnthropicAttempt.error && (
               <View style={styles.errorContainer}>
@@ -159,11 +231,11 @@ const DebugPanel = () => {
           <View style={styles.apiResultContainer}>
             <Text style={styles.source}>Time: {debugData.apiDebugResults.lastGoogleAttempt.time}</Text>
             <Text style={styles.source}>Success: {debugData.apiDebugResults.lastGoogleAttempt.success ? 'YES' : 'NO'}</Text>
-            {debugData.apiDebugResults.lastGoogleAttempt.url && (
-              <Text style={styles.keyValue}>URL: {debugData.apiDebugResults.lastGoogleAttempt.url}</Text>
+            {debugData.apiDebugResults.lastGoogleAttempt.sourceLang && (
+              <Text style={styles.keyValue}>Source Language: {debugData.apiDebugResults.lastGoogleAttempt.sourceLang}</Text>
             )}
-            {debugData.apiDebugResults.lastGoogleAttempt.apiKey && (
-              <Text style={styles.keyValue}>API Key: {debugData.apiDebugResults.lastGoogleAttempt.apiKey}</Text>
+            {debugData.apiDebugResults.lastGoogleAttempt.targetLang && (
+              <Text style={styles.keyValue}>Target Language: {debugData.apiDebugResults.lastGoogleAttempt.targetLang}</Text>
             )}
             {debugData.apiDebugResults.lastGoogleAttempt.error && (
               <View style={styles.errorContainer}>
