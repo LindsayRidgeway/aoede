@@ -326,10 +326,6 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
         time: new Date().toISOString()
       };
       
-      if (Platform.OS === 'ios') {
-        Core.showDebugAlert('API Key Missing', 'No Google API key found.');
-      }
-      
       if (onFinish) onFinish();
       return;
     }
@@ -352,8 +348,15 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
       requestBody.voice.name = voiceName;
     }
     
-    Core.log(`Sending TTS API request: ${JSON.stringify(requestBody)}`);
-    Core.debugState.lastApiRequest = requestBody;
+    Core.log(`Sending TTS API request`);
+    // Store request without sensitive info in debug state
+    Core.debugState.lastApiRequest = {
+      inputTextLength: sentence.length,
+      languageCode: ttsLanguageCode,
+      ssmlGender: "FEMALE",
+      speakingRate: speakingRate,
+      hasVoiceName: !!voiceName
+    };
 
     const response = await fetch(
       `https://texttospeech.googleapis.com/v1/text:synthesize?key=${Core.GOOGLE_TTS_API_KEY}`,
@@ -390,8 +393,14 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
         simplifiedBody.voice.name = voiceName;
       }
       
-      Core.log(`Sending simplified TTS API request: ${JSON.stringify(simplifiedBody)}`);
-      Core.debugState.lastSimplifiedRequest = simplifiedBody;
+      Core.log(`Sending simplified TTS API request`);
+      // Store simplified request without sensitive info
+      Core.debugState.lastSimplifiedRequest = {
+        inputTextLength: sentence.length,
+        languageCode: ttsLanguageCode,
+        ssmlGender: "FEMALE",
+        hasVoiceName: !!voiceName
+      };
       
       const retryResponse = await fetch(
         `https://texttospeech.googleapis.com/v1/text:synthesize?key=${Core.GOOGLE_TTS_API_KEY}`,
@@ -423,8 +432,14 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
             }
           };
           
-          Core.log(`Sending final TTS API request: ${JSON.stringify(lastAttemptBody)}`);
-          Core.debugState.lastFinalRequest = lastAttemptBody;
+          Core.log(`Sending final TTS API request`);
+          // Store final request without sensitive info
+          Core.debugState.lastFinalRequest = {
+            inputTextLength: sentence.length,
+            languageCode: ttsLanguageCode,
+            ssmlGender: "FEMALE",
+            hasVoiceName: false
+          };
           
           const lastResponse = await fetch(
             `https://texttospeech.googleapis.com/v1/text:synthesize?key=${Core.GOOGLE_TTS_API_KEY}`,
@@ -447,10 +462,6 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
               time: new Date().toISOString()
             };
             
-            if (Platform.OS === 'ios') {
-              Core.showDebugAlert('API Request Failed', `All TTS API requests failed. Status: ${lastResponse.status}`);
-            }
-            
             if (onFinish) onFinish();
             return;
           }
@@ -469,10 +480,6 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
               time: new Date().toISOString()
             };
             
-            if (Platform.OS === 'ios') {
-              Core.showDebugAlert('No Audio Content', 'TTS API returned no audio content');
-            }
-            
             if (onFinish) onFinish();
             return;
           }
@@ -489,10 +496,6 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
           message: 'All API requests failed after trying all options',
           time: new Date().toISOString()
         };
-        
-        if (Platform.OS === 'ios') {
-          Core.showDebugAlert('API Request Failed', 'All TTS API requests failed after trying all options');
-        }
         
         if (onFinish) onFinish();
         return;
@@ -511,10 +514,6 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
           message: 'Simplified API response has no audio content',
           time: new Date().toISOString()
         };
-        
-        if (Platform.OS === 'ios') {
-          Core.showDebugAlert('No Audio Content', 'TTS API returned no audio content');
-        }
         
         if (onFinish) onFinish();
         return;
@@ -539,10 +538,6 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
         time: new Date().toISOString()
       };
       
-      if (Platform.OS === 'ios') {
-        Core.showDebugAlert('No Audio Content', 'TTS API returned no audio content');
-      }
-      
       if (onFinish) onFinish();
       return;
     }
@@ -554,13 +549,8 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
     Core.debugState.lastError = {
       type: 'TTSProcessError',
       message: error.message,
-      stack: error.stack,
       time: new Date().toISOString()
     };
-    
-    if (Platform.OS === 'ios') {
-      Core.showDebugAlert('TTS Process Error', `Error in TTS process: ${error.message}`);
-    }
     
     if (onFinish) onFinish();
   }

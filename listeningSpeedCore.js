@@ -4,7 +4,7 @@ import Constants from 'expo-constants';
 import { Audio } from 'expo-av';
 import { Alert, Platform } from 'react-native';
 
-// Debug state tracking
+// Debug state tracking - but hide sensitive data
 export const debugState = {
   lastApiRequest: null,
   lastApiResponse: null,
@@ -17,8 +17,8 @@ export const debugState = {
   lastLog: null
 };
 
-// Enable debug logging for troubleshooting
-const DEBUG = true;
+// Set to false to disable debug alerts, true to enable
+const DEBUG = false;
 
 // Flag to track if audio session is configured
 let isAudioSessionConfigured = false;
@@ -95,8 +95,12 @@ export const configureAudioSession = async () => {
       staysActiveInBackground: false
     };
     
-    log(`Attempting to set audio mode with config: ${JSON.stringify(audioConfig)}`);
-    debugState.audioSessionConfig = audioConfig;
+    log(`Attempting to set audio mode with config`);
+    // Don't store the full config in debug state to avoid showing API keys
+    debugState.audioSessionConfig = {
+      playsInSilentModeIOS: audioConfig.playsInSilentModeIOS,
+      configured: true
+    };
     
     await Audio.setAudioModeAsync(audioConfig);
     
@@ -109,8 +113,12 @@ export const configureAudioSession = async () => {
       try {
         // Try to get the current audio mode to verify settings took effect
         const currentAudioMode = await Audio.getAudioModeAsync();
-        log(`Current audio mode: ${JSON.stringify(currentAudioMode)}`);
-        debugState.currentAudioMode = currentAudioMode;
+        log(`iOS audio session validated`);
+        // Don't store the full audio mode in debug state
+        debugState.currentAudioMode = {
+          playsInSilentModeIOS: currentAudioMode.playsInSilentModeIOS,
+          validated: true
+        };
         
         // For iOS 14+ compatibility check
         if (currentAudioMode && Platform.OS === 'ios') {
@@ -133,7 +141,6 @@ export const configureAudioSession = async () => {
     debugState.lastError = {
       type: 'AudioSessionConfig',
       message: error.message,
-      stack: error.stack,
       time: new Date().toISOString()
     };
     
@@ -186,7 +193,8 @@ export const playAudioFromBase64 = async (base64Audio, onFinish) => {
     }
     
     log(`Loading audio from URI (length: ${audioUri.length})`);
-    debugState.lastAudioUri = audioUri.substring(0, 50) + '...';
+    // Don't store the actual URI in debug state, just the info that it was created
+    debugState.lastAudioUri = `Audio URI created (${audioUri.length} chars)`;
     
     try {
       log('Starting to load audio...');
@@ -196,8 +204,15 @@ export const playAudioFromBase64 = async (base64Audio, onFinish) => {
       
       // Set up a listener for when playback finishes
       sound.setOnPlaybackStatusUpdate(status => {
-        debugState.playbackStatus = status;
-        log(`Playback status update: ${JSON.stringify(status)}`);
+        // Don't store full status object in debug state
+        debugState.playbackStatus = { 
+          isPlaying: status.isPlaying,
+          positionMillis: status.positionMillis,
+          durationMillis: status.durationMillis,
+          didJustFinish: status.didJustFinish
+        };
+        
+        log(`Playback status update: playing=${status.isPlaying}, position=${status.positionMillis}ms`);
         
         if (status.didJustFinish) {
           log('Playback finished naturally');
@@ -227,16 +242,26 @@ export const playAudioFromBase64 = async (base64Audio, onFinish) => {
       
       log('Starting playback...');
       const playbackStatus = await sound.playAsync();
-      log(`Playback started with status: ${JSON.stringify(playbackStatus)}`);
-      debugState.initialPlaybackStatus = playbackStatus;
+      log(`Playback started`);
+      // Don't store full status object in debug state
+      debugState.initialPlaybackStatus = { 
+        isPlaying: playbackStatus.isPlaying,
+        positionMillis: playbackStatus.positionMillis,
+        durationMillis: playbackStatus.durationMillis
+      };
       
       // For iOS, make extra effort to check volume
       if (Platform.OS === 'ios') {
         try {
           log('Getting sound status on iOS...');
           const soundStatus = await sound.getStatusAsync();
-          log(`iOS sound status after play: ${JSON.stringify(soundStatus)}`);
-          debugState.iosSoundStatus = soundStatus;
+          log(`iOS sound status: volume=${soundStatus.volume}, rate=${soundStatus.rate}`);
+          // Don't store full status object in debug state
+          debugState.iosSoundStatus = { 
+            volume: soundStatus.volume,
+            rate: soundStatus.rate,
+            isPlaying: soundStatus.isPlaying
+          };
           
           // Check if volume is 0
           if (soundStatus.volume === 0) {
@@ -259,13 +284,10 @@ export const playAudioFromBase64 = async (base64Audio, onFinish) => {
       debugState.lastError = {
         type: 'AudioLoadError',
         message: loadError.message,
-        stack: loadError.stack,
         time: new Date().toISOString()
       };
       
-      if (Platform.OS === 'ios') {
-        showDebugAlert('Audio Load Error', `Failed to load audio: ${loadError.message}`);
-      }
+      showDebugAlert('Audio Load Error', `Failed to load audio: ${loadError.message}`);
       
       if (sound === currentSound) {
         try {
@@ -283,13 +305,10 @@ export const playAudioFromBase64 = async (base64Audio, onFinish) => {
     debugState.lastError = {
       type: 'AudioPlaybackError',
       message: error.message,
-      stack: error.stack,
       time: new Date().toISOString()
     };
     
-    if (Platform.OS === 'ios') {
-      showDebugAlert('Audio Playback Error', `Error in audio playback: ${error.message}`);
-    }
+    showDebugAlert('Audio Playback Error', `Error in audio playback: ${error.message}`);
     
     if (sound === currentSound) {
       try {
