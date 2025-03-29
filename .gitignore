@@ -30,12 +30,9 @@ yarn-error.*
 *.pem
 
 # local app.json and .env files
-#app.json
+app.json
 .env
 .env*.local
 
 # typescript
 *.tsbuildinfo
-
-# Temporarily prevent from pushing
-apiUtils.js
