@@ -31,8 +31,11 @@ yarn-error.*
 
 # local app.json and .env files
 app.json
+app.json~
 env
+env~
 .env
+.env~
 .env*.local
 
 # typescript

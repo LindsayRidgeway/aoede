@@ -23,5 +23,12 @@
     "react-native-localize": "^3.4.1",
     "react-native-web": "~0.19.13",
     "@expo/metro-runtime": "~4.0.1"
+  },
+  "expo": {
+    "doctor": {
+      "reactNativeDirectoryCheck": {
+        "listUnknownPackages": false
+      }
+    }
   }
 }
