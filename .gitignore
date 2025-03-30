@@ -37,3 +37,7 @@ env
 
 # typescript
 *.tsbuildinfo
+
+# builds
+android/
+ios/
