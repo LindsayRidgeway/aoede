@@ -628,7 +628,7 @@ export function MainUI({
         <View style={styles.innerContainer}>
           <View style={styles.headerContainer}>
             <Image 
-              source={require('./assets/muse.png')} 
+              source={require('./docs/aoede_logo.png')} 
               style={styles.headerLogo} 
               resizeMode="contain"
             />
