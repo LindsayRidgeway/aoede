@@ -10,6 +10,7 @@ Rules:
 2. Use common vocabulary for a child that age.
 3. Avoid long phrases or abstract ideas.
 4. Follow the original sentence's structure where possible.
+5. IMPORTANT: Your response MUST be in the ${targetLanguage} language, not English.
 
 Formatting:
 - One simplified sentence per line.

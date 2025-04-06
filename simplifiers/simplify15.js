@@ -10,6 +10,7 @@ Guidelines:
 2. Use vocabulary familiar to a high school student.
 3. Preserve tone, literary devices, and emotional impact.
 4. Keep sentence order and meaning intact.
+5. IMPORTANT: Your response MUST be in the ${targetLanguage} language, not English.
 
 Formatting:
 - One simplified sentence per line.

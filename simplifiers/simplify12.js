@@ -8,8 +8,9 @@ ${sourceText}
 Rules:
 1. Sentences can be up to 12 words long.
 2. Use familiar grammar and tone for a middle schooler.
-3. You may keep metaphors if they’re easy to understand.
+3. You may keep metaphors if they're easy to understand.
 4. Preserve meaning and sequence of ideas.
+5. IMPORTANT: Your response MUST be in the ${targetLanguage} language, not English.
 
 Formatting:
 - One simplified sentence per line.

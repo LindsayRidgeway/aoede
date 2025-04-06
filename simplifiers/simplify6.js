@@ -11,6 +11,7 @@ Rules:
 3. Use only very basic grammar and vocabulary otherwise.
 4. Keep present tense when possible.
 5. Try to follow the structure of the original sentence.
+6. IMPORTANT: Your response MUST be in the ${targetLanguage} language, not English.
 
 Formatting:
 - Put ONE simplified sentence per line.
