@@ -124,10 +124,9 @@ GOOGLE_API_KEY=AIza...
 
 ## Roadmap
 
-- Adaptive difficulty tuning based on user feedback
-- Expanded material library with real-time AI content curation
-- Custom voice and pacing selection
-- Bookmarking and per-language study logs
+- Expanded source material library
+- Voice selection (at least male vs female)
+- Toggle for fluent vs word-by-word listening (that is, "Fluent: <no/yes>"
 
 ---
 
