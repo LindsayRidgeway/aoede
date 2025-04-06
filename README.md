@@ -153,10 +153,7 @@ _The following checklist is used by the creator to test Aoede across all support
 Issues currently under review:
 
 - 🚧 iOS build fails due to runtime mismatch (ticket submitted to Expo team)  
-- ⚠️ Some languages intermittently fail to translate—under investigation
-- Reading level, reading speed, and both Show on/off switches used to be, and should be, persistent across sessions, but currently they are always reset to minimum value
 - Add detailed CLI commands to Regression Testing (above)
-- Since The Little Prince source material is in French, the title should appear in French in the list of books
 
 ---
 

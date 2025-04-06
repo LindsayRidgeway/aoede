@@ -312,8 +312,8 @@ export const bookSources = [
     format: "text"
   },
   {
-    id: "littleprince", 
-    title: "The Little Prince by Antoine de Saint-Exupéry",
+    id: "littleprince",
+    title: "Le Petit Prince by Antoine de Saint-Exupéry",
     author: "Antoine de Saint-Exupéry",
     url: "https://gutenberg.net.au/ebooks03/0300771h.html#ppded",
     language: "fr",
