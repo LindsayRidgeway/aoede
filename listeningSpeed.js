@@ -234,10 +234,39 @@ export const saveStudyLanguage = async (language) => {
   }
 };
 
+// Get stored listening speed with better default handling
+export const getStoredListeningSpeed = async () => {
+  try {
+    const storedListeningSpeed = await AsyncStorage.getItem("listeningSpeed");
+    if (storedListeningSpeed !== null) {
+      const speed = parseInt(storedListeningSpeed, 10);
+      // Ensure it's a valid value (1-5)
+      if (speed >= 1 && speed <= 5) {
+        return speed;
+      }
+    }
+    return 3; // Default to middle speed (3)
+  } catch (error) {
+    return 3; // Default to middle speed (3) on error
+  }
+};
+
+// Save listening speed with validation
+export const saveListeningSpeed = async (speed) => {
+  try {
+    // Ensure we save a clean integer value between 1-5
+    const integerSpeed = Math.max(1, Math.min(5, parseInt(speed, 10) || 3));
+    await AsyncStorage.setItem("listeningSpeed", integerSpeed.toString());
+    Core.log(`Saved listening speed: ${integerSpeed}`);
+    return true;
+  } catch (error) {
+    Core.log(`Error saving listening speed: ${error.message}`);
+    return false;
+  }
+};
+
 // Export storage functions from core
 export const { 
-  getStoredListeningSpeed, 
-  saveListeningSpeed, 
   updateSpeechRate, 
   stopSpeaking 
 } = Core;

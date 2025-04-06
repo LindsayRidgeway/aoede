@@ -175,7 +175,7 @@ export default function App() {
   const [showTranslation, setShowTranslation] = useState(true);
   const [speechRate, setSpeechRate] = useState(1.0);
   const [studyLanguage, setStudyLanguage] = useState("");
-  const [listeningSpeed, setListeningSpeed] = useState(1.0);
+  const [listeningSpeed, setListeningSpeed] = useState(3); // Default to middle speed (3)
   const [loadingBook, setLoadingBook] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
@@ -214,6 +214,7 @@ export default function App() {
           const storedReadingLevel = await AsyncStorage.getItem("readingLevel");
           const storedShowText = await AsyncStorage.getItem("showText");
           const storedShowTranslation = await AsyncStorage.getItem("showTranslation");
+          const storedListeningSpeed = await AsyncStorage.getItem("listeningSpeed");
           
           if (storedSelectedBook !== null) {
             setSelectedBook(storedSelectedBook);
@@ -234,6 +235,22 @@ export default function App() {
           if (storedShowTranslation !== null) {
             setShowTranslation(storedShowTranslation === 'true');
           }
+          
+          if (storedListeningSpeed !== null) {
+            const speed = parseInt(storedListeningSpeed, 10);
+            // Ensure it's a valid value (1-5)
+            if (speed >= 1 && speed <= 5) {
+              setListeningSpeed(speed);
+              
+              // Also update ListeningSpeed module's internal state
+              await ListeningSpeed.saveListeningSpeed(speed);
+            }
+          } else {
+            // Initialize with default value of 3 (medium speed)
+            await ListeningSpeed.saveListeningSpeed(3);
+          }
+          
+          log(`Loaded settings: readingLevel=${storedReadingLevel}, showText=${storedShowText}, showTranslation=${storedShowTranslation}, listeningSpeed=${storedListeningSpeed}`);
         } catch (error) {
           // Silent error handling
           log(`Error loading stored settings: ${error.message}`);
@@ -362,6 +379,7 @@ export default function App() {
     BookReader.setReadingLevel(level);
     try {
       await AsyncStorage.setItem("readingLevel", level.toString());
+      log(`Saved reading level: ${level}`);
     } catch (error) {
       // Silent error handling
       log(`Error saving reading level: ${error.message}`);
@@ -373,6 +391,7 @@ export default function App() {
     setShowText(value);
     try {
       await AsyncStorage.setItem("showText", value.toString());
+      log(`Saved showText: ${value}`);
     } catch (error) {
       // Silent error handling
       log(`Error saving show text preference: ${error.message}`);
@@ -384,9 +403,23 @@ export default function App() {
     setShowTranslation(value);
     try {
       await AsyncStorage.setItem("showTranslation", value.toString());
+      log(`Saved showTranslation: ${value}`);
     } catch (error) {
       // Silent error handling
       log(`Error saving show translation preference: ${error.message}`);
+    }
+  };
+  
+  // Handle listening speed change
+  const handleListeningSpeedChange = async (speed) => {
+    setListeningSpeed(speed);
+    try {
+      await AsyncStorage.setItem("listeningSpeed", speed.toString());
+      await ListeningSpeed.saveListeningSpeed(speed);
+      log(`Saved listening speed: ${speed}`);
+    } catch (error) {
+      // Silent error handling
+      log(`Error saving listening speed: ${error.message}`);
     }
   };
   
@@ -515,7 +548,7 @@ export default function App() {
       isSpeaking={isSpeaking}
       loadingBook={loadingBook}
       listeningSpeed={listeningSpeed}
-      setListeningSpeed={setListeningSpeed}
+      setListeningSpeed={handleListeningSpeedChange}  // Use the new handler
       studyLanguage={studyLanguage}
       setStudyLanguage={setStudyLanguage}
       currentSentenceIndex={currentSentenceIndex}
