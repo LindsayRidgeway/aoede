@@ -15,14 +15,14 @@ Aoede can be accessed via instructions at https://aoede.pro
 ## How It Works
 
 1. Choose your **study language** and **source material**.
-2. Aoede selects a sentence, simplifies it (if desired), and uses a native voice to read it.
+2. Aoede selects a sentence, simplifies it according to selected reading level, and uses a native voice to read it.
 3. You can:
    - Replay the sentence
-   - View the original or translated text
+   - View the text in the selected study language, the user's own language, both, or neither
    - Adjust speaking speed
    - Move to the next sentence
    - Rewind the source material to the beginning
-4. The Aoede UI automatically detects, and translates to, the user's own language.
+4. Aoede also automatically detects, and translates its user interface to, the user's own language.
    
 
 ---
@@ -144,7 +144,7 @@ _The following checklist is used by the creator to test Aoede across all support
 
 - Expanded source material library
 - Voice selection (at least male vs female)
-- Toggle for fluent vs word-by-word listening (that is, "Fluent: <no/yes>"
+- Toggle for fluent vs word-by-word listening (that is, "Fluent: <no/yes>")
 
 ---
 
