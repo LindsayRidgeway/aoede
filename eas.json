@@ -1,0 +1,12 @@
+{
+  "cli": {
+    "version": ">= 3.0.0"
+  },
+  "build": {
+    "production": {
+      "env": {
+        "EXPO_RUNTIME_VERSION": "1.0.0"
+      }
+    }
+  }
+}
