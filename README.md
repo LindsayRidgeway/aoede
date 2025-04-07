@@ -31,26 +31,13 @@ Aoede can be accessed via instructions at https://aoede.pro
 
 Aoede supports multiple reading levels that affect **sentence simplification**:
 
-- **AG 6**: Extremely simplified sentences (for a 6-year-old native speaker)
-- **AG 9**
-- **AG 12**
-- **AG 15**
-- **AG 18**: No simplification; original sentence preserved
+- **RL 6**: Extremely simplified sentences (for a 6-year-old native speaker)
+- **RL 9**
+- **RL 12**
+- **RL 15**
+- **RL 18**: No simplification; original sentence preserved
 
-At AG 18, Aoede skips the AI simplification step entirely.
-
----
-
-## Error Codes
-
-If something fails, Aoede will tell you. Expect messages like:
-
-- `translation failed (A1)` – Google Translation API failed.
-- `simplification failed (A2)` – GPT-4o Mini returned no output.
-- `audio generation failed (A4)` – TTS service could not process sentence.
-- `source sentence unavailable (A5)` – No sentence received from pipeline.
-
-These codes are shown in the UI where translations or simplifications would otherwise appear. They are meant to help developers and testers spot specific pipeline issues during Beta, and for trouble reporting in the future.
+At RL 18, Aoede skips the AI simplification step entirely.
 
 ---
 
