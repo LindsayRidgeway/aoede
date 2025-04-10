@@ -2,19 +2,19 @@
 import Constants from 'expo-constants';
 
 const {
-  EXPO_PUBLIC_OPENAI_API_KEY,
-  EXPO_PUBLIC_ANTHROPIC_API_KEY,
-  EXPO_PUBLIC_GOOGLE_API_KEY,
-  EXPO_PUBLIC_CORS_PROXY
+  OPENAI_API_KEY,
+  ANTHROPIC_API_KEY,
+  GOOGLE_API_KEY,
+  CORS_PROXY
 } = Constants.expoConfig.extra;
 
 // Example usage:
 export const getApiKey = (name) => {
   switch (name) {
-    case 'openai': return EXPO_PUBLIC_OPENAI_API_KEY;
-    case 'anthropic': return EXPO_PUBLIC_ANTHROPIC_API_KEY;
-    case 'google': return EXPO_PUBLIC_GOOGLE_API_KEY;
-    case 'proxy': return EXPO_PUBLIC_CORS_PROXY;
+    case 'openai': return OPENAI_API_KEY;
+    case 'anthropic': return ANTHROPIC_API_KEY;
+    case 'google': return GOOGLE_API_KEY;
+    case 'proxy': return CORS_PROXY;
     default: return null;
   }
 };

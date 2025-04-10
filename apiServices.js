@@ -16,10 +16,10 @@ export const apiDebugResults = {
 };
 
 // Get API keys using updated function
-const anthropicKey = getConstantValue('EXPO_PUBLIC_ANTHROPIC_API_KEY');
-const googleKey = getConstantValue('EXPO_PUBLIC_GOOGLE_API_KEY');
-const openaiKey = getConstantValue('EXPO_PUBLIC_OPENAI_API_KEY');
-export const CORS_PROXY = getConstantValue('EXPO_PUBLIC_CORS_PROXY') || '';
+const anthropicKey = getConstantValue('ANTHROPIC_API_KEY');
+const googleKey = getConstantValue('GOOGLE_API_KEY');
+const openaiKey = getConstantValue('OPENAI_API_KEY');
+export const CORS_PROXY = getConstantValue('CORS_PROXY') || '';
 
 // Store initial values for debugging
 apiDebugResults.initialized = true;
@@ -52,7 +52,7 @@ export const getPromptForLevel = (readingLevel) => {
 
 // Process the source text - translate and simplify
 export const processSourceText = async (sourceText, targetLanguage, readingLevel = 6) => {
-  const openaiKey = getConstantValue('EXPO_PUBLIC_OPENAI_API_KEY');
+  const openaiKey = getConstantValue('OPENAI_API_KEY');
 
   if (!openaiKey) {
     console.log('[API] No OpenAI API key available for simplification');

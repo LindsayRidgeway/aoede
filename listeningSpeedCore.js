@@ -52,7 +52,7 @@ export const getConstantValue = (key) => {
 };
 
 // Safely access API keys directly from Constants
-export const GOOGLE_TTS_API_KEY = getConstantValue('EXPO_PUBLIC_GOOGLE_API_KEY');
+export const GOOGLE_TTS_API_KEY = getConstantValue('GOOGLE_API_KEY');
 
 // Function to log debug messages
 export const log = (message) => {

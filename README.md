@@ -8,7 +8,7 @@
 
 ## Quick Start
 
-Aoede can be accessed via instructions at https://aoede.pro
+To get started, visit https://aoede.pro for setup instructions.
 
 ---
 
@@ -45,58 +45,54 @@ At RL 18, Aoede skips the AI simplification step entirely.
 
 In order to run regression tests or generate a new build, you must include two configuration files at the root level of your local project:
 
-1. **`app.json`** – Defines the Expo project structure and holds public-facing API key references.
+1. **`app.config.js`** – Defines the Expo project structure and holds public-facing API key references.
 2. **`.env`** – Stores sensitive API keys for runtime use.
 
-Both of these files are and must be **excluded from the repository** using `.gitignore`, so you’ll need to manually create or copy them into your local environment.
+File .env is, and must be, **excluded from the repository** using `.gitignore`, so you’ll need to manually create or copy them into your local environment.
 
-### Template: `app.json`
+### Template: `app.config.js`
 
-```json
-{
-  "expo": {
-    "name": "aoede",
-    "slug": "aoede",
-    "version": "1.0.0",
-    "runtimeVersion": "1.0.0",
-    "orientation": "default",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+```
+export default {
+  expo: {
+    name: "aoede",
+    slug: "aoede",
+    version: "1.0.0",
+    runtimeVersion: "1.0.0",
+    orientation: "default",
+    icon: "./assets/icon.png",
+    userInterfaceStyle: "light",
+    splash: {
+      image: "./assets/splash.png",
+      resizeMode: "contain",
+      backgroundColor: "#ffffff"
     },
-    "updates": {
-      "fallbackToCacheTimeout": 0,
-      "url": "https://u.expo.dev/0e70cf3b-940d-4f03-b264-4ea7953da859"
+    updates: {
+      fallbackToCacheTimeout: 0,
+      url: "https://u.expo.dev/0e70cf3b-940d-4f03-b264-4ea7953da859"
     },
-    "assetBundlePatterns": ["**/*"],
-    "ios": {
-      "supportsTablet": true
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#FFFFFF"
+    assetBundlePatterns: ["**/*"],
+    ios: { supportsTablet: true },
+    android: {
+      adaptiveIcon: {
+        foregroundImage: "./assets/adaptive-icon.png",
+        backgroundColor: "#FFFFFF"
       }
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    },
-    "extra": {
-      "EXPO_PUBLIC_OPENAI_API_KEY": "",
-      "EXPO_PUBLIC_ANTHROPIC_API_KEY": "",
-      "EXPO_PUBLIC_GOOGLE_API_KEY": "",
-      "EXPO_PUBLIC_CORS_PROXY": "https://thingproxy.freeboard.io/fetch/",
-      "NO_IMMEDIATE": true,
-      "eas": {
-        "projectId": "0e70cf3b-940d-4f03-b264-4ea7953da859"
+    web: { favicon: "./assets/favicon.png" },
+    extra: {
+      OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+      ANTHROPIC_API_KEY: process.env.ANTHROPIC_API_KEY,
+      GOOGLE_API_KEY: process.env.GOOGLE_API_KEY,
+      CORS_PROXY: process.env.CORS_PROXY,
+      NO_IMMEDIATE: true,
+      eas: {
+        projectId: "0e70cf3b-940d-4f03-b264-4ea7953da859"
       }
     },
-    "newArchEnabled": true
+    newArchEnabled: true
   }
-}
+};
 ```
 
 ### Template: `.env`
@@ -105,9 +101,10 @@ Both of these files are and must be **excluded from the repository** using `.git
 OPENAI_API_KEY=sk-...
 ANTHROPIC_API_KEY=sk-ant-...
 GOOGLE_API_KEY=AIza...
+CORS_PROXY=https://thingproxy.freeboard.io/fetch/
 ```
 
-> 🔒 **Important:** Never commit these files to version control. They must remain local only.
+> 🔒 **Important:** Never commit .env to version control. This file must remain local only. These values are referenced from app.config.js using process.env.KEY and also uploaded to EAS using eas env:push.
 
 ---
 

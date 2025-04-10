@@ -42,7 +42,7 @@ const getConstantValue = (key) => {
 };
 
 // Get Google API key from Expo Constants
-const GOOGLE_API_KEY = getConstantValue('EXPO_PUBLIC_GOOGLE_API_KEY');
+const GOOGLE_API_KEY = getConstantValue('GOOGLE_API_KEY');
 
 export function MainUI({
   studyLanguage,

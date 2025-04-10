@@ -38,7 +38,7 @@ const getConstantValue = (key) => {
 };
 
 // Get Google API key for translations
-const GOOGLE_API_KEY = getConstantValue('EXPO_PUBLIC_GOOGLE_API_KEY');
+const GOOGLE_API_KEY = getConstantValue('GOOGLE_API_KEY');
 
 // Cache of supported languages to avoid multiple API calls
 let cachedLanguages = null;

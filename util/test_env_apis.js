@@ -7,7 +7,7 @@ const axios = require('axios');
 async function testGoogleTTS() {
   const text = 'Bonjour';
   const lang = 'fr';
-  const url = `https://texttospeech.googleapis.com/v1/text:synthesize?key=${process.env.EXPO_PUBLIC_GOOGLE_API_KEY}`;
+  const url = `https://texttospeech.googleapis.com/v1/text:synthesize?key=${process.env.GOOGLE_API_KEY}`;
 
   const payload = {
     input: { text },
@@ -28,7 +28,7 @@ async function testGoogleTTS() {
 
 // CLAUDE HAIKU
 async function testAnthropic() {
-  const apiKey = process.env.EXPO_PUBLIC_ANTHROPIC_API_KEY;
+  const apiKey = process.env.ANTHROPIC_API_KEY;
 
   try {
     const response = await axios.post(

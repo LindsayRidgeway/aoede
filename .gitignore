@@ -29,9 +29,7 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local app.json and .env files
-app.json
-app.json~
+# local .env files
 env
 env~
 .env
@@ -44,3 +42,6 @@ env~
 # builds
 android/
 ios/
+
+# prototype with API key
+library_builder.html
