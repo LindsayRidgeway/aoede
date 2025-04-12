@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Aoede 1.0 Load Panel - Build 18</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #fdfdfd;
+      margin: 40px;
+      color: #333;
+    }
+    .logo {
+      font-size: 24px;
+      font-weight: bold;
+      color: #3366cc;
+    }
+    .tagline {
+      font-style: italic;
+      color: #777;
+      margin-bottom: 20px;
+    }
+    .panel {
+      border: 1px solid #ccc;
+      border-radius: 12px;
+      padding: 20px;
+      max-width: 600px;
+      position: relative;
+    }
+    .section {
+      margin-bottom: 20px;
+    }
+    label {
+      font-weight: bold;
+      margin-bottom: 6px;
+      display: inline-block;
+    }
+    select, input[type="text"] {
+      width: 100%;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #aaa;
+    }
+    .radio-group {
+      display: flex;
+      gap: 15px;
+      margin-top: 8px;
+    }
+    .book-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+      align-items: flex-end;
+    }
+    .load-button {
+      padding: 8px 12px;
+      background: #3a7ca5;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      text-align: center;
+    }
+    .source-material-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .menu-button {
+      padding: 6px 10px;
+      background: #eee;
+      border: 1px solid #aaa;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .menu-dropdown {
+      display: none;
+      position: absolute;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      z-index: 100;
+      right: 20px;
+    }
+    .menu-dropdown.show {
+      display: block;
+    }
+    .menu-item {
+      padding: 10px 14px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .menu-item:hover {
+      background: #f0f0f0;
+    }
+    .search-button {
+      padding: 8px 16px;
+      color: white;
+      font-weight: bold;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .search-green {
+      background-color: #4CAF50;
+    }
+    .search-red {
+      background-color: #D9534F;
+    }
+    .footer {
+      position: fixed;
+      bottom: 10px;
+      right: 20px;
+      font-size: 12px;
+      color: #999;
+    }
+    .search-result {
+      margin-bottom: 12px;
+      border-bottom: 1px solid #eee;
+      padding-bottom: 12px;
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .search-result-title {
+      color: #0066cc;
+      text-decoration: none;
+    }
+    .search-results-container {
+      margin-top: 15px;
+      width: 100%;
+    }
+    .search-controls {
+      display: flex;
+      gap: 10px;
+      align-items: flex-end;
+      width: 100%;
+    }
+  </style>
+  <script>
+    // Variable to track last added book
+    let lastAdded = '';
+    let searchTimeout;
+    
+    function toggleMenu() {
+      const dropdown = document.getElementById("menu-dropdown");
+      dropdown.classList.toggle("show");
+    }
+
+    function confirmDelete() {
+      const title = document.getElementById("book-title").value || "this title";
+      const confirmDelete = confirm(`Are you sure you want to delete "${title}" from your library?`);
+      if (confirmDelete) {
+        alert("Delete completed");
+      }
+      toggleMenu(); // Close the menu
+    }
+
+    function confirmRestore() {
+      alert("Restore completed");
+      toggleMenu(); // Close the menu
+    }
+
+    function confirmAdd() {
+      const container = document.getElementById("book-row-container");
+      container.innerHTML = `
+        <div style="width: 100%;">
+          <div class="search-controls">
+            <input type="text" id="search-input" placeholder="Title or topic" style="flex: 1;" />
+            <button id="search-button" class="search-button search-green" onclick="toggleSearch()">Search</button>
+            <button id="done-button" class="load-button" style="margin-left: 10px;" onclick="confirmReturnToLoadPanel()">Done</button>
+          </div>
+          <div class="search-results-container" id="search-results-container"></div>
+        </div>
+      `;
+      toggleMenu(); // Close the menu
+    }
+
+    function toggleSearch() {
+      const btn = document.getElementById("search-button");
+      const doneBtn = document.getElementById("done-button");
+      if (btn.classList.contains("search-green")) {
+        btn.classList.remove("search-green");
+        btn.classList.add("search-red");
+        btn.textContent = "Stop Search";
+        if (doneBtn) doneBtn.style.display = "none";
+        startSearchResults();
+      } else {
+        btn.classList.remove("search-red");
+        btn.classList.add("search-green");
+        btn.textContent = "Search";
+        if (doneBtn) doneBtn.style.display = "inline-block";
+        if (searchTimeout) clearTimeout(searchTimeout);
+      }
+    }
+
+    function startSearchResults() {
+      const results = [
+        { title: "The Irish Fairy Book", author: "Unknown", link: "https://www.gutenberg.org/files/32202/32202-h/32202-h.htm#Page_v" },
+        { title: "More Celtic Fairy Tales", author: "Unknown", link: "https://www.gutenberg.org/files/34453/34453-h/34453-h.htm#frontispiece" },
+        { title: "Tales from Spenser, Chosen from the Faerie Queene", author: "Edmund Spenser and Sophia H. MacLehose", link: "https://www.gutenberg.org/files/35161/35161-h/35161-h.htm#PREFACE" },
+        { title: "The Faery Queen and Her Knights: Stories Retold from Edmund Spenser", author: "Alfred John Church and Edmund Spenser", link: "https://www.gutenberg.org/files/55765/55765-h/55765-h.htm#c1" }
+      ];
+      const container = document.getElementById("search-results-container");
+      container.innerHTML = ''; // Clear any previous results
+      let i = 0;
+      function renderNext() {
+        if (i < results.length) {
+          const entry = results[i];
+          const row = document.createElement("div");
+          row.className = "search-result";
+          
+          const link = document.createElement("a");
+          link.href = entry.link;
+          link.target = "_blank";
+          link.textContent = `${entry.title} — ${entry.author}`;
+          link.className = "search-result-title";
+          
+          const button = document.createElement("button");
+          button.className = "load-button";
+          button.textContent = "Add";
+          button.onclick = () => {
+            alert(`Title "${entry.title}" added`);
+            lastAdded = entry.title;
+          };
+
+          row.appendChild(link);
+          row.appendChild(button);
+          container.appendChild(row);
+          i++;
+          searchTimeout = setTimeout(renderNext, 1200);
+        } else {
+          const btn = document.getElementById("search-button");
+          btn.classList.remove("search-red");
+          btn.classList.add("search-green");
+          btn.textContent = "Search";
+          const doneBtn = document.getElementById("done-button");
+          if (doneBtn) doneBtn.style.display = "inline-block";
+        }
+      }
+      searchTimeout = setTimeout(renderNext, 800);
+    }
+
+    function confirmReturnToLoadPanel() {
+      const container = document.getElementById("book-row-container");
+      container.innerHTML = `
+        <select id="book-title"><option>${lastAdded || 'Select a book title...'}</option></select>
+        <button class="load-button"><div>Load</div><div>Book</div></button>
+      `;
+    }
+
+    function renderDoneButton() {
+      let existing = document.getElementById("done-button");
+      if (!existing) {
+        const done = document.createElement("button");
+        done.textContent = "Done";
+        done.className = "load-button";
+        done.id = "done-button";
+        done.style.marginLeft = "10px";
+        done.style.display = "inline-block";
+        done.onclick = confirmReturnToLoadPanel;
+        const searchBtn = document.getElementById("search-button");
+        searchBtn.parentNode.appendChild(done);
+      } else {
+        existing.style.display = "inline-block";
+      }
+    }
+  </script>
+</head>
+<body>
+  <div class="logo">AOEDE</div>
+  <div class="tagline">ay-EE-dee</div>
+
+  <div class="panel">
+    <div class="section">
+      <label for="study-lang">Study Language</label>
+      <select id="study-lang">
+        <option>Russian</option>
+        <option>French</option>
+        <option>Spanish</option>
+      </select>
+    </div>
+
+    <div class="section">
+      <label>Reading Level</label>
+      <div class="radio-group">
+        <label><input type="radio" name="level" value="6"> 6</label>
+        <label><input type="radio" name="level" value="9"> 9</label>
+        <label><input type="radio" name="level" value="12"> 12</label>
+        <label><input type="radio" name="level" value="15"> 15</label>
+        <label><input type="radio" name="level" value="18"> 18</label>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="source-material-header">
+        <label>Source Material</label>
+        <div>
+          <button class="menu-button" onclick="toggleMenu()">Library ⚙️</button>
+          <div id="menu-dropdown" class="menu-dropdown">
+            <div class="menu-item" onclick="confirmDelete()">Delete this title from my library</div>
+            <div class="menu-item" onclick="confirmRestore()">Restore the standard library</div>
+            <div class="menu-item" onclick="confirmAdd()">Add a new title to my library</div>
+          </div>
+        </div>
+      </div>
+      <div class="book-row" id="book-row-container">
+        <select id="book-title"><option>Select a book title...</option></select>
+        <button class="load-button"><div>Load</div><div>Book</div></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">Build 18</div>
+</body>
+</html>
