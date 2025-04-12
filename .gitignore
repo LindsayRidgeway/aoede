@@ -42,6 +42,3 @@ env~
 # builds
 android/
 ios/
-
-# prototype with API key
-library_builder.html
