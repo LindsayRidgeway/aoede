@@ -1,28 +1,27 @@
 const getSimplificationPrompt = (sourceText, bookLanguage, studyLanguage, userLanguage) => {
-  return `You will receive one sentence in {bookLanguage} from a book.
+  return `You will receive one sentence in ${bookLanguage} from a book.
 
-Your task is to do three things:
-1. Translate the sentence into {studyLanguage}.
-2. Simplify the translated sentence so that a native {studyLanguage}-speaking child at reading level 6 can understand it.
-3. Translate each simplified sentence into {userLanguage}, so the reader can understand the meaning.
+Your task is to do three things in this order:
+1. Translate the sentence into ${studyLanguage}.
+2. Simplify the translated sentence so that a native ${studyLanguage}-speaking child at reading level 6 can understand it.
+3. Translate each simplified sentence into ${userLanguage}.
 
 Output format:
-- Write each simplified sentence in {studyLanguage} on a line by itself.
-- Under each sentence, write its {userLanguage} translation.
+- Write each simplified sentence in ${studyLanguage} on a line by itself, only one sentence per line.
+- Under each sentence, write its ${userLanguage} translation.
 - Do NOT number or group the sentences.
 - Do NOT explain anything.
-- Do NOT include the original {bookLanguage} sentence.
+- Do NOT include the original ${bookLanguage} sentence.
 
 Simplification rules:
-- Vocabulary: very basic vocabulary.
-- Each simplified sentence must be 4 to 8 words long.
-- Use only basic grammar and sentence forms appropriate for RL 6.
-- You may use ONE harder word per sentence.
-- Use very short and clear sentences. Include questions, exclamations, and different sentence orders.
-- Break the sentence into multiple simpler ones as needed.
+- Break the translated sentence into multiple shorter ones as needed to carry out the following guidelines.
+- Vocabulary: very basic vocabulary, except you may use ONE harder word per simplified sentence.
+- Each simplified sentence should be no longer than 8 words.
+- Simplifying the sentence may require you to lose some of its meaning, but do not add your own thoughts of what the sentence might have said instead.
+- Sentence structure: Use varied sentence beginnings and structure for the simplified sentences to avoid the monotony of continuous SVO sentences.
 
 Book sentence:
-{sourceText}`;
+${sourceText}`;
 };
 
 export default getSimplificationPrompt;
