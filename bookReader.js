@@ -258,16 +258,12 @@ class BookReader {
       const rawText = rawSentences.join(' ');
       this.rawSentenceSize = rawText.length;
       
-      // 1. FIRST TRANSLATE to the study language if the book is not already in that language
       let textForSimplification = rawText;
       
       // Find the book source to get its original language
       const bookSource = bookSources.find(book => book.title === this.readerBookTitle);
-      
-      // No need for additional translation here - we'll use the processSourceText which
-      // handles translation to the study language
-      
-      // 2. Process with OpenAI API which handles simplification and translation in one call
+    
+      // Process with OpenAI API which handles simplification and translation in one call
       let processedText;
       try {
         // Get proper language code for the study language
@@ -278,25 +274,18 @@ class BookReader {
         processedText = null;
       }
       
-      if (!processedText || processedText.length === 0) {
-        // Use the text we have as fallback (already in study language from previous step)
-        this.simpleArray = parseIntoSentences(textForSimplification);
-        // Also set translatedArray to the same content as fallback
-        this.translatedArray = [...this.simpleArray];
-      } else {
-        // Now let's use getSL and getUL to get the paired sentences from apiServices
-        this.simpleArray = [];
-        this.translatedArray = [];
+      // Now let's use getSL and getUL to get the paired sentences from apiServices
+      this.simpleArray = [];
+      this.translatedArray = [];
+      
+      // Get all available simplified sentences and their translations
+      let slSentence, ulSentence;
+      while ((slSentence = getSL()) !== null) {
+        this.simpleArray.push(slSentence);
         
-        // Get all available simplified sentences and their translations
-        let slSentence, ulSentence;
-        while ((slSentence = getSL()) !== null) {
-          this.simpleArray.push(slSentence);
-          
-          // Get the corresponding translation
-          ulSentence = getUL();
-          this.translatedArray.push(ulSentence || slSentence); // Fallback to SL if UL is not available
-        }
+        // Get the corresponding translation
+        ulSentence = getUL();
+        this.translatedArray.push(ulSentence || slSentence); // Fallback to SL if UL is not available
       }
       
       this.simpleIndex = 0;

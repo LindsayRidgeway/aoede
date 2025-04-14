@@ -84,16 +84,6 @@ export const processSourceText = async (sourceText, targetLanguage, readingLevel
     return null;
   }
 
-  // Optimization: For reading level 18, we don't need to call the API at all
-  if (readingLevel === 18) {
-    // For level 18, just return the source text as-is
-    // Split by periods, question marks, or exclamation points and add line breaks
-    const sentenceEndings = /([.!?])\s+/g;
-    const formattedText = sourceText.replace(sentenceEndings, "$1\n");
-    console.log('[API] Using level 18 optimization - skipping API call');
-    return formattedText;
-  }
-
   const apiUrl = 'https://api.openai.com/v1/chat/completions';
 
   apiDebugResults.lastOpenAIAttempt = {

@@ -190,40 +190,33 @@ class BookPipe {
     return bookId;
   }
 
-  // Get the next batch of sentences, loading more if needed
+  // Get the next batch of sentences, ensuring complete sentences
   async getNextBatch(batchSize = 10) {
     if (!this.isInitialized) {
       throw new Error('Book pipe is not initialized');
     }
 
-    const startIdx = this.nextSentenceIndex;
-    let endIdx = Math.min(startIdx + batchSize, this.sentences.length);
-    
-    this.log(`Getting next batch: startIdx=${startIdx}, endIdx=${endIdx}, totalSentences=${this.sentences.length}`);
-    
-    // If we don't have enough sentences and there's more content, process another chunk
-    if (endIdx - startIdx < batchSize && this.hasMoreContent) {
-      this.log(`Need more sentences, processing another chunk (have ${endIdx - startIdx}, need ${batchSize})`);
-      // Process another chunk - only save position if this isn't the initial load
-      const newSentences = await bookPipeProcess.processNextChunk(this, this.shouldSavePosition);
-      
-      // Recalculate the end index
-      endIdx = Math.min(startIdx + batchSize, this.sentences.length);
-      this.log(`After processing chunk: endIdx=${endIdx}, totalSentences=${this.sentences.length}`);
+    // Check if we need more sentences
+    if (this.sentences.length - this.nextSentenceIndex < batchSize && this.hasMoreContent) {
+      this.log(`Need more sentences, processing another chunk`);
+      await bookPipeProcess.processNextChunk(this, this.shouldSavePosition);
     }
-    
+  
+    // Get exactly batchSize sentences, or as many as are available
+    const startIdx = this.nextSentenceIndex;
+    const endIdx = Math.min(startIdx + batchSize, this.sentences.length);
+  
     if (startIdx >= this.sentences.length) {
-      this.log(`No more sentences available (startIdx=${startIdx} >= totalSentences=${this.sentences.length})`);
+      this.log(`No more sentences available`);
       return [];
     }
-    
-    // Get the batch of sentences
+  
+    // Get the batch of complete sentences
     const batch = this.sentences.slice(startIdx, endIdx);
-    
+  
     // Update our position
     this.nextSentenceIndex = endIdx;
-    this.log(`Updated nextSentenceIndex to ${this.nextSentenceIndex}`);
-    
+  
     return batch;
   }
 
