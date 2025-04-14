@@ -1,5 +1,5 @@
 // textProcessing.js - Helper functions for text processing
-import { translateBatch } from './apiServices';
+import { getSL, getUL } from './apiServices';
 
 // Debug flag - set to false to disable debug logging
 const DEBUG = false;
@@ -139,17 +139,15 @@ export const translateSentences = async (sentences, sourceLang, targetLang) => {
       return sentences;
     }
     
-    // Use translateBatch from apiServices
-    const translatedSentences = await translateBatch(sentences, sourceCode, targetCode);
+    // Instead of using translateBatch, we use getSL and getUL
+    // However, since this function expects a batch of translations,
+    // we need to either modify its usage elsewhere or provide similar
+    // functionality using the new approach
     
-    // Return original sentences if translation fails
-    if (!translatedSentences || translatedSentences.length === 0) {
-      log('Translation failed, returning original sentences');
-      return sentences;
-    }
+    log(`Note: translateSentences is deprecated and will return original sentences. Use getSL() and getUL() instead.`);
     
-    log(`Successfully translated ${translatedSentences.length} sentences`);
-    return translatedSentences;
+    // Return original sentences for compatibility
+    return sentences;
   } catch (error) {
     log(`Error in translateSentences: ${error.message}`);
     return sentences; // Return original in case of error

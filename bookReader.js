@@ -1,7 +1,7 @@
 // bookReader.js - Manages reading state for books according to the specified pseudocode
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { processSourceText, translateBatch } from './apiServices';
-import { parseIntoSentences, detectLanguageCode, translateSentences } from './textProcessing';
+import { processSourceText, getSL, getUL } from './apiServices';
+import { parseIntoSentences, detectLanguageCode } from './textProcessing';
 import { bookSources, getBookSourceById } from './bookSources';
 import BookPipe from './bookPipeCore';
 import { Platform } from 'react-native';
@@ -112,7 +112,7 @@ class BookReader {
     // Initialize the reader with the book
     try {
       // Find the book in our sources
-      const bookSource = bookSources.find(book => book.title === bookTitle);
+      const bookSource = bookSources.find(b => b.title === bookTitle);
       
       if (!bookSource) {
         throw new Error(`Book not found: ${bookTitle}`);
@@ -264,26 +264,10 @@ class BookReader {
       // Find the book source to get its original language
       const bookSource = bookSources.find(book => book.title === this.readerBookTitle);
       
-      if (bookSource) {
-        // Get language codes for translation
-        const sourceLanguageCode = bookSource.language;
-        const targetLanguageCode = detectLanguageCode(this.readerStudyLanguage);
-        
-        // Only translate if languages are different
-        if (sourceLanguageCode && targetLanguageCode && sourceLanguageCode !== targetLanguageCode) {
-          try {
-            const translatedText = await translateBatch([rawText], sourceLanguageCode, targetLanguageCode);
-            
-            if (translatedText && translatedText.length > 0) {
-              textForSimplification = translatedText[0];
-            }
-          } catch (error) {
-            // Continue with original text as fallback
-          }
-        }
-      }
+      // No need for additional translation here - we'll use the processSourceText which
+      // handles translation to the study language
       
-      // 2. THEN SIMPLIFY the text in the study language
+      // 2. Process with OpenAI API which handles simplification and translation in one call
       let processedText;
       try {
         // Get proper language code for the study language
@@ -297,42 +281,21 @@ class BookReader {
       if (!processedText || processedText.length === 0) {
         // Use the text we have as fallback (already in study language from previous step)
         this.simpleArray = parseIntoSentences(textForSimplification);
+        // Also set translatedArray to the same content as fallback
+        this.translatedArray = [...this.simpleArray];
       } else {
-        // Split the processed text into individual sentences
-        this.simpleArray = processedText.split('\n')
-          .map(line => line.trim())
-          .filter(line => line.length > 0);
+        // Now let's use getSL and getUL to get the paired sentences from apiServices
+        this.simpleArray = [];
+        this.translatedArray = [];
         
-        // If that didn't work well, try another method
-        if (this.simpleArray.length < 3) {
-          this.simpleArray = parseIntoSentences(processedText);
-        }
-      }
-      
-      // 3. TRANSLATE the simplified sentences to user's language for display
-      // First, make a deep copy of the simple array as a fallback
-      this.translatedArray = [...this.simpleArray];
-      
-      // Only translate if the languages are different
-      if (this.readerStudyLanguage !== this.userLanguage) {
-        try {
-          // Get proper language codes for translation
-          const sourceLang = detectLanguageCode(this.readerStudyLanguage);
-          const targetLang = detectLanguageCode(this.userLanguage);
+        // Get all available simplified sentences and their translations
+        let slSentence, ulSentence;
+        while ((slSentence = getSL()) !== null) {
+          this.simpleArray.push(slSentence);
           
-          // Use translateBatch for better Android compatibility
-          const translations = await translateBatch(
-            this.simpleArray, 
-            sourceLang,
-            targetLang
-          );
-          
-          if (translations && translations.length > 0) {
-            // Store translations in the translated array
-            this.translatedArray = translations;
-          }
-        } catch (error) {
-          // Use fallback if translation fails
+          // Get the corresponding translation
+          ulSentence = getUL();
+          this.translatedArray.push(ulSentence || slSentence); // Fallback to SL if UL is not available
         }
       }
       
