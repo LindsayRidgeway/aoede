@@ -77,19 +77,25 @@ export const detectLanguageCode = (input) => {
   return normalizedInput;
 };
 
-// Parse text into sentences
+// In textProcessing.js - modify the parseIntoSentences function
 export const parseIntoSentences = (text) => {
   if (!text) {
+    console.log(`[DEBUG] parseIntoSentences: No text provided`);
     return [];
   }
+  
+  console.log(`[DEBUG] parseIntoSentences: Processing text of length ${text.length} bytes`);
   
   // First split by newlines - these are natural sentence breaks
   let sentences = text.split('\n')
     .map(line => line.trim())
     .filter(line => line.length > 0);
   
+  console.log(`[DEBUG] parseIntoSentences: After newline split, found ${sentences.length} potential sentences`);
+  
   // If we got a reasonable number of sentences, return them
   if (sentences.length >= 3) {
+    console.log(`[DEBUG] parseIntoSentences: Returning ${sentences.length} sentences from newline split`);
     return sentences;
   }
   
@@ -102,6 +108,7 @@ export const parseIntoSentences = (text) => {
       .map(s => s.trim())
       .filter(s => s.length > 0);
     
+    console.log(`[DEBUG] parseIntoSentences: Returning ${sentences.length} sentences from regex split`);
     return sentences;
   }
   
@@ -111,5 +118,6 @@ export const parseIntoSentences = (text) => {
     .filter(part => part.length > 0)
     .map(part => part + '.');
   
+  console.log(`[DEBUG] parseIntoSentences: Returning ${sentences.length} sentences from punctuation split (last resort)`);
   return sentences;
 };

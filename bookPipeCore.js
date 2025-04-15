@@ -14,7 +14,7 @@ class BookPipe {
     this.htmlContent = null;     // Stores the HTML content
     this.anchorPosition = 0;     // Position of the anchor in the HTML
     this.currentReadPosition = 0; // Current reading position relative to anchor
-    this.chunkSize = 50000;      // Size of text chunks to process at once
+    this.chunkSize = 1000000;      // Size of text chunks to process at once
     this.sentences = [];         // Processed sentences
     this.nextSentenceIndex = 0;  // Current position in sentences array
     this.isInitialized = false;
@@ -26,7 +26,18 @@ class BookPipe {
     this.isRewindRequested = false; // Flag to indicate if rewind was requested
     this.lastInitializedBookId = null; // Track which book was last initialized
   }
+  
+  // Add getter/setter for chunkSize to track changes
+  get chunkSize() {
+    return this._chunkSize;
+  }
 
+  set chunkSize(value) {
+    console.log(`[DEBUG] bookPipeCore: chunkSize changed from ${this._chunkSize} to ${value}`);
+    console.trace(); // This will show the call stack
+    this._chunkSize = value;
+  }
+  
   // Debug logging helper
   log(message) {
     if (this.debugMode) {
@@ -189,37 +200,51 @@ class BookPipe {
     
     return bookId;
   }
-
-  // Get the next batch of sentences, ensuring complete sentences
+  // In bookPipeCore.js - modify the getNextBatch function
   async getNextBatch(batchSize = 10) {
     if (!this.isInitialized) {
       throw new Error('Book pipe is not initialized');
     }
 
-    // Check if we need more sentences
-    if (this.sentences.length - this.nextSentenceIndex < batchSize && this.hasMoreContent) {
-      this.log(`Need more sentences, processing another chunk`);
-      await bookPipeProcess.processNextChunk(this, this.shouldSavePosition);
+    console.log(`[DEBUG] getNextBatch called with batchSize=${batchSize}`);
+    console.log(`[DEBUG] Current position: nextSentenceIndex=${this.nextSentenceIndex}, total sentences=${this.sentences.length}`);
+    console.log(`[DEBUG] hasMoreContent=${this.hasMoreContent}`);
+  
+    const startIdx = this.nextSentenceIndex;
+    let endIdx = Math.min(startIdx + batchSize, this.sentences.length);
+  
+    // If we don't have enough sentences and there's more content, process another chunk
+    if (endIdx - startIdx < batchSize && this.hasMoreContent) {
+      console.log(`[DEBUG] Need more sentences, processing another chunk (have ${endIdx - startIdx}, need ${batchSize})`);
+      // Process another chunk - only save position if this isn't the initial load
+      const newSentences = await bookPipeProcess.processNextChunk(this, this.shouldSavePosition);
+      console.log(`[DEBUG] After processing chunk: added ${newSentences.length} new sentences`);
+    
+      // Recalculate the end index
+      endIdx = Math.min(startIdx + batchSize, this.sentences.length);
+      console.log(`[DEBUG] Updated endIdx=${endIdx}, totalSentences=${this.sentences.length}`);
     }
   
-    // Get exactly batchSize sentences, or as many as are available
-    const startIdx = this.nextSentenceIndex;
-    const endIdx = Math.min(startIdx + batchSize, this.sentences.length);
-  
     if (startIdx >= this.sentences.length) {
-      this.log(`No more sentences available`);
+      console.log(`[DEBUG] No more sentences available (startIdx=${startIdx} >= totalSentences=${this.sentences.length})`);
       return [];
     }
   
-    // Get the batch of complete sentences
+    // Get the batch of sentences
     const batch = this.sentences.slice(startIdx, endIdx);
+    console.log(`[DEBUG] Returning batch of ${batch.length} sentences`);
+    console.log(`[DEBUG] First sentence in batch: "${batch[0].substring(0, 100)}..."`);
+    if (batch.length > 1) {
+      console.log(`[DEBUG] Last sentence in batch: "${batch[batch.length-1].substring(0, 100)}..."`);
+    }
   
     // Update our position
     this.nextSentenceIndex = endIdx;
+    console.log(`[DEBUG] Updated nextSentenceIndex to ${this.nextSentenceIndex}`);
   
     return batch;
   }
-
+  
   // User actively advanced to next sentence - enable position saving
   enablePositionSaving() {
     const oldValue = this.shouldSavePosition;

@@ -1,13 +1,13 @@
 // bookReader.js - Manages reading state for books according to the specified pseudocode
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { processSourceText, getSL, getUL } from './apiServices';
-import { parseIntoSentences, detectLanguageCode } from './textProcessing';
+import { detectLanguageCode } from './textProcessing';
 import { bookSources, getBookSourceById } from './bookSources';
 import BookPipe from './bookPipeCore';
 import { Platform } from 'react-native';
 
 // Constants
-const BLOCK_SIZE = 10000; // Size of text chunks to process at once
+const BUFFER_SIZE = 100000; // 100K buffer size
 
 class BookReader {
   constructor() {
@@ -24,6 +24,11 @@ class BookReader {
     this.readerStudyLanguage = null;
     this.readerBookTitle = null;
     
+    // Text buffer state
+    this.buffer = "";
+    this.bufferSize = 0;
+    this.isAtEnd = false;
+    
     // Sentence processing
     this.rawSentenceSize = 0;
     this.simpleIndex = 0;
@@ -34,6 +39,9 @@ class BookReader {
     
     // Callback for sentence processing
     this.onSentenceProcessed = null;
+    
+    // Debug flag
+    this.DEBUG = true;
   }
   
   // Initialize the reader with callback for sentence processing
@@ -60,6 +68,9 @@ class BookReader {
     this.simpleArray = [];
     this.translatedArray = [];
     this.simpleIndex = 0;
+    this.buffer = "";
+    this.bufferSize = 0;
+    this.isAtEnd = false;
     
     // Try to find existing tracker in persistent store
     const trackerKey = `book_tracker_${studyLanguage}_${bookTitle}`;
@@ -144,13 +155,21 @@ class BookReader {
       throw error;
     }
     
-    // Load the first sentence
-    await this.loadRawSentence();
+    // Load the first sentence batch
+    const result = await this.getSentenceBatch();
     
-    // Process the first sentence
-    this.processSimpleSentence();
-    
-    return true;
+    if (result) {
+      // Process the first sentence
+      this.processSimpleSentence();
+      return true;
+    } else {
+      // Create a default error message if loading failed
+      this.simpleArray = ["Failed to load content. Please try again."];
+      this.translatedArray = ["Failed to load content. Please try again."];
+      this.simpleIndex = 0;
+      this.processSimpleSentence();
+      return false;
+    }
   }
   
   // Handle Next Sentence button
@@ -162,27 +181,251 @@ class BookReader {
     // Check if we have more sentences in the current simple array
     if (this.simpleIndex < (this.simpleArray.length - 1)) {
       this.simpleIndex++;
+      this.processSimpleSentence();
+      return true;
     } else {
-      // IMPORTANT: Update tracker offset BEFORE loading more content
-      // This ensures we maintain the correct position within content that has already been read
-      this.tracker.offset += this.rawSentenceSize;
-      
-      // Save the updated tracker to persistent storage immediately
-      await this.saveTrackerState();
-      
-      // Also enable position saving in BookPipe
+      // Enable position saving in BookPipe
       if (this.reader) {
         this.reader.enablePositionSaving();
       }
       
-      // Load the next sentence
-      await this.loadRawSentence();
+      // Load the next batch of sentences
+      const result = await this.getSentenceBatch();
+      
+      if (result) {
+        // Process the sentence
+        this.processSimpleSentence();
+        return true;
+      } else if (this.isAtEnd) {
+        // We're at the end of the book
+        this.simpleArray = ["You have reached the end of the book."];
+        this.translatedArray = ["You have reached the end of the book."];
+        this.simpleIndex = 0;
+        this.processSimpleSentence();
+        return true;
+      } else {
+        // Error loading more content
+        return false;
+      }
+    }
+  }
+  
+  // Find the end of a sentence, accounting for quotes and other special cases
+  findSentenceEnd(text, startPos) {
+    const maxLength = text.length;
+    let inQuote = false;
+    let quoteChar = null;
+    let lastChar = null;
+    
+    for (let i = startPos; i < maxLength; i++) {
+      const char = text[i];
+      
+      // Track quotes
+      if ((char === '"' || char === "'" || char === '"' || char === '"' || char === "'" || char === "'") && 
+          (lastChar !== '\\')) {
+        if (!inQuote) {
+          inQuote = true;
+          quoteChar = char;
+        } else if ((char === quoteChar) || 
+                   (char === '"' && (quoteChar === '"' || quoteChar === '"')) ||
+                   (char === "'" && (quoteChar === "'" || quoteChar === "'"))) {
+          inQuote = false;
+        }
+      }
+      
+      // Check for sentence end but not inside quotes
+      if (!inQuote && 
+          (char === '.' || char === '!' || char === '?')) {
+        
+        // Make sure this period is actually ending a sentence
+        // Look ahead to confirm it's followed by space or newline or end of text
+        if (i + 1 >= maxLength || 
+            text[i + 1] === ' ' || 
+            text[i + 1] === '\n' || 
+            text[i + 1] === '\r') {
+          
+          // Also check for quotation marks, parentheses, etc. that might follow a period
+          let endPos = i;
+          for (let j = i + 1; j < maxLength; j++) {
+            const nextChar = text[j];
+            if (nextChar === '"' || nextChar === "'" || nextChar === '"' || 
+                nextChar === '"' || nextChar === "'" || nextChar === "'" ||
+                nextChar === ')' || nextChar === ']') {
+              endPos = j;
+            } else if (nextChar !== ' ' && nextChar !== '\n' && nextChar !== '\r') {
+              break;
+            } else {
+              endPos = j;
+            }
+          }
+          
+          return endPos + 1;
+        }
+      }
+      
+      lastChar = char;
     }
     
-    // Process and display the current sentence
-    this.processSimpleSentence();
+    // If we couldn't find a proper sentence end, return the end of text
+    return maxLength;
+  }
+  
+  // New unified function to get sentence batches
+  async getSentenceBatch() {
+    if (this.DEBUG) console.log("[DEBUG] getSentenceBatch called");
     
-    return true;
+    if (!this.reader || !this.reader.htmlContent) {
+      if (this.DEBUG) console.log("[DEBUG] getSentenceBatch: No reader or HTML content");
+      return false;
+    }
+    
+    try {
+      // Fill buffer if needed
+      if (this.bufferSize < BUFFER_SIZE && !this.isAtEnd) {
+        const refill = BUFFER_SIZE - this.bufferSize;
+        
+        // Calculate where to start reading from
+        const readStart = this.reader.anchorPosition + this.tracker.offset;
+        const readEnd = Math.min(readStart + refill, this.reader.htmlContent.length);
+        
+        if (this.DEBUG) console.log(`[DEBUG] getSentenceBatch: Buffer needs refill, reading from ${readStart} to ${readEnd}`);
+        
+        if (readStart >= this.reader.htmlContent.length) {
+          if (this.DEBUG) console.log("[DEBUG] getSentenceBatch: Reached end of content");
+          this.isAtEnd = true;
+          if (this.bufferSize <= 0) {
+            return false;
+          }
+        } else {
+          // Read more content into buffer
+          const newContent = this.reader.htmlContent.substring(readStart, readEnd);
+          
+          // Extract readable text from HTML
+          const newText = this.extractText(newContent);
+          if (this.DEBUG) console.log(`[DEBUG] getSentenceBatch: Extracted ${newText.length} bytes of text`);
+          
+          // Add to buffer
+          this.buffer += newText;
+          this.bufferSize = this.buffer.length;
+          
+          // Update offset and save
+          this.tracker.offset += (readEnd - readStart);
+          await this.saveTrackerState();
+          
+          // Check for EOF
+          if (readEnd >= this.reader.htmlContent.length) {
+            if (this.DEBUG) console.log("[DEBUG] getSentenceBatch: Reached end of file");
+            this.isAtEnd = true;
+          }
+        }
+      }
+      
+      // Extract exactly 10 complete sentences from buffer
+      let sentenceBatch = "";
+      let sentences = [];
+      let sentenceCount = 0;
+      let currentPos = 0;
+      
+      if (this.DEBUG) console.log(`[DEBUG] getSentenceBatch: Extracting sentences from buffer of ${this.bufferSize} bytes`);
+      
+      // Extract exactly 10 sentences, or as many as we can get
+      while (sentenceCount < 10 && currentPos < this.bufferSize) {
+        // Find next sentence end using improved method
+        let endPos = this.findSentenceEnd(this.buffer, currentPos);
+        
+        // If no sentence end found, but we're not at EOF, read more
+        if (endPos >= this.bufferSize) {
+          if (!this.isAtEnd && sentenceCount === 0) {
+            // Need more content, but only if we haven't found any sentences yet
+            if (this.DEBUG) console.log(`[DEBUG] getSentenceBatch: No sentence end found, need more content`);
+            break;
+          } else {
+            // Use what we have if we're at EOF or have at least one sentence
+            endPos = this.bufferSize;
+          }
+        }
+        
+        // Extract the sentence
+        const sentence = this.buffer.substring(currentPos, endPos).trim();
+        if (sentence.length > 0) {
+          sentences.push(sentence);
+          sentenceBatch += (sentenceBatch ? " " : "") + sentence;
+          sentenceCount++;
+          if (this.DEBUG) console.log(`[DEBUG] getSentenceBatch: Added sentence ${sentenceCount}: "${sentence.substring(0, 30)}..."`);
+        }
+        
+        // Move to the next position
+        currentPos = endPos;
+        
+        // Skip whitespace between sentences
+        while (currentPos < this.bufferSize && 
+               (this.buffer[currentPos] === ' ' || 
+                this.buffer[currentPos] === '\n' || 
+                this.buffer[currentPos] === '\r' || 
+                this.buffer[currentPos] === '\t')) {
+          currentPos++;
+        }
+      }
+      
+      // Remove processed text from buffer
+      if (currentPos > 0) {
+        this.buffer = this.buffer.substring(currentPos);
+        this.bufferSize = this.buffer.length;
+        if (this.DEBUG) console.log(`[DEBUG] getSentenceBatch: Removed ${currentPos} bytes from buffer, ${this.bufferSize} remaining`);
+      }
+      
+      // If we found some sentences, process them
+      if (sentenceCount > 0 && sentenceBatch.length > 0) {
+        if (this.DEBUG) console.log(`[DEBUG] getSentenceBatch: Processing batch of ${sentenceCount} sentences`);
+        
+        // Get proper language code for the study language
+        const targetLang = detectLanguageCode(this.readerStudyLanguage);
+        
+        // Process with API
+        const result = await processSourceText(sentenceBatch, targetLang, this.readingLevel);
+        if (this.DEBUG) console.log(`[DEBUG] getSentenceBatch: processSourceText result: ${result ? 'success' : 'failed'}`);
+        
+        if (result) {
+          // After processSourceText, we need to get sentences from getSL and getUL
+          this.simpleArray = [];
+          this.translatedArray = [];
+          
+          let slSentence, ulSentence;
+          while ((slSentence = getSL()) !== null) {
+            this.simpleArray.push(slSentence);
+            
+            // Get the corresponding translation
+            ulSentence = getUL();
+            this.translatedArray.push(ulSentence || slSentence); // Fallback to SL if UL is not available
+          }
+          
+          if (this.DEBUG) console.log(`[DEBUG] getSentenceBatch: Got ${this.simpleArray.length} SL sentences and ${this.translatedArray.length} UL sentences`);
+          
+          // Reset index for the new batch
+          this.simpleIndex = 0;
+          
+          return true;
+        }
+      }
+      
+      // If we didn't find any sentences but the buffer is empty and we're at EOF
+      if (this.bufferSize === 0 && this.isAtEnd) {
+        if (this.DEBUG) console.log(`[DEBUG] getSentenceBatch: Buffer empty and at EOF`);
+        this.simpleArray = ["You have reached the end of the book."];
+        this.translatedArray = ["You have reached the end of the book."];
+        this.simpleIndex = 0;
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.log(`[ERROR] getSentenceBatch: ${error.message}`);
+      if (this.DEBUG) console.log(`[DEBUG] getSentenceBatch error: ${error.message}`);
+      this.simpleArray = [`Error loading content: ${error.message}`];
+      this.translatedArray = [`Error loading content: ${error.message}`];
+      this.simpleIndex = 0;
+      return true; // Still return true so we display the error message
+    }
   }
   
   // Handle Rewind button
@@ -225,81 +468,90 @@ class BookReader {
       
       return true;
     } catch (error) {
+      console.log(`[ERROR] handleRewind: ${error.message}`);
       return false;
     }
   }
   
-  // Load and process next raw sentence
-  async loadRawSentence() {
-    // Check if reader is at EOF
-    if (!this.reader.hasMoreSentences()) {
-      // Handle EOF by setting special state
-      this.simpleArray = ["You have reached the end of the book."];
-      this.translatedArray = ["You have reached the end of the book."];
-      this.simpleIndex = 0;
-      this.rawSentenceSize = 0;
-      return;
-    }
-    
+  // Extract readable text from HTML
+  extractText(html) {
     try {
-      // Get the next batch of sentences from BookPipe
-      const batchSize = 10; // Process 10 sentences at a time
-      const rawSentences = await this.reader.getNextBatch(batchSize);
+      // Remove script, style, and metadata tags
+      html = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, ' ');
+      html = html.replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, ' ');
+      html = html.replace(/<head\b[^<]*(?:(?!<\/head>)<[^<]*)*<\/head>/gi, ' ');
+      html = html.replace(/<!--[\s\S]*?-->/g, ' ');
       
-      if (!rawSentences || rawSentences.length === 0) {
-        this.simpleArray = ["No more sentences available."];
-        this.translatedArray = ["No more sentences available."];
-        this.simpleIndex = 0;
-        this.rawSentenceSize = 0;
-        return;
-      }
+      // Remove navigation, header, footer sections if present
+      html = html.replace(/<nav\b[^<]*(?:(?!<\/nav>)<[^<]*)*<\/nav>/gi, ' ');
+      html = html.replace(/<header\b[^<]*(?:(?!<\/header>)<[^<]*)*<\/header>/gi, ' ');
+      html = html.replace(/<footer\b[^<]*(?:(?!<\/footer>)<[^<]*)*<\/footer>/gi, ' ');
       
-      // Join the raw sentences for processing
-      const rawText = rawSentences.join(' ');
-      this.rawSentenceSize = rawText.length;
+      // Remove table elements - often contain TOC or other navigation
+      html = html.replace(/<table\b[^<]*(?:(?!<\/table>)<[^<]*)*<\/table>/gi, ' ');
       
-      let textForSimplification = rawText;
+      // Preserve heading tags by adding newlines before and after them
+      // This helps maintain chapter titles and headers
+      html = html.replace(/(<h[1-6][^>]*>)/gi, '\n$1');
+      html = html.replace(/(<\/h[1-6]>)/gi, '$1\n');
       
-      // Find the book source to get its original language
-      const bookSource = bookSources.find(book => book.title === this.readerBookTitle);
-    
-      // Process with OpenAI API which handles simplification and translation in one call
-      let processedText;
-      try {
-        // Get proper language code for the study language
-        const targetLang = detectLanguageCode(this.readerStudyLanguage);
-        
-        processedText = await processSourceText(textForSimplification, targetLang, this.readingLevel);
-      } catch (error) {
-        processedText = null;
-      }
+      // Add newlines for other structural elements 
+      html = html.replace(/(<(div|p|section|article)[^>]*>)/gi, '\n$1');
+      html = html.replace(/(<\/(div|p|section|article)>)/gi, '$1\n');
       
-      // Now let's use getSL and getUL to get the paired sentences from apiServices
-      this.simpleArray = [];
-      this.translatedArray = [];
+      // Special handling for content that's likely to be title elements
+      html = html.replace(/(<[^>]*class\s*=\s*["'][^"']*(?:title|chapter|heading|header)[^"']*["'][^>]*>)/gi, '\n$1');
       
-      // Get all available simplified sentences and their translations
-      let slSentence, ulSentence;
-      while ((slSentence = getSL()) !== null) {
-        this.simpleArray.push(slSentence);
-        
-        // Get the corresponding translation
-        ulSentence = getUL();
-        this.translatedArray.push(ulSentence || slSentence); // Fallback to SL if UL is not available
-      }
+      // Remove all remaining HTML tags
+      let text = html.replace(/<[^>]*>/g, ' ');
       
-      this.simpleIndex = 0;
+      // Decode HTML entities
+      text = text.replace(/&nbsp;/g, ' ')
+                .replace(/&amp;/g, '&')
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>')
+                .replace(/&quot;/g, '"')
+                .replace(/&#39;/g, "'")
+                .replace(/&ldquo;/g, '"')
+                .replace(/&rdquo;/g, '"')
+                .replace(/&lsquo;/g, "'")
+                .replace(/&rsquo;/g, "'")
+                .replace(/&mdash;/g, '-')
+                .replace(/&ndash;/g, '-');
+      
+      // Handle numeric entities
+      text = text.replace(/&#(\d+);/g, (match, dec) => {
+        return String.fromCharCode(dec);
+      });
+      
+      // Normalize newlines
+      text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+      
+      // Remove consecutive newlines
+      text = text.replace(/\n{3,}/g, '\n\n');
+      
+      // Clean up whitespace while preserving newlines
+      text = text.split('\n')
+                .map(line => line.replace(/\s+/g, ' ').trim())
+                .join('\n')
+                .trim();
+      
+      return text;
     } catch (error) {
-      this.simpleArray = [`Error loading content: ${error.message}`];
-      this.translatedArray = [`Error loading content: ${error.message}`];
-      this.simpleIndex = 0;
-      this.rawSentenceSize = 0;
+      // Return a simplified version as fallback
+      console.log(`[BookReader] Error extracting text: ${error.message}`);
+      return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
     }
   }
   
   // Process and display the current sentence
   processSimpleSentence() {
     if (!this.simpleArray || this.simpleArray.length === 0) {
+      if (this.DEBUG) console.log("[DEBUG] processSimpleSentence: No sentences available");
+      // Call the callback with empty strings to clear the display
+      if (typeof this.onSentenceProcessed === 'function') {
+        this.onSentenceProcessed("", "");
+      }
       return;
     }
     
@@ -307,9 +559,15 @@ class BookReader {
     const currentSentence = this.simpleArray[this.simpleIndex];
     const currentTranslation = this.translatedArray[this.simpleIndex] || currentSentence;
     
+    if (this.DEBUG) console.log(`[DEBUG] processSimpleSentence: Processing sentence ${this.simpleIndex+1}/${this.simpleArray.length}`);
+    if (this.DEBUG) console.log(`[DEBUG] SL: "${currentSentence.substring(0, 50)}..."`);
+    if (this.DEBUG) console.log(`[DEBUG] UL: "${currentTranslation.substring(0, 50)}..."`);
+    
     // Submit to the callback for display and TTS
     if (typeof this.onSentenceProcessed === 'function') {
       this.onSentenceProcessed(currentSentence, currentTranslation);
+    } else {
+      if (this.DEBUG) console.log("[DEBUG] processSimpleSentence: No callback function available");
     }
   }
   
@@ -349,7 +607,7 @@ class BookReader {
       currentOffset: this.tracker.offset,
       currentSentenceIndex: this.simpleIndex,
       totalSentencesInMemory: this.simpleArray.length,
-      hasMoreContent: this.reader ? this.reader.hasMoreSentences() : false
+      hasMoreContent: !this.isAtEnd || this.bufferSize > 0
     };
   }
   
@@ -373,6 +631,11 @@ class BookReader {
     this.simpleIndex = 0;
     this.simpleArray = [];
     this.translatedArray = [];
+    
+    // Reset buffer
+    this.buffer = "";
+    this.bufferSize = 0;
+    this.isAtEnd = false;
   }
 }
 

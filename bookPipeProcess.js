@@ -69,6 +69,10 @@ export const bookPipeProcess = {
 
   // Process the next chunk of HTML into sentences
   async processNextChunk(pipe, shouldSave = true) {
+    if (pipe.DEBUG) {
+      console.log(`[DEBUG] bookPipeProcess.processNextChunk: Starting with pipe.chunkSize=${pipe.chunkSize}`);
+    }
+    
     if (!pipe.htmlContent) {
       pipe.hasMoreContent = false;
       return [];
@@ -79,7 +83,7 @@ export const bookPipeProcess = {
       const chunkStart = pipe.anchorPosition + pipe.currentReadPosition;
       const chunkEnd = Math.min(chunkStart + pipe.chunkSize, pipe.htmlContent.length);
       
-      pipe.log(`Processing chunk from ${chunkStart} to ${chunkEnd}, shouldSave=${shouldSave}`);
+      pipe.log(`Processing chunk from ${chunkStart} to ${chunkEnd}, chunkSize=${pipe.chunkSize}, shouldSave=${shouldSave}`);
       
       // Check if we're at the end of the content
       if (chunkStart >= pipe.htmlContent.length || chunkStart >= chunkEnd) {
@@ -90,24 +94,67 @@ export const bookPipeProcess = {
       
       // Extract the chunk of HTML
       const htmlChunk = pipe.htmlContent.substring(chunkStart, chunkEnd);
+      pipe.log(`Extracted HTML chunk of ${htmlChunk.length} bytes`);
       
       // Extract text from this HTML chunk
       let textChunk = this.extractText(htmlChunk);
+      pipe.log(`Extracted text chunk of ${textChunk.length} bytes`);
+      pipe.log(`Text chunk begins with: "${textChunk.substring(0, 100)}..."`);
+      pipe.log(`Text chunk ends with: "...${textChunk.substring(textChunk.length - 100)}"`);
       
       // Parse the text into sentences
-      const newSentences = parseIntoSentences(textChunk);
-      pipe.log(`Extracted ${newSentences.length} sentences from chunk`);
+      const allSentences = parseIntoSentences(textChunk);
+      pipe.log(`Extracted ${allSentences.length} sentences from chunk`);
       
+      // Get at most 10 sentences to avoid processing too many at once
+      // But make sure we don't end with a partial sentence
+      let newSentences = [];
+      let charCount = 0;
+      let validSentenceCount = 0;
+      const maxSentences = 10;
+      
+      // Add sentences until we reach maxSentences or have processed all sentences
+      for (let i = 0; i < Math.min(maxSentences, allSentences.length); i++) {
+        const sentence = allSentences[i];
+        
+        // Check if this is a valid, complete sentence
+        if (sentence && sentence.length > 0) {
+          // Check for potential truncation by looking for sentence terminators
+          // A complete sentence should typically end with ., !, ?, ", ', or )
+          const hasProperEnding = /[.!?"\'\)]$/.test(sentence.trim());
+          
+          if (hasProperEnding) {
+            newSentences.push(sentence);
+            charCount += sentence.length;
+            validSentenceCount++;
+          } else if (i < allSentences.length - 1) {
+            // If not the last sentence, it might be OK to include it
+            // as the next one will be processed in the next batch
+            newSentences.push(sentence);
+            charCount += sentence.length;
+            validSentenceCount++;
+          } else {
+            // Skip the last sentence if it doesn't have a proper ending
+            // as it might be truncated
+            pipe.log(`Skipping potential truncated sentence: "${sentence}"`);
+          }
+        }
+      }
+      
+      // Log sentence info
       if (newSentences.length > 0) {
-        pipe.log(`First sentence: "${newSentences[0].substring(0, 30)}..."`);
+        pipe.log(`First extracted sentence: "${newSentences[0].substring(0, 100)}..."`);
+        pipe.log(`Last extracted sentence: "${newSentences[newSentences.length-1].substring(0, 100)}..."`);
       }
       
       // Add new sentences to our collection
       pipe.sentences = [...pipe.sentences, ...newSentences];
       
-      // Update the current read position
-      const chunkSize = chunkEnd - chunkStart;
-      pipe.currentReadPosition += chunkSize;
+      // Update the current read position to reflect how many characters we actually processed
+      // Skip past the characters we've processed, but not the whole chunk
+      // This ensures we don't miss any text between chunks
+      const processedBytes = charCount;
+      pipe.currentReadPosition += processedBytes;
       pipe.log(`Updated currentReadPosition to ${pipe.currentReadPosition}`);
       
       // Only save position if instructed to (e.g., after user clicks Next)
