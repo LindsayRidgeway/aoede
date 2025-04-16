@@ -1,21 +1,26 @@
-const getSimplificationPrompt = (sourceText, targetLanguage, ageGroup = 9) => {
-  return `You will receive one sentence from a book.
+const getSimplificationPrompt = (sourceText, bookLanguage, studyLanguage, userLanguage) => {
+  return `You will receive one sentence in ${bookLanguage} from a book.
 
-Your job is to simplify it so that a 9-year-old native ${targetLanguage} speaker can easily understand it.
+Your task is to do three things in this order:
+1. Translate the sentence into ${studyLanguage}.
+2. Simplify the translated sentence so that a native ${studyLanguage}-speaking child at reading level 9 can understand it.
+3. Translate each simplified sentence into ${userLanguage}.
 
-${sourceText}
+Output format:
+- Write each simplified sentence in ${studyLanguage} on a line by itself, only one sentence per line.
+- Under each sentence, write its ${userLanguage} translation.
+- Do NOT number or group the sentences.
+- Do NOT explain anything.
+- Do NOT include the original ${bookLanguage} sentence.
 
-Rules:
-1. Keep each sentence under 9 words.
-2. Use common vocabulary for a child that age.
-3. Avoid long phrases or abstract ideas.
-4. Follow the original sentence's structure where possible.
-5. IMPORTANT: Your response MUST be in the ${targetLanguage} language, not English.
+Simplification rules:
+- Break the translated sentence into multiple shorter ones as needed to carry out the following guidelines.
+- Vocabulary: basic vocabulary, with ONE harder word allowed per simplified sentence.
+- Each simplified sentence should be no longer than 10 words.
+- Sentence structure: Use varied sentence beginnings and structure for the simplified sentences to avoid the monotony of continuous SVO sentences.
 
-Formatting:
-- One simplified sentence per line.
-- End with proper punctuation.
-- Do not number or comment. No explanations.`;
+Book sentence:
+${sourceText}`;
 };
 
 export default getSimplificationPrompt;

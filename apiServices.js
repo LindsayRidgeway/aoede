@@ -51,9 +51,12 @@ export const getPromptForLevel = (readingLevel) => {
 };
 
 // Process the source text - translate and simplify
-export const processSourceText = async (sourceText, targetLanguage, readingLevel = 6) => {
+export const processSourceText = async (sourceText, bookLang, studyLang, userLang,readingLevel = 6) => {
+  console.log(`[apiServices.js] 🛠 Entered processSourceText(sourceText, ${bookLang}, ${studyLang}, ${userLang}, ${readingLevel})`);
+
   const openaiKey = getConstantValue('OPENAI_API_KEY');
 
+/*
   if (!openaiKey) {
     console.log('[API] No OpenAI API key available for simplification');
     apiDebugResults.lastOpenAIAttempt = {
@@ -62,11 +65,15 @@ export const processSourceText = async (sourceText, targetLanguage, readingLevel
     };
     return null;
   }
+*/  
 
+/*
   if (!sourceText || typeof sourceText !== 'string' || sourceText.length < 3) {
     return null;
   }
+*/  
 
+/*
   // Optimization: For reading level 18, we don't need to call the API at all
   if (readingLevel === 18) {
     // For level 18, just return the source text as-is
@@ -75,6 +82,7 @@ export const processSourceText = async (sourceText, targetLanguage, readingLevel
     const formattedText = sourceText.replace(sentenceEndings, "$1\n");
     return formattedText;
   }
+*/  
 
   const apiUrl = 'https://api.openai.com/v1/chat/completions';
 
@@ -85,10 +93,14 @@ export const processSourceText = async (sourceText, targetLanguage, readingLevel
   };
 
   const getPrompt = getPromptForLevel(readingLevel);
-  const prompt = getPrompt(sourceText, targetLanguage, readingLevel);
+  const prompt = getPrompt(sourceText, bookLang, studyLang, userLang);
 
   try {
-    const response = await fetch(apiUrl, {
+/*	  
+      console.log('[OpenAI] Input (first 100 chars):', JSON.stringify(prompt).slice(0, 100));
+*/	  
+      console.log('[OpenAI] Input prompt:\n', prompt);
+	  const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${openaiKey}`,
@@ -127,6 +139,7 @@ export const processSourceText = async (sourceText, targetLanguage, readingLevel
 
     apiDebugResults.lastOpenAIAttempt.success = true;
     const processedText = data.choices[0].message.content.trim();
+    console.log('[OpenAI] Output (first 100 chars):', JSON.stringify(processedText).slice(0, 100));
 
     return processedText;
   } catch (error) {
@@ -150,6 +163,7 @@ export const translateBatch = async (textArray, sourceLang, targetLang) => {
   }
   
   try {
+    console.log('[Google Translate] Input (first 100 chars):', JSON.stringify(textArray).slice(0, 100));
     const apiUrl = `https://translation.googleapis.com/language/translate/v2?key=${googleKey}`;
     
     // Store API call details for debugging
@@ -214,6 +228,7 @@ export const translateBatch = async (textArray, sourceLang, targetLang) => {
     // Success! Store for debugging
     apiDebugResults.lastGoogleAttempt.success = true;
     
+    console.log('[Google Translate] Output (first 100 chars):', JSON.stringify(data.data.translations).slice(0, 100));
     return data.data.translations.map(t => t.translatedText);
   } catch (error) {
     console.log(`[API] Error in translateBatch: ${error.message}`);

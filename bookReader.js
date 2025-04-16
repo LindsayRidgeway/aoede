@@ -263,11 +263,15 @@ class BookReader {
       
       // Find the book source to get its original language
       const bookSource = bookSources.find(book => book.title === this.readerBookTitle);
-      
+/*     
       if (bookSource) {
+*/
         // Get language codes for translation
         const sourceLanguageCode = bookSource.language;
         const targetLanguageCode = detectLanguageCode(this.readerStudyLanguage);
+        const userLanguageCode = detectLanguageCode(this.userLanguage);
+		
+/*
         
         // Only translate if languages are different
         if (sourceLanguageCode && targetLanguageCode && sourceLanguageCode !== targetLanguageCode) {
@@ -281,19 +285,49 @@ class BookReader {
             // Continue with original text as fallback
           }
         }
+*/
+		  	
+		  textForSimplification = rawText;
+		  console.log('[bookReader] Skipping first translation. Passing rawText to OpenAI (first 100 chars):', rawText.slice(0, 100));	  
+/*
       }
+*/
       
       // 2. THEN SIMPLIFY the text in the study language
       let processedText;
       try {
+/*		  
         // Get proper language code for the study language
         const targetLang = detectLanguageCode(this.readerStudyLanguage);
+*/		  
         
-        processedText = await processSourceText(textForSimplification, targetLang, this.readingLevel);
+		console.log("[bookReader] About to call processSourceText ...")
+		processedText = await processSourceText(
+		  textForSimplification,
+		  sourceLanguageCode,
+          targetLanguageCode,
+		  userLanguageCode,
+		  this.readingLevel
+		);	        
+		console.log("[bookReader] processedText (first 300 chars):", JSON.stringify(processedText).slice(0, 300));
+
+   	    const slArray = this.getSL(processedText);
+	    const ulArray = this.getUL(processedText);
+	  
+		console.log("[bookReader] slArray type:", Array.isArray(slArray), "length:", slArray?.length);
+		console.log("[bookReader] ulArray type:", Array.isArray(ulArray), "length:", ulArray?.length);
+		console.log("[bookReader] slArray[0]:", JSON.stringify(slArray?.[0]));
+		console.log("[bookReader] ulArray[0]:", JSON.stringify(ulArray?.[0]));
+		
+		this.simpleArray = slArray;
+		this.translatedArray = ulArray;
+		
       } catch (error) {
+	    console.error("[bookReader] ❌ Error during simplification or SL/UL extraction:", error.message);
         processedText = null;
       }
-      
+
+/*      
       if (!processedText || processedText.length === 0) {
         // Use the text we have as fallback (already in study language from previous step)
         this.simpleArray = parseIntoSentences(textForSimplification);
@@ -307,19 +341,18 @@ class BookReader {
         if (this.simpleArray.length < 3) {
           this.simpleArray = parseIntoSentences(processedText);
         }
-      }
+      } 
       
       // 3. TRANSLATE the simplified sentences to user's language for display
       // First, make a deep copy of the simple array as a fallback
       this.translatedArray = [...this.simpleArray];
-      
+     
       // Only translate if the languages are different
       if (this.readerStudyLanguage !== this.userLanguage) {
         try {
           // Get proper language codes for translation
           const sourceLang = detectLanguageCode(this.readerStudyLanguage);
-          const targetLang = detectLanguageCode(this.userLanguage);
-          
+<          
           // Use translateBatch for better Android compatibility
           const translations = await translateBatch(
             this.simpleArray, 
@@ -335,6 +368,7 @@ class BookReader {
           // Use fallback if translation fails
         }
       }
+*/	  
       
       this.simpleIndex = 0;
     } catch (error) {
@@ -421,6 +455,32 @@ class BookReader {
     this.simpleIndex = 0;
     this.simpleArray = [];
     this.translatedArray = [];
+  }
+  
+  getSL(multilineText) {
+    const lines = multilineText
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0);
+
+    const sl = [];
+    for (let i = 0; i < lines.length; i += 2) {
+      sl.push(lines[i]);
+    }
+    return sl;
+  }
+
+  getUL(multilineText) {
+    const lines = multilineText
+      .split('\n')
+      .map(line => line.trim())
+      .filter(line => line.length > 0);
+
+    const ul = [];
+    for (let i = 1; i < lines.length; i += 2) {
+      ul.push(lines[i]);
+    }
+    return ul;
   }
 }
 
