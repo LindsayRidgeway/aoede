@@ -25,10 +25,8 @@ export const DEBUG_KEYS = true;
 // Helper for printing key details
 export const logKeyDetails = (name, key) => {
   if (DEBUG_KEYS) {
-    console.log(`[API] ${name} available: ${key ? 'YES' : 'NO'}`);
     
     if (key) {
-      console.log(`[API] ${name} length: ${key.length} chars`);
     }
   }
 };

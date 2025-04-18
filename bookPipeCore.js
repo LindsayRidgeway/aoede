@@ -30,7 +30,6 @@ class BookPipe {
   // Debug logging helper
   log(message) {
     if (this.debugMode) {
-      console.log(`[BookPipe] ${message}`);
     }
   }
 

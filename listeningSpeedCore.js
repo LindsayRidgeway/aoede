@@ -57,7 +57,6 @@ export const GOOGLE_TTS_API_KEY = getConstantValue('GOOGLE_API_KEY');
 // Function to log debug messages
 export const log = (message) => {
   if (DEBUG) {
-    console.log(`[ListeningSpeed] ${message}`);
     // Add to debug state for viewing in DebugPanel
     debugState.lastLog = `${new Date().toISOString()} - ${message}`;
   }

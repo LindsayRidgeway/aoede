@@ -288,7 +288,6 @@ class BookReader {
 */
 		  	
 		  textForSimplification = rawText;
-		  console.log('[bookReader] Skipping first translation. Passing rawText to OpenAI (first 100 chars):', rawText.slice(0, 100));	  
 /*
       }
 */
@@ -301,7 +300,6 @@ class BookReader {
         const targetLang = detectLanguageCode(this.readerStudyLanguage);
 */		  
         
-		console.log("[bookReader] About to call processSourceText ...")
 		processedText = await processSourceText(
 		  textForSimplification,
 		  sourceLanguageCode,
@@ -309,15 +307,10 @@ class BookReader {
 		  userLanguageCode,
 		  this.readingLevel
 		);	        
-		console.log("[bookReader] processedText (first 300 chars):", JSON.stringify(processedText).slice(0, 300));
 
    	    const slArray = this.getSL(processedText);
 	    const ulArray = this.getUL(processedText);
 	  
-		console.log("[bookReader] slArray type:", Array.isArray(slArray), "length:", slArray?.length);
-		console.log("[bookReader] ulArray type:", Array.isArray(ulArray), "length:", ulArray?.length);
-		console.log("[bookReader] slArray[0]:", JSON.stringify(slArray?.[0]));
-		console.log("[bookReader] ulArray[0]:", JSON.stringify(ulArray?.[0]));
 		
 		this.simpleArray = slArray;
 		this.translatedArray = ulArray;

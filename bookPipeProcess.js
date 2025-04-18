@@ -193,7 +193,6 @@ export const bookPipeProcess = {
       return text;
     } catch (error) {
       // Return a simplified version as fallback
-      console.log(`[BookPipe] Error extracting text: ${error.message}`);
       return html.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
     }
   }

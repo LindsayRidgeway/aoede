@@ -7,7 +7,6 @@ const DEBUG = false;
 // Debug logging helper
 const log = (message) => {
   if (DEBUG) {
-    console.log(`[TextProcessing] ${message}`);
   }
 };
 

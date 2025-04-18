@@ -8,7 +8,6 @@ const DEBUG = false;
 // Helper for debug logging
 const log = (message) => {
   if (DEBUG) {
-    console.log(`[LanguageVerifier] ${message}`);
   }
 };
 

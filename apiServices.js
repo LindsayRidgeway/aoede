@@ -52,13 +52,11 @@ export const getPromptForLevel = (readingLevel) => {
 
 // Process the source text - translate and simplify
 export const processSourceText = async (sourceText, bookLang, studyLang, userLang,readingLevel = 6) => {
-  console.log(`[apiServices.js] 🛠 Entered processSourceText(sourceText, ${bookLang}, ${studyLang}, ${userLang}, ${readingLevel})`);
 
   const openaiKey = getConstantValue('OPENAI_API_KEY');
 
 /*
   if (!openaiKey) {
-    console.log('[API] No OpenAI API key available for simplification');
     apiDebugResults.lastOpenAIAttempt = {
       error: 'No API key available',
       time: new Date().toISOString()
@@ -97,9 +95,7 @@ export const processSourceText = async (sourceText, bookLang, studyLang, userLan
 
   try {
 /*	  
-      console.log('[OpenAI] Input (first 100 chars):', JSON.stringify(prompt).slice(0, 100));
 */	  
-      console.log('[OpenAI] Input prompt:\n', prompt);
 	  const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
@@ -121,7 +117,6 @@ export const processSourceText = async (sourceText, bookLang, studyLang, userLan
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.log(`[API] OpenAI API error: ${response.status} - ${errorText}`);
       apiDebugResults.lastOpenAIAttempt.error = {
         status: response.status,
         text: errorText
@@ -132,18 +127,15 @@ export const processSourceText = async (sourceText, bookLang, studyLang, userLan
     const data = await response.json();
 
     if (!data.choices || data.choices.length === 0) {
-      console.log('[API] No response content from OpenAI');
       apiDebugResults.lastOpenAIAttempt.error = 'No response choices';
       return null;
     }
 
     apiDebugResults.lastOpenAIAttempt.success = true;
     const processedText = data.choices[0].message.content.trim();
-    console.log('[OpenAI] Output (first 100 chars):', JSON.stringify(processedText).slice(0, 100));
 
     return processedText;
   } catch (error) {
-    console.log(`[API] Error in processSourceText (OpenAI): ${error.message}`);
     apiDebugResults.lastOpenAIAttempt.error = error.message;
     return null;
   }
@@ -152,7 +144,6 @@ export const processSourceText = async (sourceText, bookLang, studyLang, userLan
 // Translate a batch of sentences using Google Translate
 export const translateBatch = async (textArray, sourceLang, targetLang) => {
   if (!googleKey) {
-    console.log('[API] No Google API key available for translation');
     
     apiDebugResults.lastGoogleAttempt = {
       error: 'No API key available',
@@ -163,7 +154,6 @@ export const translateBatch = async (textArray, sourceLang, targetLang) => {
   }
   
   try {
-    console.log('[Google Translate] Input (first 100 chars):', JSON.stringify(textArray).slice(0, 100));
     const apiUrl = `https://translation.googleapis.com/language/translate/v2?key=${googleKey}`;
     
     // Store API call details for debugging
@@ -193,7 +183,6 @@ export const translateBatch = async (textArray, sourceLang, targetLang) => {
     
     if (!response.ok) {
       const errorText = await response.text();
-      console.log(`[API] Google Translate API error: ${response.status} - ${errorText}`);
       
       // Store error for debugging
       apiDebugResults.lastGoogleAttempt.error = {
@@ -208,7 +197,6 @@ export const translateBatch = async (textArray, sourceLang, targetLang) => {
     
     // Handle API errors
     if (data.error) {
-      console.log(`[API] Google Translate API returned error: ${JSON.stringify(data.error)}`);
       
       // Store error for debugging
       apiDebugResults.lastGoogleAttempt.error = data.error;
@@ -217,7 +205,6 @@ export const translateBatch = async (textArray, sourceLang, targetLang) => {
     }
     
     if (!data.data?.translations || data.data.translations.length === 0) {
-      console.log('[API] No translations in Google API response');
       
       // Store error for debugging
       apiDebugResults.lastGoogleAttempt.error = 'No translations in response';
@@ -228,10 +215,8 @@ export const translateBatch = async (textArray, sourceLang, targetLang) => {
     // Success! Store for debugging
     apiDebugResults.lastGoogleAttempt.success = true;
     
-    console.log('[Google Translate] Output (first 100 chars):', JSON.stringify(data.data.translations).slice(0, 100));
     return data.data.translations.map(t => t.translatedText);
   } catch (error) {
-    console.log(`[API] Error in translateBatch: ${error.message}`);
     
     // Store error for debugging
     if (apiDebugResults.lastGoogleAttempt) {
