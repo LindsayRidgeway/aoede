@@ -110,6 +110,7 @@ export function MainUI({
           : 'en';
         
         // Fetch available languages from Google Translate API
+		  console.log("FETCH 0002");
         const response = await fetch(
           `https://translation.googleapis.com/language/translate/v2/languages?key=${GOOGLE_API_KEY}&target=${userLang}`,
           {

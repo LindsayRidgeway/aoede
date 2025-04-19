@@ -25,6 +25,7 @@ function fetchAvailableVoices() {
 
   try {
     // We're using a synchronous approach, so we'll return a promise that will be resolved later
+	  console.log("FETCH 0010");
     const promise = fetch(
       `https://texttospeech.googleapis.com/v1/voices?key=${Core.GOOGLE_TTS_API_KEY}`
     )
@@ -387,6 +388,7 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
       hasVoiceName: !!voiceName
     };
 
+	console.log("FETCH 0011");
     const response = await fetch(
       `https://texttospeech.googleapis.com/v1/text:synthesize?key=${Core.GOOGLE_TTS_API_KEY}`,
       {
@@ -431,6 +433,7 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
         hasVoiceName: !!voiceName
       };
       
+	  console.log("FETCH 0012");
       const retryResponse = await fetch(
         `https://texttospeech.googleapis.com/v1/text:synthesize?key=${Core.GOOGLE_TTS_API_KEY}`,
         {
@@ -470,6 +473,7 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
             hasVoiceName: false
           };
           
+		  console.log("FETCH 0013");
           const lastResponse = await fetch(
             `https://texttospeech.googleapis.com/v1/text:synthesize?key=${Core.GOOGLE_TTS_API_KEY}`,
             {

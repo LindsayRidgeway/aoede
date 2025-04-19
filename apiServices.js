@@ -96,6 +96,7 @@ export const processSourceText = async (sourceText, bookLang, studyLang, userLan
   try {
 /*	  
 */	  
+	  console.log("FETCH 0003");
 	  const response = await fetch(apiUrl, {
       method: 'POST',
       headers: {
@@ -165,6 +166,7 @@ export const translateBatch = async (textArray, sourceLang, targetLang) => {
       targetLang
     };
     
+	console.log("FETCH 0004");
     const response = await fetch(
       apiUrl,
       {

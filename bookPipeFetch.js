@@ -48,6 +48,7 @@ export const bookPipeFetch = {
         const proxyUrl = `${proxy}${proxyTargetUrl}`;
         pipe.log(`Trying proxy: ${proxy}`);
         
+		console.log("FETCH 0005");
         const response = await fetch(proxyUrl, { 
           method: 'GET',
           mode: 'cors',
@@ -119,6 +120,7 @@ export const bookPipeFetch = {
               const proxyUrl = `${currentProxy}${targetUrl}`;
               pipe.log(`Using proxy: ${currentProxy}`);
               
+			  console.log("FETCH 0006");
               response = await fetch(proxyUrl, { 
                 method: 'GET',
                 mode: 'cors',
@@ -131,6 +133,7 @@ export const bookPipeFetch = {
             } else {
               // If no proxy is available or they all failed, try a no-cors request as last resort
               pipe.log(`No proxy available, trying no-cors request`);
+			  console.log("FETCH 0007");
               response = await fetch(pipe.bookUrl, { 
                 method: 'GET',
                 mode: 'no-cors',
@@ -141,6 +144,7 @@ export const bookPipeFetch = {
           } else {
             // For native platforms, use direct fetch which shouldn't have CORS issues
             pipe.log(`Using direct fetch for native platform`);
+			console.log("FETCH 0008");
             response = await fetch(pipe.bookUrl);
           }
           

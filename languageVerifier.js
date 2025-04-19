@@ -118,6 +118,7 @@ const LanguageVerifier = {
     isFetchingLanguages = true;
     
     // Start the fetch, but don't wait for it
+	console.log("FETCH 0009");
     fetch(
       `https://translation.googleapis.com/language/translate/v2/languages?key=${GOOGLE_API_KEY}&target=en`,
       {
