@@ -20,7 +20,7 @@ export default {
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false
       },
-      buildNumber: "101"
+      buildNumber: "102"
     },
     android: {
       adaptiveIcon: {
