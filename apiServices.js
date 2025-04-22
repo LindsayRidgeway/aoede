@@ -43,6 +43,7 @@ export const processSourceText = async (sourceText, bookLang, studyLang, userLan
 
   const getPrompt = getPromptForLevel(readingLevel);
   const prompt = getPrompt(sourceText, bookLang, studyLang, userLang);
+  if (__DEV__) console.log("[PROCESS_SOURCE_BOOK.1] bookLang=", bookLang, " studyLang=", studyLang, " userLang=", userLang, " sourceText=", sourceText);
 
   try {
 	  if (__DEV__) console.log("FETCH 0003");
@@ -66,19 +67,24 @@ export const processSourceText = async (sourceText, bookLang, studyLang, userLan
       })
     });
 
+    if (__DEV__) console.log("[PROCESS_SOURCE_BOOK.2] response.ok=", response.ok);
+
     if (!response.ok) {
       return null;
     }
 
     const data = await response.json();
 
+    if (__DEV__) console.log("[PROCESS_SOURCE_BOOK.3] data.choices=", data.choices);
+    if (__DEV__) console.log("[PROCESS_SOURCE_BOOK.4] data.choices.length=", data.choices.length);
+
     if (!data.choices || data.choices.length === 0) {
       return null;
     }
 
-    const processedText = data.choices[0].message.content.trim();
-
-    return processedText;
+    if (__DEV__) console.log("[PROCESS_SOURCE_BOOK.5] result=", data.choices[0].message.content);
+    
+    return data.choices[0].message.content;
   } catch (error) {
     return null;
   }

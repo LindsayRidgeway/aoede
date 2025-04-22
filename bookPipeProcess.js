@@ -79,15 +79,18 @@ export const bookPipeProcess = {
       
       // Extract the chunk of HTML
       const htmlChunk = pipe.htmlContent.substring(chunkStart, chunkEnd);
+      if (__DEV__) console.log("[PROCESS_NEXT_CHUNK.1] chunkSize=", pipe.chunkSize, " chunkStart=", chunkStart, " chunkEnd=", chunkEnd, " htmlChunk=", htmlChunk);
       
       // Extract text from this HTML chunk
       let textChunk = this.extractText(htmlChunk);
+      if (__DEV__) console.log("[PROCESS_NEXT_CHUNK.2] textChunk.length=", textChunk.length, " textChunk=", textChunk);
       
       // Parse the text into sentences
       const newSentences = parseIntoSentences(textChunk);
       
       // Add new sentences to our collection
       pipe.sentences = [...pipe.sentences, ...newSentences];
+	  // DOES THIS MEAN WE'RE STORING THE ENTIRE BOOK IN MEMORY TWICE?
       
       // Update the current read position
       const chunkSize = chunkEnd - chunkStart;

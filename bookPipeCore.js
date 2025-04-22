@@ -175,6 +175,7 @@ class BookPipe {
 
     const startIdx = this.nextSentenceIndex;
     let endIdx = Math.min(startIdx + batchSize, this.sentences.length);
+    if (__DEV__) console.log("[GET_NEXT_BATCH.1] startIdx=", startIdx, "endIdx=", endIdx, " sentences.length=", this.sentences.length, " sentences[0]=", this.sentences[0]);
     
     
     // If we don't have enough sentences and there's more content, process another chunk
@@ -192,6 +193,7 @@ class BookPipe {
     
     // Get the batch of sentences
     const batch = this.sentences.slice(startIdx, endIdx);
+    if (__DEV__) console.log("[GET_NEXT_BATCH.2] startIdx=", startIdx, "endIdx=", endIdx, "batch.length=", batch.length, " batch[0]=", batch[0]);
     
     // Update our position
     this.nextSentenceIndex = endIdx;

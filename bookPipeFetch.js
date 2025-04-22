@@ -4,6 +4,7 @@ import { CORS_PROXY } from './apiServices';
 
 // Book content fetching operations
 export const bookPipeFetch = {
+	/*
   // Special fetch that ensures no caching
   async fetchContentWithNoCaching(pipe) {
     if (__DEV__) console.log("MODULE 0052: bookPipeFetch.fetchContentWithNoCaching");
@@ -74,6 +75,7 @@ export const bookPipeFetch = {
     // If we reach here, all proxies failed
     throw new Error('Failed to fetch book content with fresh request');
   },
+	*/
 
   // Fetch book content from the URL
   async fetchBookContent(pipe) {
@@ -152,7 +154,8 @@ export const bookPipeFetch = {
           }
           
           pipe.htmlContent = await response.text();
-          
+		  if (__DEV__) console.log("BOOK_PIPE_FETCH.1 htmlContent.length=", pipe.htmlContent.length);
+		  
           if (!pipe.htmlContent || pipe.htmlContent.length < 1000) {
             throw new Error(`Retrieved HTML is too short (${pipe.htmlContent ? pipe.htmlContent.length : 0} characters)`);
           }

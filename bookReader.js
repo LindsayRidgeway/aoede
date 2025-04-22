@@ -263,8 +263,8 @@ class BookReader {
       // Join the raw sentences for processing
       const rawText = rawSentences.join(' ');
       this.rawSentenceSize = rawText.length;
-      
-      // 1. FIRST TRANSLATE to the study language if the book is not already in that language
+      if (__DEV__) console.log("[LOAD_RAW_SENTENCE] rawSentenceSize=", this.rawSentenceSize, " rawText=", rawText);
+	  
       let textForSimplification = rawText;
       
       // Find the book source to get its original language
@@ -276,9 +276,10 @@ class BookReader {
         const userLanguageCode = detectLanguageCode(this.userLanguage);
 		  	
 		  textForSimplification = rawText;
+		  
+	      if (__DEV__) console.log("[bookReader.1] " + rawText.length);
       
-      // 2. THEN SIMPLIFY the text in the study language
-      let processedText;
+		  let processedText;
       try {
         
 		processedText = await processSourceText(

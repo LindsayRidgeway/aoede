@@ -1,5 +1,5 @@
 const getSimplificationPrompt = (sourceText, bookLanguage, studyLanguage, userLanguage) => {
-  return `You will receive multiple sentences in ${bookLanguage} from a book.
+  return `You will receive one or more sentences in ${bookLanguage} from a book.
 
 Your task is to do the following for EACH sentence:
 1. Translate the sentence into ${studyLanguage}.

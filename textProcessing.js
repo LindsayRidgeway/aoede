@@ -20,6 +20,7 @@ if (__DEV__) console.log("MODULE 0098: textProcessing.detectLanguageCode");
   // If input is a language name, try to convert it to a code
   // We're only storing commonly used languages for efficiency
   const languageMap = {
+	  /*
     'english': 'en',
     'spanish': 'es',
     'french': 'fr',
@@ -47,6 +48,7 @@ if (__DEV__) console.log("MODULE 0098: textProcessing.detectLanguageCode");
     'vietnamese': 'vi',
     'hindi': 'hi',
     'romanian': 'ro'
+	  */
   };
   
   // Check if the normalized input is directly in our map
@@ -78,6 +80,7 @@ if (__DEV__) console.log("MODULE 0099: textProcessing.parseIntoSentences");
     .map(line => line.trim())
     .filter(line => line.length > 0);
   
+  /*
   // If we got a reasonable number of sentences, return them
   if (sentences.length >= 3) {
     return sentences;
@@ -100,6 +103,9 @@ if (__DEV__) console.log("MODULE 0099: textProcessing.parseIntoSentences");
     .map(part => part.trim())
     .filter(part => part.length > 0)
     .map(part => part + '.');
+	*/
   
+	if (__DEV__) console.log("[PARSE_INTO_SENTENCES.1] sentences.length=", sentences.length, " sentences[0]=", sentences[0]);
+ 
   return sentences;
 };
