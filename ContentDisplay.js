@@ -24,7 +24,7 @@ const ContentDisplay = ({
   nextButtonAnimation,
   isAtEndOfBook,
   uiText,
-  // Use integer values 1-5 for the speed options
+  // Use integer values 1–5 for the speed options
   speedOptions = [1, 2, 3, 4, 5]
 }) => {
   // Handle rewind button press

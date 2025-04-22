@@ -37,7 +37,6 @@ const getConstantValue = (key) => {
 
 // Get Google API key from Expo Constants
 const GOOGLE_API_KEY = getConstantValue('GOOGLE_API_KEY');
-console.log("TEMPORARY LOG: KEY=" + GOOGLE_API_KEY);
 
 // Direct translation method using Google Translate
 const directTranslate = async (text, sourceLang, targetLang) => {
@@ -67,14 +66,12 @@ const directTranslate = async (text, sourceLang, targetLang) => {
     
     return text;
   } catch (error) {
-    if (__DEV__) console.log(`Error in directTranslate: ${error.message}`);
     return text;
   }
 };
 
 // Get the user's preferred locale/language using multiple methods for better reliability
 const getDeviceLanguage = async () => {
-	if (__DEV__) console.log("ENTER getDeviceLanguage");
   try {
     // Try to get device language from React Native's NativeModules
     if (Platform.OS !== 'web') {
@@ -103,7 +100,6 @@ const getDeviceLanguage = async () => {
       return navLang;
     }
   } catch (error) {
-    if (__DEV__) console.log(`Error detecting language: ${error.message}`);
   }
   
   // Default fallback
@@ -210,7 +206,6 @@ export default function App() {
           }
         } catch (error) {
           // Silent error handling
-          if (__DEV__) console.log(`Error loading stored settings: ${error.message}`);
         }
         
         const language = await ListeningSpeed.getStoredStudyLanguage();
@@ -220,7 +215,6 @@ export default function App() {
         BookReader.initialize(handleSentenceProcessed, deviceLang || 'en');
       } catch (error) {
         // Silent error handling
-        if (__DEV__) console.log(`Error during initialization: ${error.message}`);
       }
     };
     
@@ -252,14 +246,12 @@ export default function App() {
           translatedBooks[book.id] = translatedTitle;
         } catch (error) {
           translatedBooks[book.id] = book.title;
-          if (__DEV__) console.log(`Error translating book title '${book.title}': ${error.message}`);
         }
       }
       
       // Set translated text
       setUiText({...translatedElements, ...translatedBooks});
     } catch (error) {
-		if (__DEV__) console.log("Error translating UI");
     }
   };
   
@@ -327,7 +319,6 @@ export default function App() {
       await AsyncStorage.setItem("selectedBook", bookId);
     } catch (error) {
       // Silent error handling
-      if (__DEV__) console.log(`Error saving book selection: ${error.message}`);
     }
   };
   
@@ -339,7 +330,6 @@ export default function App() {
       await AsyncStorage.setItem("readingLevel", level.toString());
     } catch (error) {
       // Silent error handling
-      if (__DEV__) console.log(`Error saving reading level: ${error.message}`);
     }
   };
   
@@ -350,7 +340,6 @@ export default function App() {
       await AsyncStorage.setItem("showText", value.toString());
     } catch (error) {
       // Silent error handling
-      if (__DEV__) console.log(`Error saving show text preference: ${error.message}`);
     }
   };
   
@@ -361,7 +350,6 @@ export default function App() {
       await AsyncStorage.setItem("showTranslation", value.toString());
     } catch (error) {
       // Silent error handling
-      if (__DEV__) console.log(`Error saving show translation preference: ${error.message}`);
     }
   };
   
@@ -373,7 +361,6 @@ export default function App() {
       await ListeningSpeed.saveListeningSpeed(speed);
     } catch (error) {
       // Silent error handling
-      if (__DEV__) console.log(`Error saving listening speed: ${error.message}`);
     }
   };
   
