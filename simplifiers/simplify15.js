@@ -19,6 +19,11 @@ Simplification rules:
 - Each simplified sentence should be no longer than 14 words.
 - Sentence structure: Use varied sentence beginnings and structure for the simplified sentences to avoid the monotony of continuous SVO sentences.
 
+After you have completed this work, please examine the first sentence in ${studyLanguage}
+that you are you planning to return. If it turns out that it contains multiple sentences,
+which is a mistake you sometimes make, please discard your work and repeat these instructions
+with the original set of one or more sentences in ${bookLanguage}.
+
 Book sentence:
 ${sourceText}`;
 };
