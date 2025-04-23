@@ -31,26 +31,13 @@ Aoede can be accessed via instructions at https://aoede.pro
 
 Aoede supports multiple reading levels that affect **sentence simplification**:
 
-- **AG 6**: Extremely simplified sentences (for a 6-year-old native speaker)
-- **AG 9**
-- **AG 12**
-- **AG 15**
-- **AG 18**: No simplification; original sentence preserved
+- **RL 6**: Extremely simplified sentences (for a 6-year-old native speaker)
+- **RL 9**
+- **RL 12**
+- **RL 15**
+- **RL 18**: No simplification; original sentence preserved
 
-At AG 18, Aoede skips the AI simplification step entirely.
-
----
-
-## Error Codes
-
-If something fails, Aoede will tell you. Expect messages like:
-
-- `translation failed (A1)` – Google Translation API failed.
-- `simplification failed (A2)` – GPT-4o Mini returned no output.
-- `audio generation failed (A4)` – TTS service could not process sentence.
-- `source sentence unavailable (A5)` – No sentence received from pipeline.
-
-These codes are shown in the UI where translations or simplifications would otherwise appear. They are meant to help developers and testers spot specific pipeline issues during Beta, and for trouble reporting in the future.
+At RL 18, Aoede skips the AI simplification step entirely.
 
 ---
 
@@ -58,59 +45,12 @@ These codes are shown in the UI where translations or simplifications would othe
 
 In order to run regression tests or generate a new build, you must include two configuration files at the root level of your local project:
 
-1. **`app.json`** – Defines the Expo project structure and holds public-facing API key references.
-2. **`.env`** – Stores sensitive API keys for runtime use.
+1. **`.env`** – Stores sensitive API keys for runtime use.
+2. **`app.config.js`** – Defines the app's Expo project structure.
+3. **`eas.json`** – Defines build profiles for Expo Application Services (EAS).
 
-Both of these files are and must be **excluded from the repository** using `.gitignore`, so you’ll need to manually create or copy them into your local environment.
-
-### Template: `app.json`
-
-```json
-{
-  "expo": {
-    "name": "aoede",
-    "slug": "aoede",
-    "version": "1.0.0",
-    "runtimeVersion": "1.0.0",
-    "orientation": "default",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
-    "updates": {
-      "fallbackToCacheTimeout": 0,
-      "url": "https://u.expo.dev/0e70cf3b-940d-4f03-b264-4ea7953da859"
-    },
-    "assetBundlePatterns": ["**/*"],
-    "ios": {
-      "supportsTablet": true
-    },
-    "android": {
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#FFFFFF"
-      }
-    },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    },
-    "extra": {
-      "EXPO_PUBLIC_OPENAI_API_KEY": "",
-      "EXPO_PUBLIC_ANTHROPIC_API_KEY": "",
-      "EXPO_PUBLIC_GOOGLE_API_KEY": "",
-      "EXPO_PUBLIC_CORS_PROXY": "https://thingproxy.freeboard.io/fetch/",
-      "NO_IMMEDIATE": true,
-      "eas": {
-        "projectId": "0e70cf3b-940d-4f03-b264-4ea7953da859"
-      }
-    },
-    "newArchEnabled": true
-  }
-}
-```
+The first file listed, .env, must be **excluded from the repository** using `.gitignore`, so you’ll need to manually create or copy it into your local environment, and store it for recovery
+outside of the project directory.
 
 ### Template: `.env`
 
@@ -120,31 +60,104 @@ ANTHROPIC_API_KEY=sk-ant-...
 GOOGLE_API_KEY=AIza...
 ```
 
-> 🔒 **Important:** Never commit these files to version control. They must remain local only.
+> 🔒 **Important:** Never commit this files to version control. It must remain local only.
 
 ---
 
 ## Regression Testing
 
-_The following checklist is used by the creator to test Aoede across all supported platforms before releasing a new version:_
+_This checklist is used to test Aoede across all supported platforms before releasing a new beta version. It includes browser-based tests, Android testing (both QR and direct URL modes), and TestFlight deployment for iOS and Mac._
 
-- [ ] Test the web app in Chrome, Safari, and Firefox.
-- [ ] Test the Android build using Expo Go.
-- [ ] Test the iOS build using Expo Go and TestFlight.
-- [ ] Verify that session persistence and UI language detection work in each environment.
-- [ ] Confirm TTS playback in each selected study language.
-- [ ] Validate adaptive behavior based on user feedback and toggles.
-- [ ] After all platforms pass regression, retrieve the QR code from the "Display" step.
-- [ ] Copy the Expo project URL from the QR screen and paste it into `docs/index.html`.
+---
+
+### 🌐 Web App Testing (Chrome, Safari)
+
+1. In Terminal, navigate to the Aoede directory.
+2. Set the default browser to **Chrome**: `export BROWSER="Google Chrome"`
+3. Run:  
+   ```
+   npx expo start --clear
+   ```
+4. Press `w` to launch in Chrome.
+5. Test Aoede in the Chrome browser.
+6. Press `CTRL-C` to stop the process.
+
+7. Set the browser to **Safari**: `export BROWSER=safari`
+8. Run:  
+   ```
+   npx expo start --clear
+   ```
+9. Press `w` again.
+10. Test Aoede in Safari, with **system language set to French**.  
+    Confirm **I18N UI translation** works.
+11. `CTRL-C` to stop.
+
+12. Reset default browser to Chrome: `export BROWSER="Google Chrome"`
+
+---
+
+### 🤳 Android Testing (Expo Go)
+
+1. Run the Android build:
+   ```
+   eas build --platform android --profile apk
+   ```
+2. The last line of the build log provides a link use on an Android, so copy it into index.html and send it to your Android phone (perhaps via Telegram) for testing.
+
+---
+
+### 🍎 iOS + macOS Testing (TestFlight)
+
+1. Run the iOS build:
+   ```
+   eas build --platform ios
+   ```
+2. Submit the build:
+   ```
+   eas submit --platform ios
+   ```
+3. Copy the TestFlight link from the final output and open it in a browser.
+4. Sign in to **App Store Connect**.
+5. Navigate: **Apps → Aoede → TestFlight tab**.
+6. Wait for the build to finish processing.
+7. Click the **certification** link, select **None**, and submit.
+8. Click the previously deployed build.
+9. Copy its description.
+10. Expire that build.
+11. Click the **new build**, paste in the old description, and save.
+12. Navigate to **Testers → Outside Beta Testers → Builds tab**.
+13. Click the “+” to assign the new build if needed.
+
+#### On Your iPhone:
+- Open **TestFlight**.
+- Tap **Update**, then **Open**.
+- Test Aoede on iOS.
+
+#### On Your Mac:
+- In App Store Connect, scroll to the **public TestFlight URL**.
+- Double-click to open.
+- Launch Aoede via TestFlight on macOS.
+
+---
+
+### 🧪 Final Checks (All Platforms)
+
+- [ ] Confirm **session persistence** and **UI language detection**.
+- [ ] Verify **TTS playback** in all selected study languages.
+- [ ] Validate **adaptive sentence response** based on UI toggles and feedback.
+- [ ] Retrieve the **Expo project URL** from the QR screen.
+- [ ] Copy this URL into `docs/index.html`.
 - [ ] Push the updated `index.html` to GitHub to sync the official site.
+[aoede-1.2] ~/aoede $ 
 
 ---
 
 ## Roadmap
 
-- Expanded source material library
+- Ability to edit source material library
 - Voice selection (at least male vs female)
-- Toggle for fluent vs word-by-word listening (that is, "Fluent: <no/yes>")
+- Individual word translation and pronunciation
+- Forward and backward positioning of the source material
 
 ---
 
@@ -152,10 +165,7 @@ _The following checklist is used by the creator to test Aoede across all support
 
 Issues currently under review:
 
-- 🚧 iOS build fails due to runtime mismatch (ticket submitted to Expo team)  
-- ⚠️ Some languages intermittently fail to translate—under investigation
-- Reading level and reading speed used to be, and should be, persistent across sessions, but currently they are always reset to minimum value
-- Add detailed CLI commands to Regression Testing (above)
+- None at present
 
 ---
 
@@ -164,8 +174,8 @@ Issues currently under review:
 Aoede uses:
 
 - **React Native with Expo**
-- **OpenAI GPT-4o Mini** for simplification
-- **Google Cloud APIs** for text-to-speech and translation
+- **OpenAI GPT-4o** for source material translation and simplification
+- **Google Cloud APIs** for text-to-speech and I18N translation
 
 ---
 
