@@ -96,13 +96,13 @@ _This checklist is used to test Aoede across all supported platforms before rele
 
 ---
 
-### 🤳 Android Testing (Expo Go)
+### 🤳 Android Testing
 
 1. Run the Android build:
    ```
    eas build --platform android --profile apk
    ```
-2. The last line of the build log provides a link use on an Android, so copy it into index.html and send it to your Android phone (perhaps via Telegram) for testing.
+2. The last line of the build log provides a link to use on an Android, so paste the link into the Android section of docs/index.html, and send the link to your Android phone (perhaps via Telegram) for testing.
 
 ---
 

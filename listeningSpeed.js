@@ -19,7 +19,6 @@ let supportedVoiceLanguageCodes = new Set();
 // Function to fetch available voices from Google TTS API
 function fetchAvailableVoices() {
   if (!Core.GOOGLE_TTS_API_KEY) {
-    if (__DEV__) console.log("No Google API key found");
     return null;
   }
 
@@ -31,7 +30,6 @@ function fetchAvailableVoices() {
     )
     .then(response => {
       if (!response.ok) {
-        if (__DEV__) console.log(`Failed to fetch voices: ${response.status} ${response.statusText}`);
         return null;
       }
       return response.json();
@@ -40,13 +38,11 @@ function fetchAvailableVoices() {
       return data.voices || null;
     })
     .catch(error => {
-      if (__DEV__) console.log(`Error fetching voices: ${error.message}`);
       return null;
     });
     
     return promise;
   } catch (error) {
-    if (__DEV__) console.log(`Error in fetchAvailableVoices: ${error.message}`);
     return Promise.resolve(null);
   }
 }
@@ -99,7 +95,6 @@ export const initializeVoices = async () => {
     
     return availableVoices;
   } catch (error) {
-    if (__DEV__) console.log(`Error initializing voices: ${error.message}`);
     return null;
   }
 };
@@ -259,7 +254,6 @@ export const saveListeningSpeed = async (speed) => {
     await AsyncStorage.setItem("listeningSpeed", integerSpeed.toString());
     return true;
   } catch (error) {
-    if (__DEV__) console.log(`Error saving listening speed: ${error.message}`);
     return false;
   }
 };
@@ -270,11 +264,25 @@ export const {
   stopSpeaking 
 } = Core;
 
-export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish) => {
+// Process text for articulation
+const processTextForArticulation = (text, articulationEnabled) => {
+  if (!articulationEnabled || !text) {
+    return text;
+  }
+
+  // Replace spaces between words with commas followed by space
+  // const processedText = text.replace(/(\w)(\s)(\w)/g, '$1, $3');
+  return text.split(/\s+/).join(', ');
+};
+
+export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish, articulation = false) => {
   if (!sentence) {
     if (onFinish) onFinish();
     return;
   }
+  
+  // Process the sentence for articulation if needed
+  const processedSentence = processTextForArticulation(sentence, articulation);
   
   // Configure audio session
   await Core.configureAudioSession();
@@ -330,7 +338,7 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
 
     // Preparing TTS request body
     const requestBody = {
-      input: { text: sentence },
+      input: { text: processedSentence },
       voice: { 
         languageCode: ttsLanguageCode,
         ssmlGender: "FEMALE"
@@ -360,7 +368,7 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
       // We'll try a simplified request if the first one fails      
       // If the first request failed, try without speed control
       const simplifiedBody = {
-        input: { text: sentence },
+        input: { text: processedSentence },
         voice: { 
           languageCode: ttsLanguageCode,
           ssmlGender: "FEMALE"
@@ -389,7 +397,7 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
         // If that fails too, try one last approach without specific voice name
         if (voiceName) {          
           const lastAttemptBody = {
-            input: { text: sentence },
+            input: { text: processedSentence },
             voice: { 
               languageCode: ttsLanguageCode,
               ssmlGender: "FEMALE"
@@ -453,7 +461,6 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
     // Play the audio 
     await Core.playAudioFromBase64(data.audioContent, onFinish);
   } catch (error) {
-    if (__DEV__) console.log(`Error in TTS process: ${error.message}`);
     if (onFinish) onFinish();
   }
 };

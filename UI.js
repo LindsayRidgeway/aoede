@@ -68,7 +68,10 @@ export function MainUI({
   totalSentences,
   readingLevel,
   setReadingLevel,
-  isAtEndOfBook
+  isAtEndOfBook,
+  // New props for articulation
+  articulation,
+  setArticulation
 }) {
   // State to track if content should be shown
   const [showContent, setShowContent] = useState(sentence && sentence.length > 0);
@@ -810,6 +813,8 @@ export function MainUI({
             nextButtonAnimation={nextButtonAnimation}
             isAtEndOfBook={isAtEndOfBook}
             uiText={uiText}
+            articulation={articulation}
+            setArticulation={setArticulation}
           />
         </View>
       </ScrollView>

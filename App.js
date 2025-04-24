@@ -142,6 +142,7 @@ export default function App() {
   const [nativeLangSentence, setNativeLangSentence] = useState(""); 
   const [showText, setShowText] = useState(true);
   const [showTranslation, setShowTranslation] = useState(true);
+  const [articulation, setArticulation] = useState(false); // New state for articulation feature
   const [speechRate, setSpeechRate] = useState(1.0);
   const [studyLanguage, setStudyLanguage] = useState("");
   const [listeningSpeed, setListeningSpeed] = useState(3); // Default to middle speed (3)
@@ -170,6 +171,7 @@ export default function App() {
           const storedReadingLevel = await AsyncStorage.getItem("readingLevel");
           const storedShowText = await AsyncStorage.getItem("showText");
           const storedShowTranslation = await AsyncStorage.getItem("showTranslation");
+          const storedArticulation = await AsyncStorage.getItem("articulation"); // Load articulation setting
           const storedListeningSpeed = await AsyncStorage.getItem("listeningSpeed");
           
           if (storedSelectedBook !== null) {
@@ -190,6 +192,10 @@ export default function App() {
           
           if (storedShowTranslation !== null) {
             setShowTranslation(storedShowTranslation === 'true');
+          }
+          
+          if (storedArticulation !== null) {
+            setArticulation(storedArticulation === 'true');
           }
           
           if (storedListeningSpeed !== null) {
@@ -285,7 +291,7 @@ export default function App() {
       ListeningSpeed.stopSpeaking();
       setIsSpeaking(false);
     } else {
-      ListeningSpeed.speakSentenceWithPauses(studyLangSentence, listeningSpeed, () => setIsSpeaking(false));
+      ListeningSpeed.speakSentenceWithPauses(studyLangSentence, listeningSpeed, () => setIsSpeaking(false), articulation);
       setIsSpeaking(true);
     }
   };
@@ -349,6 +355,16 @@ export default function App() {
     setShowTranslation(value);
     try {
       await AsyncStorage.setItem("showTranslation", value.toString());
+    } catch (error) {
+      // Silent error handling
+    }
+  };
+  
+  // Handle articulation toggle change
+  const handleArticulationChange = async (value) => {
+    setArticulation(value);
+    try {
+      await AsyncStorage.setItem("articulation", value.toString());
     } catch (error) {
       // Silent error handling
     }
@@ -470,6 +486,8 @@ export default function App() {
       showTranslation={showTranslation}
       setShowText={handleShowTextChange}
       setShowTranslation={handleShowTranslationChange}
+      articulation={articulation} // Pass articulation state
+      setArticulation={handleArticulationChange} // Pass articulation handler
       speechRate={speechRate}
       setSpeechRate={setSpeechRate}
       speakSentence={handleToggleSpeak}
@@ -477,7 +495,7 @@ export default function App() {
       isSpeaking={isSpeaking}
       loadingBook={loadingBook}
       listeningSpeed={listeningSpeed}
-      setListeningSpeed={handleListeningSpeedChange}  // Use the new handler
+      setListeningSpeed={handleListeningSpeedChange}
       studyLanguage={studyLanguage}
       setStudyLanguage={setStudyLanguage}
       currentSentenceIndex={currentSentenceIndex}

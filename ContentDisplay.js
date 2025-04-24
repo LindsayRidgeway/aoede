@@ -24,7 +24,7 @@ const ContentDisplay = ({
   nextButtonAnimation,
   isAtEndOfBook,
   uiText,
-  // New prop for articulation feature
+  // New props for articulation feature
   articulation,
   setArticulation,
   // Use integer values 1–5 for the speed options
@@ -119,27 +119,22 @@ const ContentDisplay = ({
       </View>
 
       <View style={styles.toggleContainer}>
+        {/* New Articulation toggle */}
         <View style={styles.toggleItem}>
-          <Text style={styles.toggleLabel}>
-            {uiText.articulation || "Articulation"}:
-          </Text>
+          <Text style={styles.toggleLabel}>{uiText.articulation || "Articulation"}:</Text>
           <Switch 
-            value={articulation} 
+            value={articulation}
             onValueChange={setArticulation}
             trackColor={{ false: '#d1d1d1', true: '#3a7ca5' }}
             thumbColor="#fff"
           />
         </View>
         <View style={styles.toggleItem}>
-          <Text style={styles.toggleLabel}>
-            {uiText.showText || "Show Study Language"}:
-          </Text>
+          <Text style={styles.toggleLabel}>{uiText.showText || "Show Foreign Sentence"}:</Text>
           <Switch value={showText} onValueChange={setShowText} />
         </View>
         <View style={styles.toggleItem}>
-          <Text style={styles.toggleLabel}>
-            {uiText.showTranslation || "Show Translation"}:
-          </Text>
+          <Text style={styles.toggleLabel}>{uiText.showTranslation || "Show Translation"}:</Text>
           <Switch value={showTranslation} onValueChange={setShowTranslation} />
         </View>
       </View>
