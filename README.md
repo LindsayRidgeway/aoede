@@ -155,9 +155,10 @@ _This checklist is used to test Aoede across all supported platforms before rele
 ## Roadmap
 
 - Ability to edit source material library
-- Voice selection (at least male vs female)
+- Voice selection
 - Individual word translation and pronunciation
 - Forward and backward positioning of the source material
+- Auto-play toggle (combines Next Sentence with Listen)
 
 ---
 
@@ -165,7 +166,7 @@ _This checklist is used to test Aoede across all supported platforms before rele
 
 Issues currently under review:
 
-- None at present
+- Intermittent out-of-sync results from AI API
 
 ---
 
