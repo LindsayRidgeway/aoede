@@ -117,6 +117,7 @@ export default function App() {
     stop: "Stop",
     next: "Next Sentence",
     loadBook: "Load Book",
+    articulation: "Articulation",
     showText: "Show Foreign Sentence",
     showTranslation: "Show Translation",
     readingSpeed: "Reading Speed",
