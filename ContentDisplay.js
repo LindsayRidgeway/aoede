@@ -1,4 +1,4 @@
-// ContentDisplay.js - Updated to use integer values for speed buttons
+// ContentDisplay.js - Updated with auto-play and consistent toggle colors
 import React from 'react';
 import {
   Text, View, TouchableOpacity, Switch, ActivityIndicator,
@@ -24,9 +24,12 @@ const ContentDisplay = ({
   nextButtonAnimation,
   isAtEndOfBook,
   uiText,
-  // New props for articulation feature
+  // Articulation props
   articulation,
   setArticulation,
+  // Auto-play props
+  autoplay,
+  setAutoplay,
   // Use integer values 1–5 for the speed options
   speedOptions = [1, 2, 3, 4, 5]
 }) => {
@@ -119,20 +122,23 @@ const ContentDisplay = ({
       </View>
 
       <View style={styles.toggleContainer}>
-        {/* New Articulation toggle */}
+        {/* Articulation toggle */}
         <View style={styles.toggleItem}>
           <Text style={styles.toggleLabel}>{uiText.articulation || "Articulation"}:</Text>
-          <Switch 
-            value={articulation}
-            onValueChange={setArticulation}
-            trackColor={{ false: '#d1d1d1', true: '#3a7ca5' }}
-            thumbColor="#fff"
-          />
+          <Switch value={articulation} onValueChange={setArticulation} />
         </View>
+        
+        {/* Auto-play toggle */}
+        <View style={styles.toggleItem}>
+          <Text style={styles.toggleLabel}>{uiText.autoplay || "Next Sentence Auto-play"}:</Text>
+          <Switch value={autoplay} onValueChange={setAutoplay} />
+        </View>
+        
         <View style={styles.toggleItem}>
           <Text style={styles.toggleLabel}>{uiText.showText || "Show Foreign Sentence"}:</Text>
           <Switch value={showText} onValueChange={setShowText} />
         </View>
+        
         <View style={styles.toggleItem}>
           <Text style={styles.toggleLabel}>{uiText.showTranslation || "Show Translation"}:</Text>
           <Switch value={showTranslation} onValueChange={setShowTranslation} />

@@ -118,6 +118,7 @@ export default function App() {
     next: "Next Sentence",
     loadBook: "Load Book",
     articulation: "Articulation",
+    autoplay: "Next Sentence Auto-play",
     showText: "Show Foreign Sentence",
     showTranslation: "Show Translation",
     readingSpeed: "Reading Speed",
@@ -142,7 +143,8 @@ export default function App() {
   const [nativeLangSentence, setNativeLangSentence] = useState(""); 
   const [showText, setShowText] = useState(true);
   const [showTranslation, setShowTranslation] = useState(true);
-  const [articulation, setArticulation] = useState(false); // New state for articulation feature
+  const [articulation, setArticulation] = useState(false); // Articulation feature
+  const [autoplay, setAutoplay] = useState(false); // Auto-play feature
   const [speechRate, setSpeechRate] = useState(1.0);
   const [studyLanguage, setStudyLanguage] = useState("");
   const [listeningSpeed, setListeningSpeed] = useState(3); // Default to middle speed (3)
@@ -171,7 +173,8 @@ export default function App() {
           const storedReadingLevel = await AsyncStorage.getItem("readingLevel");
           const storedShowText = await AsyncStorage.getItem("showText");
           const storedShowTranslation = await AsyncStorage.getItem("showTranslation");
-          const storedArticulation = await AsyncStorage.getItem("articulation"); // Load articulation setting
+          const storedArticulation = await AsyncStorage.getItem("articulation");
+          const storedAutoplay = await AsyncStorage.getItem("autoplay");
           const storedListeningSpeed = await AsyncStorage.getItem("listeningSpeed");
           
           if (storedSelectedBook !== null) {
@@ -196,6 +199,10 @@ export default function App() {
           
           if (storedArticulation !== null) {
             setArticulation(storedArticulation === 'true');
+          }
+          
+          if (storedAutoplay !== null) {
+            setAutoplay(storedAutoplay === 'true');
           }
           
           if (storedListeningSpeed !== null) {
@@ -291,7 +298,14 @@ export default function App() {
       ListeningSpeed.stopSpeaking();
       setIsSpeaking(false);
     } else {
-      ListeningSpeed.speakSentenceWithPauses(studyLangSentence, listeningSpeed, () => setIsSpeaking(false), articulation);
+      ListeningSpeed.speakSentenceWithPauses(
+        studyLangSentence, 
+        listeningSpeed, 
+        () => {
+          setIsSpeaking(false);
+        }, 
+        articulation
+      );
       setIsSpeaking(true);
     }
   };
@@ -312,6 +326,16 @@ export default function App() {
     try {
       setLoadingBook(true);
       await BookReader.handleNextSentence();
+      
+      // If autoplay is enabled, automatically speak the new sentence after loading
+      if (autoplay && !isAtEndOfBook) {
+        // Use a small delay to let the UI update first
+        setTimeout(() => {
+          if (!isSpeaking) {
+            handleToggleSpeak();
+          }
+        }, 300);
+      }
     } catch (error) {
       setStudyLangSentence("Error: " + error.message);
     } finally {
@@ -365,6 +389,16 @@ export default function App() {
     setArticulation(value);
     try {
       await AsyncStorage.setItem("articulation", value.toString());
+    } catch (error) {
+      // Silent error handling
+    }
+  };
+  
+  // Handle autoplay toggle change
+  const handleAutoplayChange = async (value) => {
+    setAutoplay(value);
+    try {
+      await AsyncStorage.setItem("autoplay", value.toString());
     } catch (error) {
       // Silent error handling
     }
@@ -486,8 +520,10 @@ export default function App() {
       showTranslation={showTranslation}
       setShowText={handleShowTextChange}
       setShowTranslation={handleShowTranslationChange}
-      articulation={articulation} // Pass articulation state
-      setArticulation={handleArticulationChange} // Pass articulation handler
+      articulation={articulation}
+      setArticulation={handleArticulationChange}
+      autoplay={autoplay}
+      setAutoplay={handleAutoplayChange}
       speechRate={speechRate}
       setSpeechRate={setSpeechRate}
       speakSentence={handleToggleSpeak}

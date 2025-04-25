@@ -69,9 +69,12 @@ export function MainUI({
   readingLevel,
   setReadingLevel,
   isAtEndOfBook,
-  // New props for articulation
+  // Props for articulation
   articulation,
-  setArticulation
+  setArticulation,
+  // Props for autoplay
+  autoplay,
+  setAutoplay
 }) {
   // State to track if content should be shown
   const [showContent, setShowContent] = useState(sentence && sentence.length > 0);
@@ -794,7 +797,7 @@ export function MainUI({
             )}
           </View>
 
-          {/* Content display component */}
+          {/* Content display component with articulation and autoplay props */}
           <ContentDisplay 
             showControls={showControls}
             sentence={sentence}
@@ -815,6 +818,8 @@ export function MainUI({
             uiText={uiText}
             articulation={articulation}
             setArticulation={setArticulation}
+            autoplay={autoplay}
+            setAutoplay={setAutoplay}
           />
         </View>
       </ScrollView>
