@@ -298,7 +298,7 @@ export default function App() {
       ListeningSpeed.stopSpeaking();
       setIsSpeaking(false);
     } else {
-      ListeningSpeed.speakSentenceWithPauses(
+	    ListeningSpeed.speakSentenceWithPauses(
         studyLangSentence, 
         listeningSpeed, 
         () => {
@@ -326,20 +326,28 @@ export default function App() {
     try {
       setLoadingBook(true);
       await BookReader.handleNextSentence();
-      
-      // If autoplay is enabled, automatically speak the new sentence after loading
-      if (autoplay && !isAtEndOfBook) {
-        // Use a small delay to let the UI update first
-        setTimeout(() => {
-          if (!isSpeaking) {
-            handleToggleSpeak();
-          }
-        }, 300);
-      }
     } catch (error) {
       setStudyLangSentence("Error: " + error.message);
     } finally {
+      // Loading is complete
       setLoadingBook(false);
+
+      // Check if autoplay should be triggered
+      if (autoplay && !isSpeaking) {
+        // Get the current sentence directly from BookReader
+        const currentSentence = BookReader.simpleArray[BookReader.simpleIndex];
+        
+        // Speak using the sentence directly from BookReader
+        ListeningSpeed.speakSentenceWithPauses(
+          currentSentence, 
+          listeningSpeed, 
+          () => {
+            setIsSpeaking(false);
+          }, 
+          articulation
+        );
+        setIsSpeaking(true);
+      }
     }
   };
   
