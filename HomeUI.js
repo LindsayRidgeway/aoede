@@ -1,8 +1,8 @@
 // HomeUI.js - Component for the home screen (header and load panel)
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Text, View, TouchableOpacity, Image, 
-  ActivityIndicator, Platform, Modal, FlatList
+  ActivityIndicator, Platform, Modal, FlatList, SafeAreaView
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { styles } from './styles';
@@ -50,7 +50,8 @@ export function HomeUI({
   loadingBook,
   readingLevel,
   setReadingLevel,
-  handleClearContent
+  handleClearContent,
+  onLibraryButtonClick
 }) {
   // State for displayed book title and modals
   const [displayBookTitle, setDisplayBookTitle] = useState("");
@@ -190,10 +191,12 @@ export function HomeUI({
     loadBook();
   };
   
-  // Placeholder for Library button click handler
+  // Handle Library button click - use the callback passed from parent
   const handleLibraryButtonClick = () => {
-    // Library button action will be implemented here
-    console.log("Library button clicked");
+    if (onLibraryButtonClick) {
+      onLibraryButtonClick();
+      console.log("Library button clicked");
+    }
   };
   
   // Handle language selection
@@ -542,7 +545,7 @@ export function HomeUI({
             animationType="slide"
             onRequestClose={() => setShowLanguageModal(false)}
           >
-            <View style={styles.modalContainer}>
+            <SafeAreaView style={styles.modalContainer}>
               <View style={styles.modalContent}>
                 <Text style={styles.modalHeader}>{uiText.studyLanguage || "Study Language"}</Text>
                 
@@ -569,7 +572,7 @@ export function HomeUI({
                   <Text style={styles.closeButtonText}>Cancel</Text>
                 </TouchableOpacity>
               </View>
-            </View>
+            </SafeAreaView>
           </Modal>
         )}
         
@@ -581,7 +584,7 @@ export function HomeUI({
             animationType="slide"
             onRequestClose={() => setShowBookModal(false)}
           >
-            <View style={styles.modalContainer}>
+            <SafeAreaView style={styles.modalContainer}>
               <View style={styles.modalContent}>
                 <Text style={styles.modalHeader}>{uiText.bookSelection || "Book Selection"}</Text>
                 
@@ -610,7 +613,7 @@ export function HomeUI({
                   <Text style={styles.closeButtonText}>Cancel</Text>
                 </TouchableOpacity>
               </View>
-            </View>
+            </SafeAreaView>
           </Modal>
         )}
         

@@ -4,6 +4,7 @@ import { SafeAreaView, ScrollView, View } from 'react-native';
 import { styles } from './styles';
 import { HomeUI } from './HomeUI';
 import { ReadingUI } from './ReadingUI';
+import { LibraryUI } from './LibraryUI';
 import * as Font from 'expo-font';
 
 export function MainUI(props) {
@@ -12,6 +13,9 @@ export function MainUI(props) {
   
   // State to track if fonts are loaded
   const [fontsLoaded, setFontsLoaded] = useState(false);
+  
+  // State to track if library modal is shown
+  const [showLibrary, setShowLibrary] = useState(false);
   
   // Update showContent when sentence changes
   useEffect(() => {
@@ -64,6 +68,16 @@ export function MainUI(props) {
   // Define showControls early to avoid reference issues
   const showControls = showContent && props.sentence && props.sentence.length > 0;
 
+  // Handle showing the library
+  const handleShowLibrary = () => {
+    setShowLibrary(true);
+  };
+  
+  // Handle closing the library
+  const handleCloseLibrary = () => {
+    setShowLibrary(false);
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollViewContent}>
@@ -81,6 +95,7 @@ export function MainUI(props) {
             readingLevel={props.readingLevel}
             setReadingLevel={props.setReadingLevel}
             handleClearContent={() => setShowContent(false)}
+            onLibraryButtonClick={handleShowLibrary}
           />
           
           {/* Reading UI component - Contains all the reading controls */}
@@ -109,6 +124,13 @@ export function MainUI(props) {
           )}
         </View>
       </ScrollView>
+      
+      {/* Library UI component - Modal panel for library management */}
+      <LibraryUI
+        visible={showLibrary}
+        onClose={handleCloseLibrary}
+        uiText={props.uiText}
+      />
     </SafeAreaView>
   );
 }
