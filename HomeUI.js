@@ -462,7 +462,7 @@ export function HomeUI({
         />
         <View style={styles.titleContainer}>
           <Text style={getHeaderTextStyle()}>
-            {uiText.appName || "Aoede"}
+            Aoede
           </Text>
           <Text style={styles.headerPronunciation}>(ay-EE-dee)</Text>
         </View>

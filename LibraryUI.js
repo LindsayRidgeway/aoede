@@ -38,12 +38,19 @@ export function LibraryUI({
     }
   };
 
+  // Get translated book title if available
+  const getBookTitle = (book) => {
+    // Try to get translated title from uiText
+    const translatedTitle = uiText[book.id] || uiText[`${book.id}Title`] || uiText[book.id + 'Title'];
+    return translatedTitle || book.title;
+  };
+
   // Handle book deletion
   const handleDeleteBook = (book) => {
     // Confirm deletion with alert
     Alert.alert(
       uiText.deleteBook || "Delete Book",
-      `${uiText.confirmDelete || "Are you sure you want to delete"} "${book.title}" ${uiText.fromLibrary || "from your library"}?`,
+      `${uiText.confirmDelete || "Are you sure you want to delete"} "${getBookTitle(book)}" ${uiText.fromLibrary || "from your library"}?`,
       [
         {
           text: uiText.cancel || "Cancel",
@@ -53,9 +60,13 @@ export function LibraryUI({
           text: uiText.yes || "Yes",
           onPress: async () => {
             try {
-              await removeBookFromLibrary(book.id);
-              // Refresh the list
-              setRefreshKey(prevKey => prevKey + 1);
+              const success = await removeBookFromLibrary(book.id);
+              if (success) {
+                // Refresh the list
+                setRefreshKey(prevKey => prevKey + 1);
+              } else {
+                throw new Error("Failed to delete book");
+              }
             } catch (error) {
               console.error("Error deleting book:", error);
               Alert.alert(
@@ -73,8 +84,7 @@ export function LibraryUI({
   const renderBookItem = ({ item }) => (
     <View style={styles.bookListItem}>
       <View style={styles.bookInfoContainer}>
-        <Text style={styles.bookTitle}>{item.title}</Text>
-        <Text style={styles.bookAuthor}>{item.author}</Text>
+        <Text style={styles.bookTitle}>{getBookTitle(item)}</Text>
         <Text style={styles.bookLanguage}>{item.language}</Text>
       </View>
       <TouchableOpacity

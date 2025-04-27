@@ -125,12 +125,19 @@ export const addBookToLibrary = async (book) => {
 export const removeBookFromLibrary = async (bookId) => {
   try {
     const library = await getUserLibrary();
+    
+    // Check if the book exists
+    const bookExists = library.some(book => book.id === bookId);
+    if (!bookExists) {
+      return false;
+    }
+    
     const updatedLibrary = library.filter(book => book.id !== bookId);
     
     await AsyncStorage.setItem(USER_LIBRARY_KEY, JSON.stringify(updatedLibrary));
     return true;
   } catch (error) {
-    if (__DEV__) console.log(`Error removing book from library: ${error.message}`);
+    console.error(`Error removing book from library: ${error.message}`);
     return false;
   }
 };
