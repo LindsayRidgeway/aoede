@@ -51,7 +51,8 @@ export function HomeUI({
   readingLevel,
   setReadingLevel,
   handleClearContent,
-  onLibraryButtonClick
+  onLibraryButtonClick,
+  libraryRefreshKey
 }) {
   // State for displayed book title and modals
   const [displayBookTitle, setDisplayBookTitle] = useState("");
@@ -74,20 +75,34 @@ export function HomeUI({
   // State for the user's book library
   const [bookLibrary, setBookLibrary] = useState([]);
   
-  // Load the user's library when component mounts
+  // Load the user's library when component mounts or when libraryRefreshKey changes
   useEffect(() => {
     const loadUserLibrary = async () => {
       try {
         const userLibrary = await getUserLibrary();
-        setBookLibrary(userLibrary);
-        setFilteredBooks(userLibrary);
+        
+        // Sort books by their translated titles
+        const sortedBooks = [...userLibrary].sort((a, b) => {
+          const titleA = getBookTitle(a).toLowerCase();
+          const titleB = getBookTitle(b).toLowerCase();
+          return titleA.localeCompare(titleB);
+        });
+        
+        setBookLibrary(sortedBooks);
+        setFilteredBooks(sortedBooks);
+        
+        // If the currently selected book was deleted, clear the selection
+        if (selectedBook && !sortedBooks.some(book => book.id === selectedBook)) {
+          setSelectedBook("");
+          setDisplayBookTitle(uiText.enterBook || "Select a book");
+        }
       } catch (error) {
         console.error("Failed to load user library:", error);
       }
     };
     
     loadUserLibrary();
-  }, []);
+  }, [libraryRefreshKey, uiText]);
   
   // Load languages from the Google Translate API
   useEffect(() => {
@@ -184,7 +199,7 @@ export function HomeUI({
     });
   }, []);
   
-  // Update displayed book title when selection changes
+  // Update displayed book title when selection changes or when books are reloaded
   useEffect(() => {
     if (selectedBook) {
       const book = bookLibrary.find(b => b.id === selectedBook);

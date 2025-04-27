@@ -11,12 +11,14 @@ import { getUserLibrary, removeBookFromLibrary, addBookToLibrary } from './userL
 export function LibraryUI({
   visible,
   onClose,
-  uiText
+  uiText,
+  onLibraryChange // New prop to notify parent of library changes
 }) {
   // State for user's book library
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0); // Used to force refresh
+  const [libraryChanged, setLibraryChanged] = useState(false); // Track if library changed
   
   // Search state
   const [searchQuery, setSearchQuery] = useState('');
@@ -43,6 +45,15 @@ export function LibraryUI({
     }
   }, [visible, refreshKey]);
   
+  // Notify parent when modal is closing if library changed
+  useEffect(() => {
+    return () => {
+      if (libraryChanged && onLibraryChange) {
+        onLibraryChange();
+      }
+    };
+  }, [libraryChanged, onLibraryChange]);
+  
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -57,7 +68,15 @@ export function LibraryUI({
     setLoading(true);
     try {
       const userLibrary = await getUserLibrary();
-      setBooks(userLibrary);
+      
+      // Sort books by their translated title
+      const sortedBooks = [...userLibrary].sort((a, b) => {
+        const titleA = getBookTitle(a).toLowerCase();
+        const titleB = getBookTitle(b).toLowerCase();
+        return titleA.localeCompare(titleB);
+      });
+      
+      setBooks(sortedBooks);
     } catch (error) {
       console.error("Error loading library:", error);
     } finally {
@@ -108,6 +127,9 @@ export function LibraryUI({
       const result = await removeBookFromLibrary(bookId);
       
       if (result) {
+        // Mark library as changed
+        setLibraryChanged(true);
+        
         // Success - reload the library
         await loadLibrary();
       } else {
@@ -151,6 +173,9 @@ export function LibraryUI({
       const success = await addBookToLibrary(newBook);
       
       if (success) {
+        // Mark library as changed
+        setLibraryChanged(true);
+        
         // Remove the added book from search results
         setSearchResults(prevResults => 
           prevResults.filter(item => item.url !== book.url)
@@ -441,6 +466,13 @@ export function LibraryUI({
     }
   };
   
+  // Handle closing the library modal with proper notification
+  const handleClose = () => {
+    if (onClose) {
+      onClose(libraryChanged);
+    }
+  };
+  
   // Handle opening URL
   const handleOpenURL = (url) => {
     Linking.openURL(url).catch(err => {
@@ -493,7 +525,7 @@ export function LibraryUI({
       visible={visible}
       animationType="slide"
       transparent={true}
-      onRequestClose={onClose}
+      onRequestClose={handleClose}
     >
       <SafeAreaView style={styles.libraryModal}>
         <View style={styles.libraryContentWrapper}>
@@ -504,7 +536,7 @@ export function LibraryUI({
             </Text>
             <TouchableOpacity 
               style={styles.exitButton} 
-              onPress={onClose}
+              onPress={handleClose}
             >
               <Text style={styles.exitButtonText}>
                 {uiText.exit || "Exit"}
@@ -551,7 +583,7 @@ export function LibraryUI({
               <View style={styles.searchInputContainer}>
                 <TextInput
                   style={styles.searchInput}
-                  placeholder={uiText.searchPlaceholder || "Enter search term..."}
+                  placeholder={uiText.searchPlaceholder || "Search Project Gutenberg by title, author, or subject"}
                   value={searchQuery}
                   onChangeText={setSearchQuery}
                   onSubmitEditing={handleSearch}
@@ -581,19 +613,14 @@ export function LibraryUI({
                       {uiText.searching || "Searching..."}
                     </Text>
                   </View>
-                ) : searchResults.length > 0 ? (
+                ) : (
                   <FlatList
                     data={searchResults}
                     renderItem={renderSearchResultItem}
                     keyExtractor={(item, index) => `search_${index}`}
                     contentContainerStyle={styles.bookList}
+                    ListEmptyComponent={null} // No empty state prompt
                   />
-                ) : (
-                  <View style={styles.emptyResultsContainer}>
-                    <Text style={styles.emptyResultsText}>
-                      {uiText.searchInstructions || "Enter a search term and press Search"}
-                    </Text>
-                  </View>
                 )}
               </View>
             </View>

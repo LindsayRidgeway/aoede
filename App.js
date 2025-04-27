@@ -109,59 +109,55 @@ const getDeviceLanguage = async () => {
 
 export default function App() {
   if (__DEV__) console.log("MODULE 0003: App.js.App");
-  
   // Basic UI text in English
   const defaultUiText = {
-	addBook: "Add Book",
-	articulation: "Articulation",
-	autoplay: "Next Sentence Auto-play",
-	bookDetails: "Book Details",
-	bookSelection: "Book Selection",
-	cancel: "Cancel",
-	confirmDelete: "Are you sure you want to delete this book?",
-	continue: "Continue",
-	deleteBook: "Delete Book",
-	editBook: "Edit Book",
-	emptyLibrary: "Your library is empty.",
-	endOfBook: "You have read all the sentences that I retrieved for that book. To continue studying, please use Load Book again.",
-	enterBook: "Select a book",
-	enterLanguage: "Select language",
-	error: "Error",
-	errorDeletingBook: "Error deleting book",
-	exit: "Exit",
-	fromLibrary: "from your library",
-	library: "Library",
-	libraryComingSoon: "Library management features are coming soon.",
-	listen: "Listen",
-	loadBook: "Load Book",
-	loading: "Loading...",
-	next: "Next Sentence",
-	pleaseWait: "Please wait. This may take several minutes...",
-	readingLevel: "Reading Level",
-	readingSpeed: "Reading Speed",
-	rewindConfirmMessage: "Are you sure you want to rewind the book to the beginning?",
-	rewindConfirmTitle: "Rewind Book",
-	rewindFailed: "Failed to rewind the book.",
-	showText: "Show Foreign Sentence",
-	showTranslation: "Show Translation",
-	sourceMaterial: "Source Material",
-	stop: "Stop",
-	studyLanguage: "Study Language",
-	yes: "Yes",
-	myLibrary: "My Library",
-	searchBooks: "Search Books", 
-	searchPlaceholder: "Enter a book topic...",
-	search: "Search",
-	stopSearch: "Stop",
-	searching: "Searching...",
-	searchInstructions: "Enter a search term and press Search",
-	enterSearchQuery: "Please enter a search query",
-	searchError: "Search error",
-	allProxiesFailed: "Unable to connect",
-	cannotOpenURL: "Cannot open URL", 
-	bookAdded: "Book added to library",
-	errorAddingBook: "Error adding book",
-	success: "Success"
+    addBook: "Add Book",
+    articulation: "Articulation",
+    autoplay: "Next Sentence Auto-play",
+    bookAdded: "Book added to library",
+    bookDetails: "Book Details",
+    bookSelection: "Book Selection",
+    cancel: "Cancel",
+    cannotOpenURL: "Cannot open URL",
+    confirmDelete: "Are you sure you want to delete",
+    continue: "Continue",
+    deleteBook: "Delete",
+    editBook: "Edit Book",
+    emptyLibrary: "Your library is empty.",
+    endOfBook: "You have read all the sentences that I retrieved for that book. To continue studying, please use Load Book again.",
+    enterBook: "Select a book",
+    enterLanguage: "Select language",
+    enterSearchQuery: "Please enter a search query",
+    error: "Error",
+    errorAddingBook: "Error adding book",
+    errorDeletingBook: "Error deleting book",
+    exit: "Exit",
+    fromLibrary: "from your library",
+    library: "Library",
+    libraryComingSoon: "Library management features are coming soon.",
+    listen: "Listen",
+    loadBook: "Load Book",
+    loading: "Loading...",
+    myLibrary: "My Library",
+    next: "Next Sentence",
+    readingLevel: "Reading Level",
+    readingSpeed: "Reading Speed",
+    rewindConfirmMessage: "Are you sure you want to rewind the book to the beginning?",
+    rewindConfirmTitle: "Rewind Book",
+    rewindFailed: "Failed to rewind the book.",
+    search: "Search",
+    searchBooks: "Search Books",
+    searchError: "Search error",
+    searchPlaceholder: "Search Project Gutenberg by title, author, or subject",
+    searching: "Searching...",
+    showText: "Show Foreign Sentence",
+    showTranslation: "Show Translation",
+    sourceMaterial: "Source Material",
+    stop: "Stop",
+    stopSearch: "Stop",
+    studyLanguage: "Study Language",
+    success: "Success",
+    yes: "Yes"
   };
   
   const [uiText, setUiText] = useState(defaultUiText);
@@ -182,6 +178,7 @@ export default function App() {
   const [sourceLanguage, setSourceLanguage] = useState("en");
   const [readingLevel, setReadingLevel] = useState(6);
   const [isAtEndOfBook, setIsAtEndOfBook] = useState(false);
+  const [libraryRefreshKey, setLibraryRefreshKey] = useState(0); // For library refresh
   
   // Initialize the app
   useEffect(() => {
@@ -273,7 +270,6 @@ export default function App() {
       // Translate basic UI elements
       const translatedElements = {};
       for (const [key, value] of Object.entries(defaultUiText)) {
-    
         try {
           const translated = await directTranslate(value, 'en', targetLang);
           translatedElements[key] = translated;
@@ -301,6 +297,11 @@ export default function App() {
       setUiText({...translatedElements, ...translatedBooks});
     } catch (error) {
     }
+  };
+  
+  // Function to refresh the library
+  const refreshLibrary = () => {
+    setLibraryRefreshKey(prev => prev + 1);
   };
   
   // Callback for when BookReader processes a sentence
@@ -582,6 +583,9 @@ export default function App() {
       readingLevel={readingLevel}
       setReadingLevel={handleReadingLevelChange}
       isAtEndOfBook={isAtEndOfBook}
+      handleClearContent={clearContent}
+      libraryRefreshKey={libraryRefreshKey}
+      refreshLibrary={refreshLibrary}
     />
   );
 }

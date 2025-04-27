@@ -83,9 +83,13 @@ export function MainUI(props) {
     setShowLibrary(true);
   };
   
-  // Handle closing the library
-  const handleCloseLibrary = () => {
+  // Handle closing the library with refresh if needed
+  const handleCloseLibrary = (libraryChanged) => {
     setShowLibrary(false);
+    // If library changed, refresh the content
+    if (libraryChanged && props.refreshLibrary) {
+      props.refreshLibrary();
+    }
   };
 
   return (
@@ -104,8 +108,14 @@ export function MainUI(props) {
             loadingBook={props.loadingBook}
             readingLevel={props.readingLevel}
             setReadingLevel={props.setReadingLevel}
-            handleClearContent={() => setShowContent(false)}
+            handleClearContent={() => {
+              if (props.handleClearContent) {
+                props.handleClearContent();
+              }
+              setShowContent(false);
+            }}
             onLibraryButtonClick={handleShowLibrary}
+            libraryRefreshKey={props.libraryRefreshKey}
           />
           
           {/* Reading UI component - Contains all the reading controls */}
