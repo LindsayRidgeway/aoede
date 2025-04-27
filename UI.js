@@ -116,7 +116,7 @@ export function MainUI({
           : 'en';
         
         // Fetch available languages from Google Translate API
-		  if (__DEV__) console.log("FETCH 0002");
+        if (__DEV__) console.log("FETCH 0002");
         const response = await fetch(
           `https://translation.googleapis.com/language/translate/v2/languages?key=${GOOGLE_API_KEY}&target=${userLang}`,
           {
@@ -280,6 +280,12 @@ export function MainUI({
   const handleLoadButtonClick = () => {
     // Call the passed loadBook function from props
     loadBook();
+  };
+  
+  // Placeholder for Library button click handler
+  const handleLibraryButtonClick = () => {
+    // Library button action will be implemented here
+    console.log("Library button clicked");
   };
   
   // Handle language selection
@@ -470,108 +476,47 @@ export function MainUI({
     // iOS needs special handling
     if (Platform.OS === 'ios') {
       return (
-        <View style={{
-          flex: 1,
-          marginRight: 10,
-          height: 40,
-        }}>
-          <IosPickers.IosSelectorButton
-            value={displayBookTitle}
-            placeholder={uiText.enterBook || "Select a book"}
-            onPress={() => {
-              if (!loadingBook) {
-                setShowIosBookModal(true);
-                setSearchText('');
-                setTempSelectedBook(null);
-                setFilteredBooks(bookSources);
-                
-                // Find the current book to pre-select
-                if (selectedBook) {
-                  const currentBook = bookSources.find(b => b.id === selectedBook);
-                  if (currentBook) {
-                    setTempSelectedBook(currentBook);
-                  }
+        <IosPickers.IosSelectorButton
+          value={displayBookTitle}
+          placeholder={uiText.enterBook || "Select a book"}
+          onPress={() => {
+            if (!loadingBook) {
+              setShowIosBookModal(true);
+              setSearchText('');
+              setTempSelectedBook(null);
+              setFilteredBooks(bookSources);
+              
+              // Find the current book to pre-select
+              if (selectedBook) {
+                const currentBook = bookSources.find(b => b.id === selectedBook);
+                if (currentBook) {
+                  setTempSelectedBook(currentBook);
                 }
               }
-            }}
-            disabled={loadingBook}
-          />
-        </View>
+            }
+          }}
+          disabled={loadingBook}
+        />
       );
     }
     
     // Android uses its own modal approach
     if (Platform.OS === 'android') {
       return (
-        <View style={{
-          flex: 1,
-          marginRight: 10,
-          height: 40, // Exact height match with button
-        }}>
-          <TouchableOpacity
-            style={{
-              height: 40, // Exact height match with button
-              borderColor: '#ddd',
-              borderWidth: 1,
-              borderRadius: 5,
-              backgroundColor: '#fff',
-              paddingHorizontal: 10,
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between'
-            }}
-            onPress={() => {
-              if (!loadingBook) {
-                setShowBookModal(true);
-              }
-            }}
-            disabled={loadingBook}
-          >
-            <Text style={selectedBook ? styles.androidPickerButtonTextSelected : styles.androidPickerButtonText}>
-              {displayBookTitle}
-            </Text>
-            <Text style={styles.androidPickerIcon}>▼</Text>
-          </TouchableOpacity>
-          
-          {/* Book Selection Modal */}
-          <Modal
-            visible={showBookModal}
-            transparent={true}
-            animationType="slide"
-            onRequestClose={() => setShowBookModal(false)}
-          >
-            <SafeAreaView style={styles.modalContainer}>
-              <View style={styles.modalContent}>
-                <Text style={styles.modalHeader}>{uiText.bookSelection || "Book Selection"}</Text>
-                
-                <FlatList
-                  data={[{id: 'prompt', title: uiText.enterBook || "Select a book"}, ...bookSources]}
-                  keyExtractor={item => item.id}
-                  renderItem={({item}) => (
-                    <TouchableOpacity
-                      style={styles.bookItem}
-                      onPress={() => {
-                        handleBookChange(item.id === 'prompt' ? "" : item.id);
-                        setShowBookModal(false);
-                      }}
-                    >
-                      <Text style={styles.bookItemText}>
-                        {item.id === 'prompt' ? item.title : getBookTitle(item)}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                />
-                
-                <TouchableOpacity
-                  style={styles.closeButton}
-                  onPress={() => setShowBookModal(false)}
-                >
-                  <Text style={styles.closeButtonText}>Cancel</Text>
-                </TouchableOpacity>
-              </View>
-            </SafeAreaView>
-          </Modal>
-        </View>
+        <TouchableOpacity
+          style={styles.androidPickerButton}
+          onPress={() => {
+            if (!loadingBook) {
+              setShowBookModal(true);
+            }
+          }}
+          disabled={loadingBook}
+        >
+          <Text style={selectedBook ? styles.androidPickerButtonTextSelected : styles.androidPickerButtonText}>
+            {displayBookTitle}
+          </Text>
+          <Text style={styles.androidPickerIcon}>▼</Text>
+        </TouchableOpacity>
       );
     }
     
@@ -647,7 +592,7 @@ export function MainUI({
               <Text style={getHeaderTextStyle()}>
                 {uiText.appName || "Aoede"}
               </Text>
-		<Text style={styles.headerPronunciation}>(ay-EE-dee)</Text>
+              <Text style={styles.headerPronunciation}>(ay-EE-dee)</Text>
             </View>
           </View>
 
@@ -655,127 +600,186 @@ export function MainUI({
 
           {/* Input container is always visible */}
           <View style={styles.inputContainer}>
-            {/* Redesigned Study Language Row with Dropdown */}
+            {/* Study Language Row with Dropdown - Full width */}
             <View style={styles.studyLangRow}>
               <Text style={styles.studyLangLabel}>{uiText.studyLanguage || "Study Language"}:</Text>
               {renderLanguagePicker()}
-              
-              {/* Language Selection Modal for Android */}
-              {Platform.OS === 'android' && (
-                <Modal
-                  visible={showLanguageModal}
-                  transparent={true}
-                  animationType="slide"
-                  onRequestClose={() => setShowLanguageModal(false)}
-                >
-                  <SafeAreaView style={styles.modalContainer}>
-                    <View style={styles.modalContent}>
-                      <Text style={styles.modalHeader}>{uiText.studyLanguage || "Study Language"}</Text>
-                      
-                      <FlatList
-                        data={languages}
-                        keyExtractor={item => item.language}
-                        renderItem={({item}) => (
-                          <TouchableOpacity
-                            style={styles.bookItem}
-                            onPress={() => {
-                              handleLanguageChange(item);
-                              setShowLanguageModal(false);
-                            }}
-                          >
-                            <Text style={styles.bookItemText}>{item.name}</Text>
-                          </TouchableOpacity>
-                        )}
-                      />
-                      
-                      <TouchableOpacity
-                        style={styles.closeButton}
-                        onPress={() => setShowLanguageModal(false)}
-                      >
-                        <Text style={styles.closeButtonText}>Cancel</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </SafeAreaView>
-                </Modal>
-              )}
-              
-              {/* iOS Language Selection Modal */}
-              {Platform.OS === 'ios' && (
-                <IosPickers.IosLanguagePicker
-                  visible={showIosLanguageModal}
-                  onCancel={() => {
-                    setShowIosLanguageModal(false);
-                    setSearchText('');
-                  }}
-                  onDone={applyIosLanguageSelection}
-                  languages={filteredLanguages}
-                  searchText={searchText}
-                  onSearchChange={setSearchText}
-                  selectedLanguage={tempSelectedLanguage}
-                  onSelectLanguage={handleIosLanguageSelect}
-                  uiText={uiText}
-                />
-              )}
             </View>
-
-            {/* Redesigned Reading Level Row */}
-            <View style={styles.readingLevelRow}>
-              <Text style={styles.readingLevelLabel}>{uiText.readingLevel || "Reading Level"}:</Text>
-              <View style={styles.readingLevelControls}>
-                {[6, 9, 12, 15, 18].map((level) => (
-                  <TouchableOpacity
-                    key={level}
-                    style={[
-                      styles.readingLevelButton,
-                      readingLevel === level ? styles.readingLevelButtonActive : null
-                    ]}
-                    onPress={() => {
-                      setReadingLevel(level);
-                      handleClearContent(); // Clear content when reading level changes
-                    }}
-                  >
-                    <Text 
-                      style={[
-                        styles.readingLevelButtonText,
-                        readingLevel === level ? styles.readingLevelButtonTextActive : null
-                      ]}
-                    >
-                      {level}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+            
+            {/* Two-column table layout */}
+            <View style={styles.twoColumnTable}>
+              {/* Left column: Reading Level and Source Material */}
+              <View style={styles.leftColumn}>
+                <View style={styles.readingLevelRow}>
+                  <Text style={styles.readingLevelLabel}>{uiText.readingLevel || "Reading Level"}:</Text>
+                  <View style={styles.readingLevelControls}>
+                    {[6, 9, 12, 15, 18].map((level) => (
+                      <TouchableOpacity
+                        key={level}
+                        style={[
+                          styles.readingLevelButton,
+                          readingLevel === level ? styles.readingLevelButtonActive : null
+                        ]}
+                        onPress={() => {
+                          setReadingLevel(level);
+                          handleClearContent(); // Clear content when reading level changes
+                        }}
+                      >
+                        <Text 
+                          style={[
+                            styles.readingLevelButtonText,
+                            readingLevel === level ? styles.readingLevelButtonTextActive : null
+                          ]}
+                        >
+                          {level}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+                
+                {/* Source Material */}
+                <View style={styles.sourceRow}>
+                  <Text style={styles.studyLangLabel}>{uiText.sourceMaterial || "Source Material"}:</Text>
+                  {renderBookPicker()}
+                </View>
+              </View>
+              
+              {/* Right column: Library and Load Book buttons */}
+              <View style={styles.rightColumn}>
+                {/* Library Button */}
+                <TouchableOpacity 
+                  style={[
+                    styles.libraryButton, 
+                    loadingBook ? styles.disabledButton : null
+                  ]} 
+                  onPress={handleLibraryButtonClick} 
+                  disabled={loadingBook}
+                >
+                  <Text style={styles.buttonText}>{uiText.library || "Library"}</Text>
+                </TouchableOpacity>
+                
+                {/* Load Book Button */}
+                <TouchableOpacity 
+                  style={[
+                    styles.loadButton, 
+                    loadingBook ? styles.disabledButton : null, 
+                    !selectedBook ? styles.disabledButton : null
+                  ]} 
+                  onPress={handleLoadButtonClick} 
+                  disabled={loadingBook || !selectedBook}
+                >
+                  {loadingBook ? (
+                    <View style={styles.nextButtonContent}>
+                      <ActivityIndicator size="small" color="#ffffff" style={styles.buttonSpinner} />
+                      <Text style={[styles.buttonText, styles.buttonTextWithSpinner]}>
+                        {uiText.loadBook || "Load Book"}
+                      </Text>
+                    </View>
+                  ) : (
+                    <Text style={styles.buttonText}>{uiText.loadBook || "Load Book"}</Text>
+                  )}
+                </TouchableOpacity>
               </View>
             </View>
-
-            {/* Source Material label */}
-            <View style={styles.sourceRow}>
-              <Text style={styles.studyLangLabel}>{uiText.sourceMaterial || "Source Material"}:</Text>
-            </View>
-
-            {/* Book Selection Row with improved UI */}
-            <View style={styles.bookSelectionRow}>
-              {renderBookPicker()}
-              <TouchableOpacity 
-                style={[
-                  styles.loadButton, 
-                  loadingBook ? styles.disabledButton : null, 
-                  !selectedBook ? styles.disabledButton : null
-                ]} 
-                onPress={handleLoadButtonClick} 
-                disabled={loadingBook || !selectedBook}
+            
+            {/* Language Selection Modal for Android */}
+            {Platform.OS === 'android' && (
+              <Modal
+                visible={showLanguageModal}
+                transparent={true}
+                animationType="slide"
+                onRequestClose={() => setShowLanguageModal(false)}
               >
-                {loadingBook ? (
-                  <View style={styles.nextButtonContent}>
-                    <ActivityIndicator size="small" color="#ffffff" style={styles.buttonSpinner} />
-                    <Text style={[styles.buttonText, styles.buttonTextWithSpinner]}>
-                      {uiText.loadBook || "Load Book"}
-                    </Text>
+                <SafeAreaView style={styles.modalContainer}>
+                  <View style={styles.modalContent}>
+                    <Text style={styles.modalHeader}>{uiText.studyLanguage || "Study Language"}</Text>
+                    
+                    <FlatList
+                      data={languages}
+                      keyExtractor={item => item.language}
+                      renderItem={({item}) => (
+                        <TouchableOpacity
+                          style={styles.bookItem}
+                          onPress={() => {
+                            handleLanguageChange(item);
+                            setShowLanguageModal(false);
+                          }}
+                        >
+                          <Text style={styles.bookItemText}>{item.name}</Text>
+                        </TouchableOpacity>
+                      )}
+                    />
+                    
+                    <TouchableOpacity
+                      style={styles.closeButton}
+                      onPress={() => setShowLanguageModal(false)}
+                    >
+                      <Text style={styles.closeButtonText}>Cancel</Text>
+                    </TouchableOpacity>
                   </View>
-                ) : (
-                  <Text style={styles.buttonText}>{uiText.loadBook || "Load Book"}</Text>
-                )}
-              </TouchableOpacity>
-            </View>
+                </SafeAreaView>
+              </Modal>
+            )}
+            
+            {/* Book Selection Modal */}
+            {Platform.OS === 'android' && (
+              <Modal
+                visible={showBookModal}
+                transparent={true}
+                animationType="slide"
+                onRequestClose={() => setShowBookModal(false)}
+              >
+                <SafeAreaView style={styles.modalContainer}>
+                  <View style={styles.modalContent}>
+                    <Text style={styles.modalHeader}>{uiText.bookSelection || "Book Selection"}</Text>
+                    
+                    <FlatList
+                      data={[{id: 'prompt', title: uiText.enterBook || "Select a book"}, ...bookSources]}
+                      keyExtractor={item => item.id}
+                      renderItem={({item}) => (
+                        <TouchableOpacity
+                          style={styles.bookItem}
+                          onPress={() => {
+                            handleBookChange(item.id === 'prompt' ? "" : item.id);
+                            setShowBookModal(false);
+                          }}
+                        >
+                          <Text style={styles.bookItemText}>
+                            {item.id === 'prompt' ? item.title : getBookTitle(item)}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                    />
+                    
+                    <TouchableOpacity
+                      style={styles.closeButton}
+                      onPress={() => setShowBookModal(false)}
+                    >
+                      <Text style={styles.closeButtonText}>Cancel</Text>
+                    </TouchableOpacity>
+                  </View>
+                </SafeAreaView>
+              </Modal>
+            )}
+            
+            {/* iOS Language Selection Modal */}
+            {Platform.OS === 'ios' && (
+              <IosPickers.IosLanguagePicker
+                visible={showIosLanguageModal}
+                onCancel={() => {
+                  setShowIosLanguageModal(false);
+                  setSearchText('');
+                }}
+                onDone={applyIosLanguageSelection}
+                languages={filteredLanguages}
+                searchText={searchText}
+                onSearchChange={setSearchText}
+                selectedLanguage={tempSelectedLanguage}
+                onSelectLanguage={handleIosLanguageSelect}
+                uiText={uiText}
+              />
+            )}
             
             {/* iOS Book Selection Modal */}
             {Platform.OS === 'ios' && (

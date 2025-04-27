@@ -5,6 +5,7 @@ const topPadding = Platform.OS === 'android' ? 50 : 0;
 
 // Theme colors
 const themeBlue = '#3a7ca5';
+const themeBurgundy = '#800020'; // Burgundy color for Library features
 
 export const styles = StyleSheet.create({
   // New styles for full-page scrolling
@@ -156,30 +157,34 @@ export const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '500'
   },
-  bookSelectionRow: {
+  // Two-column table layout
+  twoColumnTable: {
     flexDirection: 'row',
+    width: '100%',
     justifyContent: 'space-between',
-    ...(Platform.OS === 'android' ? {
-      alignItems: 'center', // Center alignment for Android
-    } : {
-      alignItems: 'flex-end' // Original alignment for other platforms
-    })
+    alignItems: 'flex-end' // Align items at the bottom
   },
+  // Left column styles
+  leftColumn: {
+    width: '70%', // Width for left column
+    marginRight: 10,
+  },
+  // Right column styles
+  rightColumn: {
+    width: '25%', // Width for right column
+  },
+  // Source Material styles
   sourceRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    ...(Platform.OS === 'android' ? {
-      marginBottom: 0 // No bottom margin for Android
-    } : {})
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    marginTop: 10
   },
   pickerContainer: {
-    flex: 1,
+    width: '100%',
     height: 40,
     borderColor: '#ddd',
     borderWidth: 1,
     borderRadius: 5,
-    marginRight: 10,
     backgroundColor: '#fff',
     justifyContent: 'center',
     overflow: 'hidden'
@@ -189,10 +194,6 @@ export const styles = StyleSheet.create({
     height: 40
   },
   // Android custom picker styles
-  androidPickerContainer: {
-    flex: 1,
-    marginRight: 10
-  },
   androidPickerButton: {
     height: 40,
     borderColor: '#ddd',
@@ -286,6 +287,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: 10,
     backgroundColor: '#fff'
   },
+  // Button styles
   button: {
     backgroundColor: themeBlue,
     padding: 10,
@@ -294,12 +296,36 @@ export const styles = StyleSheet.create({
     marginTop: 5,
     width: '100%'
   },
+  // Library button style
+  libraryButton: {
+    backgroundColor: themeBurgundy,
+    borderRadius: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    marginBottom: 10,
+    // Platform-specific adjustments
+    ...(Platform.OS === 'android' 
+      ? {
+          // Android needs a bit more vertical space
+          paddingVertical: 12, 
+          paddingHorizontal: 10,
+          // Remove fixed height on Android
+          height: undefined
+        } 
+      : {
+          // Keep existing style for iOS/Web
+          padding: 10,
+          height: 40
+        }
+    )
+  },
   loadButton: {
     backgroundColor: themeBlue,
     borderRadius: 5,
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: 120,
+    width: '100%',
     // Platform-specific adjustments
     ...(Platform.OS === 'android' 
       ? {
