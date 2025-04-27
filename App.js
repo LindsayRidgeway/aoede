@@ -8,6 +8,7 @@ import { translateSentences, detectLanguageCode } from './textProcessing';
 import BookReader from './bookReader';
 import { bookSources } from './bookSources';
 import Constants from 'expo-constants';
+import { initializeUserLibrary, getUserLibrary, getBookById } from './userLibrary';
 
 // Get API key using both old and new Expo Constants paths for compatibility
 const getConstantValue = (key) => {
@@ -134,7 +135,15 @@ export default function App() {
     cancel: "Cancel",
     yes: "Yes",
     error: "Error",
-    rewindFailed: "Failed to rewind the book."
+    rewindFailed: "Failed to rewind the book.",
+    library: "Library",
+    exit: "Exit",
+    libraryComingSoon: "Library management features are coming soon.",
+    addBook: "Add Book",
+    editBook: "Edit Book",
+    deleteBook: "Delete Book",
+    confirmDelete: "Are you sure you want to delete this book?",
+    bookDetails: "Book Details"
   };
   
   const [uiText, setUiText] = useState(defaultUiText);
@@ -160,6 +169,9 @@ export default function App() {
   useEffect(() => {
     const initialize = async () => {
       try {
+        // Initialize the user's library first
+        await initializeUserLibrary();
+        
         // Get device language
         const deviceLang = await getDeviceLanguage();
         if (deviceLang && deviceLang !== 'en') {
@@ -254,7 +266,11 @@ export default function App() {
       
       // Translate book titles
       const translatedBooks = {};
-      for (const book of bookSources) {
+      
+      // Get books from user library instead of bookSources
+      const userLibrary = await getUserLibrary();
+      
+      for (const book of userLibrary) {
         try {
           const translatedTitle = await directTranslate(book.title, 'en', targetLang);
           translatedBooks[book.id] = translatedTitle;
@@ -486,8 +502,9 @@ export default function App() {
     setLoadingBook(true);
     
     try {
-      // Get book details
-      const book = bookSources.find(b => b.id === bookId);
+      // Get book details from user library
+      const book = await getBookById(bookId);
+      
       if (!book) {
         throw new Error(`Book with ID ${bookId} not found`);
       }
@@ -498,8 +515,8 @@ export default function App() {
       // Set reading level in BookReader
       BookReader.setReadingLevel(readingLevel);
       
-      // Load the book
-      const success = await BookReader.handleLoadBook(studyLanguage, book.title);
+      // Load the book - pass the bookId instead of the title
+      const success = await BookReader.handleLoadBook(studyLanguage, bookId);
       
       if (!success) {
         throw new Error("Failed to load book");

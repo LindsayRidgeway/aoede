@@ -6,10 +6,10 @@ import {
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { styles } from './styles';
-import { bookSources } from './bookSources';
 import DebugPanel from './DebugPanel';
 import ListeningSpeed from './listeningSpeed';
 import Constants from 'expo-constants';
+import { getUserLibrary } from './userLibrary';
 
 // Import iOS-specific components conditionally
 let IosPickers = null;
@@ -71,6 +71,24 @@ export function HomeUI({
   const [tempSelectedLanguage, setTempSelectedLanguage] = useState(null);
   const [tempSelectedBook, setTempSelectedBook] = useState(null);
   
+  // State for the user's book library
+  const [bookLibrary, setBookLibrary] = useState([]);
+  
+  // Load the user's library when component mounts
+  useEffect(() => {
+    const loadUserLibrary = async () => {
+      try {
+        const userLibrary = await getUserLibrary();
+        setBookLibrary(userLibrary);
+        setFilteredBooks(userLibrary);
+      } catch (error) {
+        console.error("Failed to load user library:", error);
+      }
+    };
+    
+    loadUserLibrary();
+  }, []);
+  
   // Load languages from the Google Translate API
   useEffect(() => {
     const loadLanguages = async () => {
@@ -115,15 +133,15 @@ export function HomeUI({
   // Update filtered books when search text changes
   useEffect(() => {
     if (searchText) {
-      const filtered = bookSources.filter(book => 
+      const filtered = bookLibrary.filter(book => 
         getBookTitle(book).toLowerCase().includes(searchText.toLowerCase()) ||
         book.author.toLowerCase().includes(searchText.toLowerCase())
       );
       setFilteredBooks(filtered);
     } else {
-      setFilteredBooks(bookSources);
+      setFilteredBooks(bookLibrary);
     }
-  }, [searchText, uiText]);
+  }, [searchText, uiText, bookLibrary]);
   
   // Update filtered languages when search text changes
   useEffect(() => {
@@ -169,14 +187,14 @@ export function HomeUI({
   // Update displayed book title when selection changes
   useEffect(() => {
     if (selectedBook) {
-      const book = bookSources.find(b => b.id === selectedBook);
+      const book = bookLibrary.find(b => b.id === selectedBook);
       if (book) {
         setDisplayBookTitle(getBookTitle(book));
       }
     } else {
       setDisplayBookTitle(uiText.enterBook || "Select a book");
     }
-  }, [selectedBook, uiText]);
+  }, [selectedBook, uiText, bookLibrary]);
   
   // Get translated book titles from uiText for dropdown
   const getBookTitle = (book) => {
@@ -243,7 +261,7 @@ export function HomeUI({
     setSelectedBook(itemValue);
     handleClearContent(); // Clear content when book selection changes
     if (itemValue) {
-      const book = bookSources.find(b => b.id === itemValue);
+      const book = bookLibrary.find(b => b.id === itemValue);
       if (book) {
         setDisplayBookTitle(getBookTitle(book));
       }
@@ -339,11 +357,11 @@ export function HomeUI({
               setShowIosBookModal(true);
               setSearchText('');
               setTempSelectedBook(null);
-              setFilteredBooks(bookSources);
+              setFilteredBooks(bookLibrary);
               
               // Find the current book to pre-select
               if (selectedBook) {
-                const currentBook = bookSources.find(b => b.id === selectedBook);
+                const currentBook = bookLibrary.find(b => b.id === selectedBook);
                 if (currentBook) {
                   setTempSelectedBook(currentBook);
                 }
@@ -385,7 +403,7 @@ export function HomeUI({
           enabled={!loadingBook}
         >
           <Picker.Item key="prompt" label={uiText.enterBook || "Select a book"} value="" />
-          {bookSources.map(book => (
+          {bookLibrary.map(book => (
             <Picker.Item 
               key={book.id} 
               label={getBookTitle(book)} 
@@ -589,7 +607,7 @@ export function HomeUI({
                 <Text style={styles.modalHeader}>{uiText.bookSelection || "Book Selection"}</Text>
                 
                 <FlatList
-                  data={[{id: 'prompt', title: uiText.enterBook || "Select a book"}, ...bookSources]}
+                  data={[{id: 'prompt', title: uiText.enterBook || "Select a book"}, ...bookLibrary]}
                   keyExtractor={item => item.id}
                   renderItem={({item}) => (
                     <TouchableOpacity

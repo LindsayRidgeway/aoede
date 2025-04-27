@@ -1,4 +1,4 @@
-// LibraryUI.js - Component for the library screen
+// LibraryUI.js - Component for the library screen with I18N support
 import React from 'react';
 import { 
   View, Text, TouchableOpacity, Modal,
@@ -39,6 +39,9 @@ export function LibraryUI({
           <ScrollView style={styles.libraryScrollView}>
             <View style={styles.libraryContent}>
               {/* This will be populated with library functionality later */}
+              <Text style={styles.infoText}>
+                {uiText.libraryComingSoon || "Library management features are coming soon."}
+              </Text>
             </View>
           </ScrollView>
         </View>

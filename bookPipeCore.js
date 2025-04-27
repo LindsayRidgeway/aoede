@@ -1,5 +1,5 @@
 // bookPipeCore.js - Core functionality for the BookPipe system
-import { getBookSourceById } from './bookSources';
+import { getBookById } from './userLibrary';
 import { bookPipeFetch } from './bookPipeFetch';
 import { bookPipeStorage } from './bookPipeStorage';
 import { bookPipeProcess } from './bookPipeProcess';
@@ -47,9 +47,10 @@ class BookPipe {
     this.shouldSavePosition = false; // Don't save position on initial load
 
     try {
-      const bookSource = getBookSourceById(bookId);
+      // Get book from user library instead of directly from bookSources
+      const bookSource = await getBookById(bookId);
       if (!bookSource) {
-        throw new Error(`Book with ID ${bookId} not found`);
+        throw new Error(`Book with ID ${bookId} not found in user library`);
       }
 
       this.bookTitle = bookSource.title || 'Unknown Title';

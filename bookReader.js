@@ -2,9 +2,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { processSourceText, translateBatch } from './apiServices';
 import { parseIntoSentences, detectLanguageCode, translateSentences } from './textProcessing';
-import { bookSources, getBookSourceById } from './bookSources';
 import BookPipe from './bookPipeCore';
 import { Platform } from 'react-native';
+import { getUserLibrary, getBookById } from './userLibrary';
 
 const BLOCK_SIZE = 10000;
 
@@ -42,10 +42,10 @@ class BookReader {
     this.readingLevel = level;
   }
 
-  async handleLoadBook(studyLanguage, bookTitle) {
+  async handleLoadBook(studyLanguage, bookId) {
     if (__DEV__) console.log("MODULE 0070: bookReader.handleLoadBook");
     if (this.trackerExists &&
-        (this.tracker.studyLanguage !== studyLanguage || this.tracker.bookTitle !== bookTitle)) {
+        (this.tracker.studyLanguage !== studyLanguage || this.tracker.bookTitle !== bookId)) {
       await this.saveTrackerState();
     }
 
@@ -53,6 +53,13 @@ class BookReader {
     this.translatedArray = [];
     this.simpleIndex = 0;
 
+    // Get the book to get its title
+    const book = await getBookById(bookId);
+    if (!book) {
+      throw new Error(`Book with ID ${bookId} not found`);
+    }
+    
+    const bookTitle = book.title;
     const trackerKey = `book_tracker_${studyLanguage}_${bookTitle}`;
 
     try {
@@ -66,7 +73,7 @@ class BookReader {
         } catch {
           this.tracker = {
             studyLanguage,
-            bookTitle,
+            bookTitle: bookTitle,
             offset: 0
           };
           this.trackerExists = true;
@@ -75,7 +82,7 @@ class BookReader {
       } else {
         this.tracker = {
           studyLanguage,
-          bookTitle,
+          bookTitle: bookTitle,
           offset: 0
         };
         this.trackerExists = true;
@@ -84,7 +91,7 @@ class BookReader {
     } catch {
       this.tracker = {
         studyLanguage,
-        bookTitle,
+        bookTitle: bookTitle,
         offset: 0
       };
       this.trackerExists = true;
@@ -92,9 +99,6 @@ class BookReader {
     }
 
     try {
-      const bookSource = bookSources.find(book => book.title === bookTitle);
-      if (!bookSource) throw new Error(`Book not found: ${bookTitle}`);
-      const bookId = bookSource.id;
       if (this.reader !== BookPipe || this.readerBookTitle !== bookTitle) {
         const trackerKey = `book_tracker_${bookId}`;
         try {
@@ -140,15 +144,19 @@ class BookReader {
       await AsyncStorage.removeItem(trackerKey);
 
       if (this.reader && this.readerBookTitle) {
-        const bookSource = bookSources.find(book => book.title === this.readerBookTitle);
-        if (bookSource) {
-          const bookPipeTrackerKey = `book_tracker_${bookSource.id}`;
+        // Get book by title from user library
+        const userLibrary = await getUserLibrary();
+        const book = userLibrary.find(b => b.title === this.readerBookTitle);
+        
+        if (book) {
+          const bookPipeTrackerKey = `book_tracker_${book.id}`;
           await AsyncStorage.removeItem(bookPipeTrackerKey);
         }
       }
 
       const studyLanguage = this.tracker.studyLanguage;
-      const bookTitle = this.tracker.bookTitle;
+      // Store the book ID for reloading
+      const bookId = this.reader ? this.reader.bookId : null;
 
       if (this.reader) {
         this.reader.thorough_reset();
@@ -156,8 +164,13 @@ class BookReader {
       }
 
       this.reset();
-      await this.handleLoadBook(studyLanguage, bookTitle);
-      return true;
+      
+      if (bookId) {
+        await this.handleLoadBook(studyLanguage, bookId);
+        return true;
+      } else {
+        return false;
+      }
     } catch {
       return false;
     }
@@ -189,8 +202,9 @@ class BookReader {
       this.rawSentenceSize = rawText.length;
 
       let textForSimplification = rawText;
-      const bookSource = bookSources.find(book => book.title === this.readerBookTitle);
-      const sourceLanguageCode = bookSource.language;
+      // Get book using reader's bookId
+      const book = await getBookById(this.reader.bookId);
+      const sourceLanguageCode = book ? book.language : 'en';
       const targetLanguageCode = detectLanguageCode(this.readerStudyLanguage);
       const userLanguageCode = detectLanguageCode(this.userLanguage);
 
@@ -246,16 +260,13 @@ class BookReader {
       const trackerJSON = JSON.stringify(this.tracker);
       await AsyncStorage.setItem(trackerKey, trackerJSON);
 
-      if (this.readerBookTitle) {
-        const bookSource = bookSources.find(book => book.title === this.readerBookTitle);
-        if (bookSource) {
-          const bookPipeTrackerKey = `book_tracker_${bookSource.id}`;
-          const bookPipeTracker = {
-            bookId: bookSource.id,
-            offset: this.tracker.offset
-          };
-          await AsyncStorage.setItem(bookPipeTrackerKey, JSON.stringify(bookPipeTracker));
-        }
+      if (this.reader && this.reader.bookId) {
+        const bookPipeTrackerKey = `book_tracker_${this.reader.bookId}`;
+        const bookPipeTracker = {
+          bookId: this.reader.bookId,
+          offset: this.tracker.offset
+        };
+        await AsyncStorage.setItem(bookPipeTrackerKey, JSON.stringify(bookPipeTracker));
       }
     } catch {}
   }

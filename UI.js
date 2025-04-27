@@ -6,6 +6,7 @@ import { HomeUI } from './HomeUI';
 import { ReadingUI } from './ReadingUI';
 import { LibraryUI } from './LibraryUI';
 import * as Font from 'expo-font';
+import { initializeUserLibrary } from './userLibrary';
 
 export function MainUI(props) {
   // State to track if content should be shown
@@ -16,6 +17,15 @@ export function MainUI(props) {
   
   // State to track if library modal is shown
   const [showLibrary, setShowLibrary] = useState(false);
+  
+  // Initialize user library when the component mounts
+  useEffect(() => {
+    const initLibrary = async () => {
+      await initializeUserLibrary();
+    };
+    
+    initLibrary();
+  }, []);
   
   // Update showContent when sentence changes
   useEffect(() => {
