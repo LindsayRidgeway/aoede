@@ -3,6 +3,7 @@ import { StyleSheet, Platform } from 'react-native';
 
 // Theme colors
 const themeBurgundy = '#800020'; // Burgundy color for Library features
+const themeBlue = '#3a7ca5';     // Blue color for secondary features
 
 export const libraryStyles = StyleSheet.create({
   // Library modal container
@@ -60,6 +61,72 @@ export const libraryStyles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 14,
   },
+  
+  // Tabs container
+  tabsContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#f0f0f0',
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+  },
+  tabButton: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+  },
+  activeTabButton: {
+    borderBottomColor: themeBurgundy,
+    backgroundColor: '#f8f8f8',
+  },
+  tabButtonText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#555',
+  },
+  activeTabButtonText: {
+    color: themeBurgundy,
+    fontWeight: 'bold',
+  },
+  
+  // Search styles
+  searchContainer: {
+    flex: 1,
+    padding: 15,
+  },
+  searchInputContainer: {
+    flexDirection: 'row',
+    marginBottom: 15,
+  },
+  searchInput: {
+    flex: 1,
+    height: 40,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 5,
+    paddingHorizontal: 10,
+    backgroundColor: '#fff',
+    marginRight: 10,
+  },
+  searchButton: {
+    backgroundColor: themeBlue,
+    paddingHorizontal: 15,
+    borderRadius: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  stopButton: {
+    backgroundColor: '#d9534f',
+  },
+  searchButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  resultsContainer: {
+    flex: 1,
+  },
+  
   // Library content area
   libraryContent: {
     flex: 1,
@@ -102,10 +169,12 @@ export const libraryStyles = StyleSheet.create({
     color: '#333',
     marginBottom: 3,
   },
-  bookAuthor: {
-    fontSize: 14,
-    color: '#666',
+  bookTitleLink: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: themeBlue,
     marginBottom: 3,
+    textDecorationLine: 'underline',
   },
   bookLanguage: {
     fontSize: 12,
@@ -122,6 +191,20 @@ export const libraryStyles = StyleSheet.create({
     alignItems: 'center',
   },
   deleteButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 12,
+  },
+  // Add button
+  addButton: {
+    backgroundColor: '#5cb85c',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addButtonText: {
     color: 'white',
     fontWeight: 'bold',
     fontSize: 12,
@@ -148,6 +231,19 @@ export const libraryStyles = StyleSheet.create({
     padding: 20,
   },
   emptyLibraryText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+  },
+  
+  // Empty search results
+  emptyResultsContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  emptyResultsText: {
     fontSize: 16,
     color: '#666',
     textAlign: 'center',
