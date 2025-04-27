@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { 
   View, Text, TouchableOpacity, Modal,
   ScrollView, SafeAreaView, Alert,
-  FlatList, ActivityIndicator
+  FlatList, ActivityIndicator, Platform
 } from 'react-native';
 import { styles } from './styles';
 import { getUserLibrary, removeBookFromLibrary } from './userLibrary';
@@ -45,39 +45,65 @@ export function LibraryUI({
     return translatedTitle || book.title;
   };
 
-  // Handle book deletion
+  // Handle book deletion with proper confirmation
   const handleDeleteBook = (book) => {
-    // Confirm deletion with alert
-    Alert.alert(
-      uiText.deleteBook || "Delete Book",
-      `${uiText.confirmDelete || "Are you sure you want to delete"} "${getBookTitle(book)}" ${uiText.fromLibrary || "from your library"}?`,
-      [
-        {
-          text: uiText.cancel || "Cancel",
-          style: "cancel"
-        },
-        {
-          text: uiText.yes || "Yes",
-          onPress: async () => {
-            try {
-              const success = await removeBookFromLibrary(book.id);
-              if (success) {
-                // Refresh the list
-                setRefreshKey(prevKey => prevKey + 1);
-              } else {
-                throw new Error("Failed to delete book");
-              }
-            } catch (error) {
-              console.error("Error deleting book:", error);
-              Alert.alert(
-                uiText.error || "Error",
-                `${uiText.errorDeletingBook || "Error deleting book"}: ${error.message}`
-              );
-            }
+    const confirmMessage = `${uiText.confirmDelete || "Are you sure you want to delete"} "${getBookTitle(book)}" ${uiText.fromLibrary || "from your library"}?`;
+    
+    // Use platform-specific confirmation
+    if (Platform.OS === 'web') {
+      if (confirm(confirmMessage)) {
+        deleteBookFromLibrary(book.id);
+      }
+    } else {
+      Alert.alert(
+        uiText.deleteBook || "Delete Book",
+        confirmMessage,
+        [
+          {
+            text: uiText.cancel || "Cancel",
+            style: "cancel"
+          },
+          {
+            text: uiText.yes || "Yes",
+            onPress: () => deleteBookFromLibrary(book.id)
           }
+        ]
+      );
+    }
+  };
+  
+  // Function to actually delete the book
+  const deleteBookFromLibrary = async (bookId) => {
+    try {
+      // Show loading while deleting
+      setLoading(true);
+      
+      const result = await removeBookFromLibrary(bookId);
+      
+      if (result) {
+        // Success - reload the library
+        await loadLibrary();
+      } else {
+        // Failed to delete
+        const errorMessage = uiText.errorDeletingBook || "Error deleting book";
+        if (Platform.OS === 'web') {
+          alert(errorMessage);
+        } else {
+          Alert.alert(uiText.error || "Error", errorMessage);
         }
-      ]
-    );
+      }
+    } catch (error) {
+      console.error("Error in deleteBookFromLibrary:", error);
+      const errorMessage = `${uiText.errorDeletingBook || "Error deleting book"}: ${error.message}`;
+      
+      if (Platform.OS === 'web') {
+        alert(errorMessage);
+      } else {
+        Alert.alert(uiText.error || "Error", errorMessage);
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Render a book item
