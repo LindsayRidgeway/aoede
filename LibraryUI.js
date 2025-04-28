@@ -8,6 +8,7 @@ import {
 import { styles } from './styles';
 import { getUserLibrary, removeBookFromLibrary, addBookToLibrary } from './userLibrary';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { DOMParser } from 'xmldom';
 import Constants from 'expo-constants';
 
 // Key for storing translated titles
