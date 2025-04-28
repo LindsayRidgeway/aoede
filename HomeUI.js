@@ -10,6 +10,7 @@ import DebugPanel from './DebugPanel';
 import ListeningSpeed from './listeningSpeed';
 import Constants from 'expo-constants';
 import { getUserLibrary } from './userLibrary';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Import iOS-specific components conditionally
 let IosPickers = null;
@@ -18,6 +19,9 @@ let IosPickers = null;
 if (Platform.OS === 'ios') {
   IosPickers = require('./IosPickers');
 }
+
+// Storage key for translated titles - must match the key in LibraryUI.js
+const TRANSLATED_TITLES_KEY = 'aoede_translated_titles';
 
 // Get API key using both old and new Expo Constants paths for compatibility
 const getConstantValue = (key) => {
@@ -86,10 +90,30 @@ export function HomeUI({
     return sortableTitle.trim();
   };
   
+  // Load saved translated titles
+  const loadTranslatedTitles = async () => {
+    try {
+      const savedTranslations = await AsyncStorage.getItem(TRANSLATED_TITLES_KEY);
+      if (savedTranslations) {
+        const translationsObject = JSON.parse(savedTranslations);
+        
+        // Update uiText with saved translations
+        Object.keys(translationsObject).forEach(key => {
+          uiText[key] = translationsObject[key];
+        });
+      }
+    } catch (error) {
+      console.error("Error loading translated titles:", error);
+    }
+  };
+  
   // Load the user's library when component mounts or when libraryRefreshKey changes
   useEffect(() => {
     const loadUserLibrary = async () => {
       try {
+        // First load any saved translations
+        await loadTranslatedTitles();
+        
         const userLibrary = await getUserLibrary();
         
         // Sort books by their translated titles, ignoring initial articles
@@ -239,7 +263,6 @@ export function HomeUI({
   const handleLibraryButtonClick = () => {
     if (onLibraryButtonClick) {
       onLibraryButtonClick();
-      console.log("Library button clicked");
     }
   };
   

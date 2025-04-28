@@ -7,6 +7,11 @@ import {
 } from 'react-native';
 import { styles } from './styles';
 import { getUserLibrary, removeBookFromLibrary, addBookToLibrary } from './userLibrary';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
+
+// Key for storing translated titles
+const TRANSLATED_TITLES_KEY = 'aoede_translated_titles';
 
 export function LibraryUI({
   visible,
@@ -37,10 +42,61 @@ export function LibraryUI({
   ];
   const [lastSuccessfulProxy, setLastSuccessfulProxy] = useState(null);
 
+  // Load saved translated titles
+  const loadTranslatedTitles = async () => {
+    try {
+      const savedTranslations = await AsyncStorage.getItem(TRANSLATED_TITLES_KEY);
+      if (savedTranslations) {
+        const translationsObject = JSON.parse(savedTranslations);
+        
+        // Update uiText with saved translations
+        Object.keys(translationsObject).forEach(key => {
+          uiText[key] = translationsObject[key];
+        });
+      }
+    } catch (error) {
+      console.error("Error loading translated titles:", error);
+    }
+  };
+
+  // Save a translated title
+  const saveTranslatedTitle = async (bookId, translatedTitle) => {
+    try {
+      // Get existing translations
+      let translations = {};
+      const savedTranslations = await AsyncStorage.getItem(TRANSLATED_TITLES_KEY);
+      
+      if (savedTranslations) {
+        translations = JSON.parse(savedTranslations);
+      }
+      
+      // Add the new translation
+      translations[bookId] = translatedTitle;
+      
+      // Save back to AsyncStorage
+      await AsyncStorage.setItem(TRANSLATED_TITLES_KEY, JSON.stringify(translations));
+      
+      // Also update uiText
+      uiText[bookId] = translatedTitle;
+      
+      return true;
+    } catch (error) {
+      console.error("Failed to save translation:", error);
+      return false;
+    }
+  };
+
   // Load user's library when modal becomes visible
   useEffect(() => {
     if (visible) {
-      loadLibrary();
+      const initialize = async () => {
+        // Load translations first
+        await loadTranslatedTitles();
+        // Then load library
+        await loadLibrary();
+      };
+      
+      initialize();
     }
   }, [visible, refreshKey]);
   
@@ -218,27 +274,16 @@ export function LibraryUI({
   
   // Get Google API key from Expo Constants
   const getGoogleApiKey = () => {
-    // This function should access the Google API key
-    // For simplicity, we'll assume it's available from somewhere
-    // You may need to adjust this based on how your app accesses the key
-    try {
-      // Import Constants from expo-constants if available
-      const Constants = require('expo-constants');
-      
-      // Try to get API key through various paths
-      if (Constants?.expoConfig?.extra?.GOOGLE_API_KEY) {
-        return Constants.expoConfig.extra.GOOGLE_API_KEY;
-      }
-      
-      if (Constants?.manifest?.extra?.GOOGLE_API_KEY) {
-        return Constants.manifest.extra.GOOGLE_API_KEY;
-      }
-      
-      if (Constants?.extra?.GOOGLE_API_KEY) {
-        return Constants.extra.GOOGLE_API_KEY;
-      }
-    } catch (error) {
-      // Silently fail if Constants is not available
+    if (Constants?.expoConfig?.extra?.GOOGLE_API_KEY) {
+      return Constants.expoConfig.extra.GOOGLE_API_KEY;
+    }
+    
+    if (Constants?.manifest?.extra?.GOOGLE_API_KEY) {
+      return Constants.manifest.extra.GOOGLE_API_KEY;
+    }
+    
+    if (Constants?.extra?.GOOGLE_API_KEY) {
+      return Constants.extra.GOOGLE_API_KEY;
     }
     
     return null;
@@ -254,12 +299,12 @@ export function LibraryUI({
       const originalTitle = titleParts[0];
       const author = titleParts.length > 1 ? titleParts[1] : book.author;
       
-      // Translate the title if possible
-      const translatedTitle = await translateBookTitle(originalTitle, book.language || "en");
+      // Generate a consistent ID
+      const bookId = book.bookId || `custom_${Date.now()}`;
       
       // Format the book for storage - use original title for storage
       const newBook = {
-        id: book.bookId || `custom_${Date.now()}`,
+        id: bookId,
         title: originalTitle,  // Store original title in the book object
         author: author,
         url: book.url,
@@ -267,9 +312,17 @@ export function LibraryUI({
         format: "text"
       };
       
+      // Translate the title
+      const translatedTitle = await translateBookTitle(originalTitle, book.language || "en");
+      
       const success = await addBookToLibrary(newBook);
       
       if (success) {
+        // Save the translation to persistent storage if different from original
+        if (translatedTitle !== originalTitle) {
+          await saveTranslatedTitle(bookId, translatedTitle);
+        }
+        
         // Mark library as changed
         setLibraryChanged(true);
         
@@ -685,6 +738,8 @@ export function LibraryUI({
                 <TextInput
                   style={styles.searchInput}
                   placeholder={uiText.searchPlaceholder || "Search Project Gutenberg by title, author, or subject"}
+                  placeholderTextColor="#bbbbbb"
+                  fontStyle="italic"
                   value={searchQuery}
                   onChangeText={setSearchQuery}
                   onSubmitEditing={handleSearch}
