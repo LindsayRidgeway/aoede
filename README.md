@@ -160,7 +160,10 @@ _This checklist is used to test Aoede across all supported platforms before rele
    git pull
    ```
 
-2. Verify or update `docs/index.html` as needed.
+2. Merge updated branch, such as `aoede-2.1` and including updated `docs/index.html`, into main:
+   ```
+   git merge aeode-2.1
+   ```
 
 3. Stage all changes:
    ```
@@ -169,7 +172,7 @@ _This checklist is used to test Aoede across all supported platforms before rele
 
 4. Commit the changes:
    ```
-   git commit -m "Publish new webpage for Aoede"
+   git commit -m "Merge aoede-2.1 into main"
    ```
 
 5. Push the changes to GitHub:
