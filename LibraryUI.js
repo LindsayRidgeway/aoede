@@ -11,8 +11,7 @@ import { getUserLibrary, removeBookFromLibrary, addBookToLibrary } from './userL
 export function LibraryUI({
   visible,
   onClose,
-  uiText,
-  onLibraryChange // New prop to notify parent of library changes
+  uiText
 }) {
   // State for user's book library
   const [books, setBooks] = useState([]);
@@ -48,11 +47,11 @@ export function LibraryUI({
   // Notify parent when modal is closing if library changed
   useEffect(() => {
     return () => {
-      if (libraryChanged && onLibraryChange) {
-        onLibraryChange();
+      if (libraryChanged && onClose) {
+        onClose(libraryChanged);
       }
     };
-  }, [libraryChanged, onLibraryChange]);
+  }, [libraryChanged, onClose]);
   
   // Cleanup on unmount
   useEffect(() => {
@@ -63,16 +62,27 @@ export function LibraryUI({
     };
   }, []);
 
+  // Function to get a sort-friendly version of a title
+  const getSortableTitle = (title) => {
+    // Convert to lowercase for case-insensitive comparison
+    let sortableTitle = title.toLowerCase();
+    
+    // Remove "The ", "A ", and "An " from the beginning of the title
+    sortableTitle = sortableTitle.replace(/^(the |a |an )/i, '');
+    
+    return sortableTitle.trim();
+  };
+
   // Load the user's library
   const loadLibrary = async () => {
     setLoading(true);
     try {
       const userLibrary = await getUserLibrary();
       
-      // Sort books by their translated title
+      // Sort books by their translated title, ignoring initial articles
       const sortedBooks = [...userLibrary].sort((a, b) => {
-        const titleA = getBookTitle(a).toLowerCase();
-        const titleB = getBookTitle(b).toLowerCase();
+        const titleA = getSortableTitle(getBookTitle(a));
+        const titleB = getSortableTitle(getBookTitle(b));
         return titleA.localeCompare(titleB);
       });
       
@@ -160,11 +170,16 @@ export function LibraryUI({
     try {
       setLoading(true);
       
+      // Extract original title without author
+      const titleParts = book.title.split(' by ');
+      const originalTitle = titleParts[0];
+      const author = titleParts.length > 1 ? titleParts[1] : book.author;
+      
       // Format the book for storage
       const newBook = {
         id: book.bookId || `custom_${Date.now()}`,
-        title: book.title,
-        author: book.author || "Unknown",
+        title: originalTitle,
+        author: author,
         url: book.url,
         language: book.language || "en",
         format: "text"
@@ -185,7 +200,7 @@ export function LibraryUI({
         await loadLibrary();
         
         // Show success message
-        const message = `${uiText.bookAdded || "Book added to library"}: ${book.title}`;
+        const message = `${uiText.bookAdded || "Book added to library"}: ${originalTitle}`;
         if (Platform.OS === 'web') {
           alert(message);
         } else {
@@ -350,11 +365,14 @@ export function LibraryUI({
         const anchor = anchorLink[1];
         const fullUrl = `${htmlUrl}#${anchor}`;
         
+        // Format title with author: "Title by Author"
+        const formattedTitle = `${title} by ${author}`;
+        
         // Return book info
         return {
           success: true,
           bookInfo: {
-            title,
+            title: formattedTitle,
             author,
             bookId,
             url: fullUrl,

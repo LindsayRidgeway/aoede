@@ -75,16 +75,27 @@ export function HomeUI({
   // State for the user's book library
   const [bookLibrary, setBookLibrary] = useState([]);
   
+  // Function to get a sort-friendly version of a title
+  const getSortableTitle = (title) => {
+    // Convert to lowercase for case-insensitive comparison
+    let sortableTitle = title.toLowerCase();
+    
+    // Remove "The ", "A ", and "An " from the beginning of the title
+    sortableTitle = sortableTitle.replace(/^(the |a |an )/i, '');
+    
+    return sortableTitle.trim();
+  };
+  
   // Load the user's library when component mounts or when libraryRefreshKey changes
   useEffect(() => {
     const loadUserLibrary = async () => {
       try {
         const userLibrary = await getUserLibrary();
         
-        // Sort books by their translated titles
+        // Sort books by their translated titles, ignoring initial articles
         const sortedBooks = [...userLibrary].sort((a, b) => {
-          const titleA = getBookTitle(a).toLowerCase();
-          const titleB = getBookTitle(b).toLowerCase();
+          const titleA = getSortableTitle(getBookTitle(a));
+          const titleB = getSortableTitle(getBookTitle(b));
           return titleA.localeCompare(titleB);
         });
         
