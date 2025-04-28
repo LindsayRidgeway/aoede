@@ -165,6 +165,85 @@ export function LibraryUI({
     }
   };
   
+  // Function to translate title to user's language if needed
+  const translateBookTitle = async (title, originalLanguage = "en") => {
+    try {
+      // Get the user's device language
+      const userLang = typeof navigator !== 'undefined' && navigator.language
+        ? navigator.language.split('-')[0]
+        : 'en';
+        
+      // Don't translate if already in user's language
+      if (userLang === originalLanguage) {
+        return title;
+      }
+      
+      // Get Google API key if available
+      const GOOGLE_API_KEY = getGoogleApiKey();
+      if (!GOOGLE_API_KEY) {
+        return title; // Can't translate without API key
+      }
+      
+      // Translate the title
+      const response = await fetch(
+        `https://translation.googleapis.com/language/translate/v2?key=${GOOGLE_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            q: title,
+            source: originalLanguage,
+            target: userLang,
+            format: "text"
+          })
+        }
+      );
+      
+      if (!response.ok) {
+        return title; // Return original title if translation fails
+      }
+      
+      const data = await response.json();
+      
+      if (data.data?.translations?.length > 0) {
+        return data.data.translations[0].translatedText;
+      }
+      
+      return title; // Return original title if no translation
+    } catch (error) {
+      console.error("Error translating title:", error);
+      return title; // Return original title on error
+    }
+  };
+  
+  // Get Google API key from Expo Constants
+  const getGoogleApiKey = () => {
+    // This function should access the Google API key
+    // For simplicity, we'll assume it's available from somewhere
+    // You may need to adjust this based on how your app accesses the key
+    try {
+      // Import Constants from expo-constants if available
+      const Constants = require('expo-constants');
+      
+      // Try to get API key through various paths
+      if (Constants?.expoConfig?.extra?.GOOGLE_API_KEY) {
+        return Constants.expoConfig.extra.GOOGLE_API_KEY;
+      }
+      
+      if (Constants?.manifest?.extra?.GOOGLE_API_KEY) {
+        return Constants.manifest.extra.GOOGLE_API_KEY;
+      }
+      
+      if (Constants?.extra?.GOOGLE_API_KEY) {
+        return Constants.extra.GOOGLE_API_KEY;
+      }
+    } catch (error) {
+      // Silently fail if Constants is not available
+    }
+    
+    return null;
+  };
+  
   // Function to add a book from search results to library
   const handleAddBook = async (book) => {
     try {
@@ -175,10 +254,13 @@ export function LibraryUI({
       const originalTitle = titleParts[0];
       const author = titleParts.length > 1 ? titleParts[1] : book.author;
       
-      // Format the book for storage
+      // Translate the title if possible
+      const translatedTitle = await translateBookTitle(originalTitle, book.language || "en");
+      
+      // Format the book for storage - use original title for storage
       const newBook = {
         id: book.bookId || `custom_${Date.now()}`,
-        title: originalTitle,
+        title: originalTitle,  // Store original title in the book object
         author: author,
         url: book.url,
         language: book.language || "en",
@@ -199,8 +281,9 @@ export function LibraryUI({
         // Update library
         await loadLibrary();
         
-        // Show success message
-        const message = `${uiText.bookAdded || "Book added to library"}: ${originalTitle}`;
+        // Show success message with translated title if available
+        const displayTitle = translatedTitle || originalTitle;
+        const message = `${uiText.bookAdded || "Book added to library"}: ${displayTitle}`;
         if (Platform.OS === 'web') {
           alert(message);
         } else {
