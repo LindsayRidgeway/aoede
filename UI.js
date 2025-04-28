@@ -78,14 +78,18 @@ export function MainUI(props) {
   // Define showControls early to avoid reference issues
   const showControls = showContent && props.sentence && props.sentence.length > 0;
 
-  // Handle showing the library
+  // Handle showing the library - use imperative form
   const handleShowLibrary = () => {
-    setShowLibrary(true);
+    // Force modal to remain open by using setTimeout
+    setTimeout(() => {
+      setShowLibrary(true);
+    }, 0);
   };
   
   // Handle closing the library with refresh if needed
   const handleCloseLibrary = (libraryChanged) => {
     setShowLibrary(false);
+    
     // If library changed, refresh the content
     if (libraryChanged && props.refreshLibrary) {
       props.refreshLibrary();
