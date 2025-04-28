@@ -108,6 +108,7 @@ export const libraryStyles = StyleSheet.create({
     paddingHorizontal: 10,
     backgroundColor: '#fff',
     marginRight: 10,
+	fontStyle: 'italic',  
   },
   searchButton: {
     backgroundColor: themeBlue,
