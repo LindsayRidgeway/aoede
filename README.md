@@ -152,6 +152,53 @@ _This checklist is used to test Aoede across all supported platforms before rele
 
 ---
 
+## 🌐 Publishing Updates to aoede.pro
+
+1. Make sure you are in the `main` branch:
+   ```
+   git checkout main
+   git pull
+   ```
+
+2. Verify or update `docs/index.html` as needed.
+
+3. Stage all changes:
+   ```
+   git add .
+   ```
+
+4. Commit the changes:
+   ```
+   git commit -m "Publish new webpage for Aoede"
+   ```
+
+5. Push the changes to GitHub:
+   ```
+   git push
+   ```
+
+6. GitHub Pages will automatically rebuild the site within 30–90 seconds.
+
+7. (Optional) Return to your working branch, such as `aoede-2.1`:
+   ```
+   git checkout aoede-2.1
+   git push -u origin aoede-2.1
+   ```
+
+---
+
+## ✅ Quick Summary
+
+| Step | Command |
+|:---|:---|
+| Switch to `main` | `git checkout main` + `git pull` |
+| Stage changes | `git add .` |
+| Commit | `git commit -m "Publish new webpage for Aoede"` |
+| Push to GitHub | `git push` |
+| Return to work | `git checkout aoede-2.1` + `git push -u origin aoede-2.1` |
+
+---
+
 ## Roadmap
 
 - Ability to edit source material library
