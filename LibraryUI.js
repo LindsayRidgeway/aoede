@@ -10,8 +10,6 @@ import { getUserLibrary, removeBookFromLibrary, addBookToLibrary } from './userL
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 
-const { parseHTML } = require('linkedom');
-
 // Key for storing translated titles
 const TRANSLATED_TITLES_KEY = 'aoede_translated_titles';
 
@@ -427,10 +425,158 @@ export function LibraryUI({
     
     throw new Error(uiText.allProxiesFailed || 'All proxies failed');
   };
+
+  // Function to find the best anchor in HTML content
+  const findBestAnchor = (htmlContent) => {
+    // Skip if no content
+    if (!htmlContent || htmlContent.length === 0) {
+      return null;
+    }
+    
+    // Priority tags to look for (in order of preference)
+    const priorityTags = [
+      'chapter01', 'chapter1', 'chapter-1', 'chap01', 'chap1', 'chap-1',
+      'book01', 'book1', 'book-1',
+      'part01', 'part1', 'part-1',
+      'preface', 'introduction', 'intro',
+      'toc', 'contents', 'table-of-contents',
+      'title', 'heading', 'header'
+    ];
+    
+    // First, try to find priority anchors (best for reading)
+    for (const tag of priorityTags) {
+      // Look for id attribute
+      const idPattern = `id="${tag}"`;
+      const idIndex = htmlContent.indexOf(idPattern);
+      if (idIndex !== -1) {
+        return tag;
+      }
+      
+      // Look for name attribute
+      const namePattern = `name="${tag}"`;
+      const nameIndex = htmlContent.indexOf(namePattern);
+      if (nameIndex !== -1) {
+        return tag;
+      }
+    }
+    
+    // Second, try to find any anchor that looks like a chapter or part
+    const chapterRegex = /<a[^>]*?(?:id|name)=["'](chapter|book|part).*?["'][^>]*>/i;
+    const chapterMatch = htmlContent.match(chapterRegex);
+    if (chapterMatch && chapterMatch[1]) {
+      // Extract the full id/name value
+      const fullAnchorRegex = /<a[^>]*?(?:id|name)=["']([^"']+)["'][^>]*>/i;
+      const fullMatch = htmlContent.substring(chapterMatch.index).match(fullAnchorRegex);
+      if (fullMatch && fullMatch[1]) {
+        return fullMatch[1];
+      }
+    }
+    
+    // Third, try to find any id or name attribute in an anchor tag
+    const anyAnchorRegex = /<a[^>]*?(?:id|name)=["']([^"']+)["'][^>]*>/i;
+    const anyMatch = htmlContent.match(anyAnchorRegex);
+    if (anyMatch && anyMatch[1]) {
+      return anyMatch[1];
+    }
+    
+    // Finally, try to find any link to an internal anchor
+    const linkPattern = 'href="#';
+    const linkIndex = htmlContent.indexOf(linkPattern);
+    if (linkIndex !== -1) {
+      // Extract the anchor part
+      const startIndex = linkIndex + linkPattern.length;
+      const endIndex = htmlContent.indexOf('"', startIndex);
+      
+      if (endIndex !== -1) {
+        return htmlContent.substring(startIndex, endIndex);
+      }
+    }
+    
+    // No suitable anchor found
+    return null;
+  };
+  
+  // Extract booklinks from search page using string methods
+  const extractBookLinksFromHtml = (html) => {
+    const bookLinks = [];
+    
+    // Look for book entries manually with simple string searches
+    let currentIndex = 0;
+    while (true) {
+      // Find the next book entry
+      const bookEntryStart = html.indexOf('<li class="booklink">', currentIndex);
+      if (bookEntryStart === -1) {
+        break; // No more book entries
+      }
+      
+      // Find the end of the book entry
+      const bookEntryEnd = html.indexOf('</li>', bookEntryStart);
+      if (bookEntryEnd === -1) {
+        break; // Malformed HTML
+      }
+      
+      // Extract the book entry HTML
+      const bookEntryHtml = html.substring(bookEntryStart, bookEntryEnd + 5);
+      
+      // Find href link
+      const hrefStart = bookEntryHtml.indexOf('href="');
+      if (hrefStart !== -1) {
+        const hrefValueStart = hrefStart + 6; // length of 'href="'
+        const hrefValueEnd = bookEntryHtml.indexOf('"', hrefValueStart);
+        if (hrefValueEnd !== -1) {
+          const bookPath = bookEntryHtml.substring(hrefValueStart, hrefValueEnd);
+          
+          // Skip .txt files
+          if (bookPath.toLowerCase().endsWith('.txt')) {
+            currentIndex = bookEntryEnd + 5;
+            continue;
+          }
+          
+          // Find title
+          let title = 'Unknown';
+          const titleStart = bookEntryHtml.indexOf('<span class="title">');
+          if (titleStart !== -1) {
+            const titleValueStart = titleStart + 20; // length of '<span class="title">'
+            const titleValueEnd = bookEntryHtml.indexOf('</span>', titleValueStart);
+            if (titleValueEnd !== -1) {
+              title = bookEntryHtml.substring(titleValueStart, titleValueEnd).trim();
+            }
+          }
+          
+          // Find author (subtitle)
+          let author = 'Unknown';
+          const authorStart = bookEntryHtml.indexOf('<span class="subtitle">');
+          if (authorStart !== -1) {
+            const authorValueStart = authorStart + 23; // length of '<span class="subtitle">'
+            const authorValueEnd = bookEntryHtml.indexOf('</span>', authorValueStart);
+            if (authorValueEnd !== -1) {
+              author = bookEntryHtml.substring(authorValueStart, authorValueEnd).trim();
+            }
+          }
+          
+          bookLinks.push({
+            bookPath,
+            title,
+            author
+          });
+        }
+      }
+      
+      // Move to the next entry
+      currentIndex = bookEntryEnd + 5;
+    }
+    
+    return bookLinks;
+  };
   
   // Process a single book
   const processBook = async (bookPath, title, author, subject) => {
     if (abortControllerRef.current?.signal.aborted) {
+      return { success: false };
+    }
+    
+    // Skip .txt files as they can't have anchors
+    if (bookPath.toLowerCase().endsWith('.txt')) {
       return { success: false };
     }
     
@@ -439,71 +585,81 @@ export function LibraryUI({
     try {
       const hubText = await fetchWithProxies(bookUrl);
       
-      // Create a parser to process the HTML
-      const { document: hubDoc } = parseHTML(hubText);
-      
-      // Get language info
+      // Extract book language and other metadata using string methods
       let bookLanguage = 'en';
-      const bibrec = hubDoc.querySelector('table.bibrec');
       
-      if (bibrec) {
-        const rows = bibrec.querySelectorAll('tr');
-        
-        for (const row of rows) {
-          const thElement = row.querySelector('th');
-          const tdElement = row.querySelector('td');
+      // Find the bibrec table
+      const bibrecStart = hubText.indexOf('<table class="bibrec">');
+      if (bibrecStart !== -1) {
+        const bibrecEnd = hubText.indexOf('</table>', bibrecStart);
+        if (bibrecEnd !== -1) {
+          const bibrecTable = hubText.substring(bibrecStart, bibrecEnd);
           
-          if (thElement && tdElement) {
-            const label = thElement.innerText.trim();
-            const value = tdElement.innerText.trim();
-            
-            if (label.toLowerCase().includes('language')) {
-              bookLanguage = value.split(',')[0].trim().toLowerCase();
+          // Look for language information
+          const langRowStart = bibrecTable.indexOf('Language</th>');
+          if (langRowStart !== -1) {
+            const langValueStart = bibrecTable.indexOf('<td>', langRowStart);
+            if (langValueStart !== -1) {
+              const langValueEnd = bibrecTable.indexOf('</td>', langValueStart);
+              if (langValueEnd !== -1) {
+                const langValue = bibrecTable.substring(langValueStart + 4, langValueEnd).trim();
+                // Extract first language if multiple are listed
+                const firstLang = langValue.split(',')[0].trim().toLowerCase();
+                
+                // Map common language names to codes
+                if (firstLang.includes('english')) bookLanguage = 'en';
+                else if (firstLang.includes('french')) bookLanguage = 'fr';
+                else if (firstLang.includes('german')) bookLanguage = 'de';
+                else if (firstLang.includes('spanish')) bookLanguage = 'es';
+                else if (firstLang.includes('italian')) bookLanguage = 'it';
+                else if (firstLang.includes('russian')) bookLanguage = 'ru';
+                else if (firstLang.includes('chinese')) bookLanguage = 'zh';
+                else if (firstLang.includes('japanese')) bookLanguage = 'ja';
+              }
             }
           }
         }
       }
       
-      // Simplify language code
-      if (bookLanguage.includes('english')) bookLanguage = 'en';
-      else if (bookLanguage.includes('french')) bookLanguage = 'fr';
-      else if (bookLanguage.includes('german')) bookLanguage = 'de';
-      else if (bookLanguage.includes('spanish')) bookLanguage = 'es';
-      else if (bookLanguage.includes('italian')) bookLanguage = 'it';
-      else if (bookLanguage.includes('russian')) bookLanguage = 'ru';
-      else if (bookLanguage.includes('chinese')) bookLanguage = 'zh';
-      else if (bookLanguage.includes('japanese')) bookLanguage = 'ja';
+      // Get HTML version URL by extracting the book ID
+      let bookId = '';
       
-      // Get HTML version URL
-      const bookId = bookPath.replace(/\/ebooks\//, '').replace(/\D/g, '');
+      // Try to extract book ID from the path using regex
+      const idMatch = bookPath.match(/\/ebooks\/(\d+)/);
+      if (idMatch && idMatch[1]) {
+        bookId = idMatch[1];
+      } else {
+        // Alternative: extract from URL
+        const pathParts = bookPath.split('/');
+        for (const part of pathParts) {
+          if (/^\d+$/.test(part)) {
+            bookId = part;
+            break;
+          }
+        }
+      }
+      
+      if (!bookId) {
+        return { success: false };
+      }
+      
       const htmlBase = `https://www.gutenberg.org/files/${bookId}/${bookId}-h`;
       const htmlUrl = `${htmlBase}/${bookId}-h.htm`;
       
+      // For now, fetch just the first 50kb of the HTML file to look for anchors
       try {
-        // Read only first part of HTML file for anchor
         const htmlFragment = await fetchWithProxies(htmlUrl, 50000);
         
-        // Try to find a good anchor - prioritize likely chapter beginnings
-        const priorityAnchors = htmlFragment.match(/<a\s+[^>]*?(?:id|name)=["'](chapter|book|part|preface|introduction|toc|contents|title|heading).*?["'][^>]*>/i);
+        // Find an appropriate anchor using string manipulation
+        const anchor = findBestAnchor(htmlFragment);
         
-        // If no priority anchor, look for any anchor
-        const anyAnchor = priorityAnchors || 
-                        htmlFragment.match(/<a\s+[^>]*?(?:id|name)=["']([^"']+)["'][^>]*>/i);
-                        
-        // Fallback to link to anchor
-        const anchorLink = anyAnchor || 
-                          htmlFragment.match(/<a\s+[^>]*?href=["']#([^"']+)["'][^>]*>/i);
-        
-        if (!anchorLink) {
+        if (!anchor) {
           return { success: false };
         }
         
-        // Extract anchor name (group 1)
-        const anchor = anchorLink[1];
-        const fullUrl = `${htmlUrl}#${anchor}`;
-        
         // Format title with author: "Title by Author"
         const formattedTitle = `${title} by ${author}`;
+        const fullUrl = `${htmlUrl}#${anchor}`;
         
         // Return book info
         return {
@@ -525,9 +681,9 @@ export function LibraryUI({
   };
   
   // Get all pages of search results
-  const getAllPages = async (searchUrl, doc) => {
-    // Find first page links
-    const firstPageLinks = Array.from(doc.querySelectorAll('li.booklink a.link'));
+  const getAllPages = async (searchUrl, htmlContent) => {
+    // Extract book links from first page using string methods
+    const firstPageLinks = extractBookLinksFromHtml(htmlContent);
     
     if (!firstPageLinks || firstPageLinks.length === 0) {
       return [];
@@ -575,10 +731,9 @@ export function LibraryUI({
       
       // Get search results page
       const html = await fetchWithProxies(searchUrl);
-      const { document: doc } = parseHTML(html);
       
       // Get all pages of results
-      const allLinks = await getAllPages(searchUrl, doc);
+      const allLinks = await getAllPages(searchUrl, html);
       
       // Handle no results
       if (allLinks.length === 0) {
@@ -587,18 +742,21 @@ export function LibraryUI({
       }
       
       // Process each book
-      for (const a of allLinks) {
+      for (let i = 0; i < allLinks.length; i++) {
+        const link = allLinks[i];
+        
         // Check if search was stopped
         if (abortControllerRef.current.signal.aborted) {
           throw new Error('Search stopped');
         }
         
-        const bookPath = a.getAttribute('href');
-        const title = a.querySelector('span.title')?.innerText.trim() || 'Untitled';
-        const author = a.querySelector('span.subtitle')?.innerText.trim() || 'Unknown';
+        // Skip .txt URLs since they can't have anchors
+        if (link.bookPath.toLowerCase().endsWith('.txt')) {
+          continue;
+        }
         
         // Process book
-        const result = await processBook(bookPath, title, author, searchQuery);
+        const result = await processBook(link.bookPath, link.title, link.author, searchQuery);
         
         // Add to results if successful
         if (result.success) {
