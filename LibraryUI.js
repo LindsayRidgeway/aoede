@@ -8,8 +8,9 @@ import {
 import { styles } from './styles';
 import { getUserLibrary, removeBookFromLibrary, addBookToLibrary } from './userLibrary';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { DOMParser } from 'xmldom';
 import Constants from 'expo-constants';
+
+const { parseHTML } = require('linkedom');
 
 // Key for storing translated titles
 const TRANSLATED_TITLES_KEY = 'aoede_translated_titles';
@@ -439,8 +440,7 @@ export function LibraryUI({
       const hubText = await fetchWithProxies(bookUrl);
       
       // Create a parser to process the HTML
-      const parser = new DOMParser();
-      const hubDoc = parser.parseFromString(hubText, 'text/html');
+      const { document: hubDoc } = parseHTML(hubText);
       
       // Get language info
       let bookLanguage = 'en';
@@ -575,9 +575,7 @@ export function LibraryUI({
       
       // Get search results page
       const html = await fetchWithProxies(searchUrl);
-      
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(html, 'text/html');
+      const { document: doc } = parseHTML(html);
       
       // Get all pages of results
       const allLinks = await getAllPages(searchUrl, doc);
