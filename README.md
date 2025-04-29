@@ -154,35 +154,43 @@ _This checklist is used to test Aoede across all supported platforms before rele
 
 ## 🌐 Publishing Updates to aoede.pro
 
-1. Make sure you are in the `main` branch:
+1. Add, commit, and push any files not yet committe to your current branch:
+   ```
+   git status
+   git add .
+   git commit -m "[describe changes]"
+   git push
+   ```
+
+2. Make sure you are in the `main` branch:
    ```
    git checkout main
    git pull
    ```
 
-2. Merge updated branch, such as `aoede-2.1` and including updated `docs/index.html`, into main:
+3. Merge updated branch, such as `aoede-2.1` and including updated `docs/index.html`, into main:
    ```
    git merge aeode-2.1
    ```
 
-3. Stage all changes:
+4. Stage all changes:
    ```
    git add .
    ```
 
-4. Commit the changes:
+5. Commit the changes:
    ```
    git commit -m "Merge aoede-2.1 into main"
    ```
 
-5. Push the changes to GitHub:
+6. Push the changes to GitHub:
    ```
    git push
    ```
 
-6. GitHub Pages will automatically rebuild the site within 30–90 seconds.
+7. GitHub Pages will automatically rebuild the site within 30–90 seconds.
 
-7. (Optional) Return to your working branch, such as `aoede-2.1`:
+8. (Optional) Return to your working branch, such as `aoede-2.1`:
    ```
    git checkout aoede-2.1
    git push -u origin aoede-2.1
