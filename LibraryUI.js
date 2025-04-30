@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   View, Text, TouchableOpacity, Modal, TextInput,
   ScrollView, SafeAreaView, Alert, Linking,
-  FlatList, ActivityIndicator, Platform
+  FlatList, ActivityIndicator, Platform, StyleSheet
 } from 'react-native';
 import { styles } from './styles';
 import { getUserLibrary, removeBookFromLibrary, addBookToLibrary } from './userLibrary';
@@ -12,6 +12,25 @@ import Constants from 'expo-constants';
 
 // Key for storing translated titles
 const TRANSLATED_TITLES_KEY = 'aoede_translated_titles';
+
+// Local styles for debug messages
+const localStyles = StyleSheet.create({
+  debugContainer: {
+    maxHeight: 150,
+    marginVertical: 10,
+    padding: 10,
+    backgroundColor: '#f5f5f5',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 5
+  },
+  debugMessage: {
+    fontSize: 12,
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+    color: '#333',
+    marginBottom: 4
+  }
+});
 
 export function LibraryUI({
   visible,
@@ -28,20 +47,22 @@ export function LibraryUI({
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
+  const [debugMessages, setDebugMessages] = useState([]);
   const abortControllerRef = useRef(null);
   
   // Current mode: 'library' or 'search'
   const [activeMode, setActiveMode] = useState('library');
   
-  // Proxies for CORS handling
-  const CORS_PROXIES = [
-    'https://corsproxy.io/?',
-    'https://api.allorigins.win/raw?url=',
-    'https://proxy.cors.sh/',
-    'https://thingproxy.freeboard.io/fetch/'
-  ];
-  const [lastSuccessfulProxy, setLastSuccessfulProxy] = useState(null);
-
+  // Utility function to add debug messages
+  const addDebugMessage = (message) => {
+    setDebugMessages(prev => [...prev, message]);
+  };
+  
+  // Utility function to clear debug messages
+  const clearDebugMessages = () => {
+    setDebugMessages([]);
+  };
+  
   // Load saved translated titles
   const loadTranslatedTitles = async () => {
     try {
@@ -359,73 +380,43 @@ export function LibraryUI({
   
   // ---- Search Functionality ----
   
-  // Fetch with proxy
-  const fetchWithProxies = async (url, readFirstNBytes = null) => {
-    // Start with the last successful proxy if available
-    let orderedProxies = [...CORS_PROXIES];
-    
-    if (lastSuccessfulProxy) {
-      // Move the last successful proxy to the front
-      orderedProxies = orderedProxies.filter(p => p !== lastSuccessfulProxy);
-      orderedProxies.unshift(lastSuccessfulProxy);
-    }
-    
-    for (let i = 0; i < orderedProxies.length; i++) {
-      const proxy = orderedProxies[i];
-      let proxyUrl;
+  // Simple fetch with robust error handling and platform awareness
+  const safeFetch = async (url, options = {}) => {
+    try {
+      addDebugMessage(`Fetching: ${url.substring(0, 50)}...`);
       
-      // Format the URL
-      if (proxy.includes('?url=')) {
-        proxyUrl = `${proxy}${encodeURIComponent(url)}`;
-      } else {
-        proxyUrl = `${proxy}${url}`;
+      // Set a reasonable timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+      }, 30000); // 30 second timeout
+      
+      const finalOptions = {
+        ...options,
+        signal: controller.signal
+      };
+      
+      // Perform the fetch
+      const response = await fetch(url, finalOptions);
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
       }
       
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 15000);
-        
-        const response = await fetch(proxyUrl, {
-          signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId);
-        
-        if (!response.ok) {
-          continue;
-        }
-        
-        // If we only need to read part of the response
-        if (readFirstNBytes) {
-          try {
-            const reader = response.body.getReader();
-            const { value, done } = await reader.read();
-            
-            if (done) {
-              return '';
-            }
-            
-            const decoder = new TextDecoder();
-            const text = decoder.decode(value.slice(0, readFirstNBytes));
-            
-            setLastSuccessfulProxy(proxy);
-            return text;
-          } catch (err) {
-            continue;
-          }
-        } else {
-          const text = await response.text();
-          setLastSuccessfulProxy(proxy);
-          return text;
-        }
-      } catch (error) {
-        // Continue to next proxy
+      const text = await response.text();
+      addDebugMessage(`Fetch successful: ${text.length} bytes`);
+      return text;
+    } catch (error) {
+      if (error.name === 'AbortError') {
+        addDebugMessage('Fetch timed out after 30 seconds');
+        throw new Error('Fetch timed out');
       }
+      addDebugMessage(`Fetch error: ${error.message}`);
+      throw error;
     }
-    
-    throw new Error(uiText.allProxiesFailed || 'All proxies failed');
   };
-
+  
   // Function to find the best anchor in HTML content
   const findBestAnchor = (htmlContent) => {
     // Skip if no content
@@ -498,10 +489,13 @@ export function LibraryUI({
   
   // Extract booklinks from search page using string methods
   const extractBookLinksFromHtml = (html) => {
+    addDebugMessage(`Extracting book links from ${html.length} bytes`);
     const bookLinks = [];
     
     // Look for book entries manually with simple string searches
     let currentIndex = 0;
+    let bookCount = 0;
+    
     while (true) {
       // Find the next book entry
       const bookEntryStart = html.indexOf('<li class="booklink">', currentIndex);
@@ -559,6 +553,7 @@ export function LibraryUI({
             title,
             author
           });
+          bookCount++;
         }
       }
       
@@ -566,6 +561,7 @@ export function LibraryUI({
       currentIndex = bookEntryEnd + 5;
     }
     
+    addDebugMessage(`Found ${bookCount} books in search results`);
     return bookLinks;
   };
   
@@ -581,9 +577,17 @@ export function LibraryUI({
     }
     
     const bookUrl = `https://www.gutenberg.org${bookPath}`;
+    addDebugMessage(`Processing book: ${title}`);
       
     try {
-      const hubText = await fetchWithProxies(bookUrl);
+      // Use simple fetch for the hub page
+      let hubText;
+      try {
+        hubText = await safeFetch(bookUrl);
+      } catch (hubError) {
+        addDebugMessage(`Failed to fetch book hub page: ${hubError.message}`);
+        return { success: false };
+      }
       
       // Extract book language and other metadata using string methods
       let bookLanguage = 'en';
@@ -640,57 +644,85 @@ export function LibraryUI({
       }
       
       if (!bookId) {
+        addDebugMessage('Could not extract book ID');
         return { success: false };
       }
       
-      const htmlBase = `https://www.gutenberg.org/files/${bookId}/${bookId}-h`;
-      const htmlUrl = `${htmlBase}/${bookId}-h.htm`;
+      addDebugMessage(`Found book ID: ${bookId}`);
       
-      // For now, fetch just the first 50kb of the HTML file to look for anchors
+      const htmlUrl = `https://www.gutenberg.org/files/${bookId}/${bookId}-h/${bookId}-h.htm`;
+      
+      // Try to fetch the HTML file
+      let htmlContent;
       try {
-        const htmlFragment = await fetchWithProxies(htmlUrl, 50000);
-        
-        // Find an appropriate anchor using string manipulation
-        const anchor = findBestAnchor(htmlFragment);
-        
-        if (!anchor) {
-          return { success: false };
-        }
-        
-        // Format title with author: "Title by Author"
-        const formattedTitle = `${title} by ${author}`;
-        const fullUrl = `${htmlUrl}#${anchor}`;
-        
-        // Return book info
-        return {
-          success: true,
-          bookInfo: {
-            title: formattedTitle,
-            author,
-            bookId,
-            url: fullUrl,
-            language: bookLanguage
+        // Just get a small part for finding anchors
+        const options = {
+          headers: {
+            'Accept': 'text/html,application/xhtml+xml,application/xml',
+            'Accept-Language': 'en-US,en;q=0.9'
           }
         };
+        htmlContent = await safeFetch(htmlUrl, options);
       } catch (htmlErr) {
+        addDebugMessage(`Failed to fetch HTML file: ${htmlErr.message}`);
         return { success: false };
       }
-    } catch (hubErr) {
+      
+      // Find an appropriate anchor using string manipulation
+      const anchor = findBestAnchor(htmlContent);
+      
+      if (!anchor) {
+        addDebugMessage('No suitable anchor found');
+        return { success: false };
+      }
+      
+      addDebugMessage(`Found anchor: ${anchor}`);
+      
+      // Format title with author: "Title by Author"
+      const formattedTitle = `${title} by ${author}`;
+      const fullUrl = `${htmlUrl}#${anchor}`;
+      
+      // Return book info
+      return {
+        success: true,
+        bookInfo: {
+          title: formattedTitle,
+          author,
+          bookId,
+          url: fullUrl,
+          language: bookLanguage
+        }
+      };
+    } catch (error) {
+      addDebugMessage(`Error processing book: ${error.message}`);
       return { success: false };
     }
   };
   
-  // Get all pages of search results
-  const getAllPages = async (searchUrl, htmlContent) => {
-    // Extract book links from first page using string methods
-    const firstPageLinks = extractBookLinksFromHtml(htmlContent);
+  // Get search results
+  const getSearchResults = async (query) => {
+    const searchUrl = `https://www.gutenberg.org/ebooks/search/?query=${encodeURIComponent(query)}`;
     
-    if (!firstPageLinks || firstPageLinks.length === 0) {
-      return [];
+    try {
+      addDebugMessage('Starting search...');
+      
+      // Fetch search results
+      const html = await safeFetch(searchUrl);
+      
+      // Extract book links
+      const bookLinks = extractBookLinksFromHtml(html);
+      
+      if (bookLinks.length === 0) {
+        addDebugMessage('No books found in search results');
+        return [];
+      }
+      
+      // Just return the links without processing for now
+      return bookLinks;
+    } catch (error) {
+      addDebugMessage(`Search error: ${error.message}`);
+      throw error;
     }
-    
-    // Only process first page for faster results
-    return firstPageLinks;
   };
   
   // Stop search
@@ -698,6 +730,7 @@ export function LibraryUI({
     if (isSearching && abortControllerRef.current) {
       abortControllerRef.current.abort();
       setIsSearching(false);
+      addDebugMessage('Search stopped by user');
     }
   };
   
@@ -718,39 +751,33 @@ export function LibraryUI({
       return;
     }
     
-    // Clear previous results
+    // Clear previous results and debug messages
     setSearchResults([]);
+    clearDebugMessages();
     setIsSearching(true);
     
     // Setup abort controller
     abortControllerRef.current = new AbortController();
     
     try {
-      const query = encodeURIComponent(searchQuery);
-      const searchUrl = `https://www.gutenberg.org/ebooks/search/?query=${query}`;
+      // Get search results
+      const bookLinks = await getSearchResults(searchQuery);
       
-      // Get search results page
-      const html = await fetchWithProxies(searchUrl);
+      // Process a limited number of books for performance
+      const maxBooksToProcess = 5;
+      let processedCount = 0;
       
-      // Get all pages of results
-      const allLinks = await getAllPages(searchUrl, html);
-      
-      // Handle no results
-      if (allLinks.length === 0) {
-        setIsSearching(false);
-        return;
-      }
-      
-      // Process each book
-      for (let i = 0; i < allLinks.length; i++) {
-        const link = allLinks[i];
-        
+      // Process each book up to the limit
+      for (let i = 0; i < Math.min(bookLinks.length, maxBooksToProcess); i++) {
         // Check if search was stopped
         if (abortControllerRef.current.signal.aborted) {
           throw new Error('Search stopped');
         }
         
-        // Skip .txt URLs since they can't have anchors
+        const link = bookLinks[i];
+        addDebugMessage(`Processing book ${i+1}/${Math.min(bookLinks.length, maxBooksToProcess)}: ${link.title}`);
+        
+        // Skip .txt URLs
         if (link.bookPath.toLowerCase().endsWith('.txt')) {
           continue;
         }
@@ -761,10 +788,14 @@ export function LibraryUI({
         // Add to results if successful
         if (result.success) {
           setSearchResults(prev => [...prev, result.bookInfo]);
+          processedCount++;
         }
       }
+      
+      addDebugMessage(`Search completed: ${processedCount} books processed successfully`);
     } catch (err) {
       if (err.message !== 'Search stopped') {
+        addDebugMessage(`Error: ${err.message}`);
         const errorMessage = `${uiText.searchError || "Search error"}: ${err.message}`;
         if (Platform.OS === 'web') {
           alert(errorMessage);
@@ -917,9 +948,20 @@ export function LibraryUI({
                 </TouchableOpacity>
               </View>
               
+              {/* Debug Messages */}
+              {debugMessages.length > 0 && (
+                <ScrollView style={localStyles.debugContainer}>
+                  {debugMessages.map((message, index) => (
+                    <Text style={localStyles.debugMessage} key={index}>
+                      {message}
+                    </Text>
+                  ))}
+                </ScrollView>
+              )}
+              
               {/* Search Results */}
               <View style={styles.resultsContainer}>
-                {isSearching && searchResults.length === 0 ? (
+                {isSearching && searchResults.length === 0 && debugMessages.length === 0 ? (
                   <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color="#800020" />
                     <Text style={styles.loadingText}>
