@@ -948,20 +948,11 @@ export function LibraryUI({
                 </TouchableOpacity>
               </View>
               
-              {/* Debug Messages */}
-              {debugMessages.length > 0 && (
-                <ScrollView style={localStyles.debugContainer}>
-                  {debugMessages.map((message, index) => (
-                    <Text style={localStyles.debugMessage} key={index}>
-                      {message}
-                    </Text>
-                  ))}
-                </ScrollView>
-              )}
+              {/* Debug Messages Box Removed */}
               
               {/* Search Results */}
               <View style={styles.resultsContainer}>
-                {isSearching && searchResults.length === 0 && debugMessages.length === 0 ? (
+                {isSearching && searchResults.length === 0 ? (
                   <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color="#800020" />
                     <Text style={styles.loadingText}>
