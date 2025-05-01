@@ -12,7 +12,7 @@ import Constants from 'expo-constants';
 import { getUserLibrary } from './userLibrary';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// Import iOS-specific components conditionally
+// Only import iOS components if on iOS platform
 let IosPickers = null;
 
 // Only import iOS components if on iOS platform
@@ -130,6 +130,12 @@ export function HomeUI({
         if (selectedBook && !sortedBooks.some(book => book.id === selectedBook)) {
           setSelectedBook("");
           setDisplayBookTitle(uiText.enterBook || "Select a book");
+        } else if (selectedBook) {
+          // Update display title for the selected book
+          const book = sortedBooks.find(b => b.id === selectedBook);
+          if (book) {
+            setDisplayBookTitle(getBookTitle(book));
+          }
         }
       } catch (error) {
         console.error("Failed to load user library:", error);
@@ -149,7 +155,6 @@ export function HomeUI({
           : 'en';
         
         // Fetch available languages from Google Translate API
-        if (__DEV__) console.log("FETCH 0002");
         const response = await fetch(
           `https://translation.googleapis.com/language/translate/v2/languages?key=${GOOGLE_API_KEY}&target=${userLang}`,
           {

@@ -315,18 +315,21 @@ export function LibraryUI({
     try {
       setLoading(true);
       
-      // Extract original title without author
+      // Format title to include the author
       const titleParts = book.title.split(' by ');
-      const originalTitle = titleParts[0];
-      const author = titleParts.length > 1 ? titleParts[1] : book.author;
+      let originalTitle = titleParts[0];
+      let author = titleParts.length > 1 ? titleParts[1] : book.author;
+      
+      // Create a properly formatted title with "by [author]"
+      const formattedTitle = `${originalTitle} by ${author}`;
       
       // Generate a consistent ID
       const bookId = book.bookId || `custom_${Date.now()}`;
       
-      // Format the book for storage - use original title for storage
+      // Format the book for storage
       const newBook = {
         id: bookId,
-        title: originalTitle,  // Store original title in the book object
+        title: formattedTitle,  // Store the formatted title with author
         author: author,
         url: book.url,
         language: book.language || "en",
@@ -334,13 +337,13 @@ export function LibraryUI({
       };
       
       // Translate the title
-      const translatedTitle = await translateBookTitle(originalTitle, book.language || "en");
+      const translatedTitle = await translateBookTitle(formattedTitle, book.language || "en");
       
       const success = await addBookToLibrary(newBook);
       
       if (success) {
         // Save the translation to persistent storage if different from original
-        if (translatedTitle !== originalTitle) {
+        if (translatedTitle !== formattedTitle) {
           await saveTranslatedTitle(bookId, translatedTitle);
         }
         
@@ -356,7 +359,7 @@ export function LibraryUI({
         await loadLibrary();
         
         // Show success message with translated title if available
-        const displayTitle = translatedTitle || originalTitle;
+        const displayTitle = translatedTitle || formattedTitle;
         const message = `${uiText.bookAdded || "Book added to library"}: ${displayTitle}`;
         if (Platform.OS === 'web') {
           alert(message);
@@ -379,31 +382,43 @@ export function LibraryUI({
   };
   
   // ---- Search Functionality ----
-  
-  // Simple fetch with robust error handling and platform awareness
   const safeFetch = async (url, options = {}) => {
     try {
       addDebugMessage(`Fetching: ${url.substring(0, 50)}...`);
-      
+    
       // Set a reasonable timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => {
         controller.abort();
       }, 30000); // 30 second timeout
-      
-      const finalOptions = {
+    
+      let finalOptions = {
         ...options,
         signal: controller.signal
       };
+    
+      let response;
+    
+      // Only apply proxy in web environment
+      if (Platform.OS === 'web') {
+        // Use a reliable CORS proxy specifically for the search functionality
+        const corsProxy = 'https://api.codetabs.com/v1/proxy?quest=';
+        const encodedUrl = encodeURIComponent(url);
+        const proxyUrl = `${corsProxy}${encodedUrl}`;
       
-      // Perform the fetch
-      const response = await fetch(url, finalOptions);
+        addDebugMessage(`Using proxy: ${corsProxy}`);
+        response = await fetch(proxyUrl, finalOptions);
+      } else {
+        // Native platforms don't need proxy
+        response = await fetch(url, finalOptions);
+      }
+    
       clearTimeout(timeoutId);
-      
+    
       if (!response.ok) {
         throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
       }
-      
+    
       const text = await response.text();
       addDebugMessage(`Fetch successful: ${text.length} bytes`);
       return text;
@@ -416,7 +431,7 @@ export function LibraryUI({
       throw error;
     }
   };
-  
+    
   // Function to find the best anchor in HTML content
   const findBestAnchor = (htmlContent) => {
     // Skip if no content
