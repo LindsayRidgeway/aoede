@@ -9,6 +9,7 @@ import { styles } from './styles';
 import { getUserLibrary, removeBookFromLibrary, addBookToLibrary } from './userLibrary';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
+import { debugLog } from './DebugPanel';
 
 // Key for storing translated titles
 const TRANSLATED_TITLES_KEY = 'aoede_translated_titles';
@@ -55,27 +56,34 @@ export function LibraryUI({
   
   // Utility function to add debug messages
   const addDebugMessage = (message) => {
+    debugLog(`LibraryUI: ${message}`);
     setDebugMessages(prev => [...prev, message]);
   };
   
   // Utility function to clear debug messages
   const clearDebugMessages = () => {
+    debugLog('LibraryUI: Clearing debug messages');
     setDebugMessages([]);
   };
   
   // Load saved translated titles
   const loadTranslatedTitles = async () => {
     try {
+      debugLog('LibraryUI: Loading translated titles');
       const savedTranslations = await AsyncStorage.getItem(TRANSLATED_TITLES_KEY);
       if (savedTranslations) {
         const translationsObject = JSON.parse(savedTranslations);
+        debugLog(`LibraryUI: Found ${Object.keys(translationsObject).length} translated titles`);
         
         // Update uiText with saved translations
         Object.keys(translationsObject).forEach(key => {
           uiText[key] = translationsObject[key];
         });
+      } else {
+        debugLog('LibraryUI: No saved translations found');
       }
     } catch (error) {
+      debugLog(`LibraryUI: Error loading translated titles: ${error.message}`);
       console.error("Error loading translated titles:", error);
     }
   };
@@ -83,25 +91,31 @@ export function LibraryUI({
   // Save a translated title
   const saveTranslatedTitle = async (bookId, translatedTitle) => {
     try {
+      debugLog(`LibraryUI: Saving translated title for ${bookId}`);
       // Get existing translations
       let translations = {};
       const savedTranslations = await AsyncStorage.getItem(TRANSLATED_TITLES_KEY);
       
       if (savedTranslations) {
         translations = JSON.parse(savedTranslations);
+        debugLog('LibraryUI: Loaded existing translations');
       }
       
       // Add the new translation
       translations[bookId] = translatedTitle;
+      debugLog(`LibraryUI: Added translation: ${bookId} -> ${translatedTitle}`);
       
       // Save back to AsyncStorage
       await AsyncStorage.setItem(TRANSLATED_TITLES_KEY, JSON.stringify(translations));
+      debugLog('LibraryUI: Saved translations to AsyncStorage');
       
       // Also update uiText
       uiText[bookId] = translatedTitle;
+      debugLog('LibraryUI: Updated uiText with new translation');
       
       return true;
     } catch (error) {
+      debugLog(`LibraryUI: Failed to save translation: ${error.message}`);
       console.error("Failed to save translation:", error);
       return false;
     }
@@ -111,6 +125,7 @@ export function LibraryUI({
   useEffect(() => {
     if (visible) {
       const initialize = async () => {
+        debugLog('LibraryUI: Modal became visible, initializing');
         // Load translations first
         await loadTranslatedTitles();
         // Then load library
@@ -125,6 +140,7 @@ export function LibraryUI({
   useEffect(() => {
     return () => {
       if (libraryChanged && onClose) {
+        debugLog(`LibraryUI: Component unmounting, libraryChanged=${libraryChanged}`);
         onClose(libraryChanged);
       }
     };
@@ -134,6 +150,7 @@ export function LibraryUI({
   useEffect(() => {
     return () => {
       if (abortControllerRef.current) {
+        debugLog('LibraryUI: Aborting any pending searches on unmount');
         abortControllerRef.current.abort();
       }
     };
@@ -152,9 +169,11 @@ export function LibraryUI({
 
   // Load the user's library
   const loadLibrary = async () => {
+    debugLog('LibraryUI: Loading library');
     setLoading(true);
     try {
       const userLibrary = await getUserLibrary();
+      debugLog(`LibraryUI: Loaded ${userLibrary.length} books from user library`);
       
       // Sort books by their translated title, ignoring initial articles
       const sortedBooks = [...userLibrary].sort((a, b) => {
@@ -164,10 +183,13 @@ export function LibraryUI({
       });
       
       setBooks(sortedBooks);
+      debugLog('LibraryUI: Updated books state with sorted library');
     } catch (error) {
+      debugLog(`LibraryUI: Error loading library: ${error.message}`);
       console.error("Error loading library:", error);
     } finally {
       setLoading(false);
+      debugLog('LibraryUI: Library loading complete');
     }
   };
 
@@ -180,6 +202,7 @@ export function LibraryUI({
 
   // Handle book deletion with proper confirmation
   const handleDeleteBook = (book) => {
+    debugLog(`LibraryUI: Delete requested for book: ${book.id}`);
     const confirmMessage = `${uiText.confirmDelete || "Are you sure you want to delete"} "${getBookTitle(book)}" ${uiText.fromLibrary || "from your library"}?`;
     
     // Use platform-specific confirmation
@@ -208,20 +231,24 @@ export function LibraryUI({
   // Function to actually delete the book
   const deleteBookFromLibrary = async (bookId) => {
     try {
+      debugLog(`LibraryUI: Deleting book ${bookId} from library`);
       // Show loading while deleting
       setLoading(true);
       
       const result = await removeBookFromLibrary(bookId);
+      debugLog(`LibraryUI: Book deletion result: ${result}`);
       
       if (result) {
         // Mark library as changed
         setLibraryChanged(true);
+        debugLog('LibraryUI: Library marked as changed due to deletion');
         
         // Success - reload the library
         await loadLibrary();
       } else {
         // Failed to delete
         const errorMessage = uiText.errorDeletingBook || "Error deleting book";
+        debugLog(`LibraryUI: Failed to delete book: ${errorMessage}`);
         if (Platform.OS === 'web') {
           alert(errorMessage);
         } else {
@@ -229,6 +256,7 @@ export function LibraryUI({
         }
       }
     } catch (error) {
+      debugLog(`LibraryUI: Error in deleteBookFromLibrary: ${error.message}`);
       console.error("Error in deleteBookFromLibrary:", error);
       const errorMessage = `${uiText.errorDeletingBook || "Error deleting book"}: ${error.message}`;
       
@@ -239,29 +267,35 @@ export function LibraryUI({
       }
     } finally {
       setLoading(false);
+      debugLog('LibraryUI: Completed book deletion process');
     }
   };
   
   // Function to translate title to user's language if needed
   const translateBookTitle = async (title, originalLanguage = "en") => {
     try {
+      debugLog(`LibraryUI: Translating title: "${title}" from ${originalLanguage}`);
       // Get the user's device language
       const userLang = typeof navigator !== 'undefined' && navigator.language
         ? navigator.language.split('-')[0]
         : 'en';
-        
+      
+      debugLog(`LibraryUI: User language detected: ${userLang}`);  
       // Don't translate if already in user's language
       if (userLang === originalLanguage) {
+        debugLog('LibraryUI: No translation needed - title already in user language');
         return title;
       }
       
       // Get Google API key if available
       const GOOGLE_API_KEY = getGoogleApiKey();
       if (!GOOGLE_API_KEY) {
+        debugLog('LibraryUI: No Google API key available for translation');
         return title; // Can't translate without API key
       }
       
       // Translate the title
+      debugLog('LibraryUI: Calling Google Translate API');
       const response = await fetch(
         `https://translation.googleapis.com/language/translate/v2?key=${GOOGLE_API_KEY}`,
         {
@@ -277,17 +311,22 @@ export function LibraryUI({
       );
       
       if (!response.ok) {
+        debugLog(`LibraryUI: Translation API error: ${response.status}`);
         return title; // Return original title if translation fails
       }
       
       const data = await response.json();
       
       if (data.data?.translations?.length > 0) {
-        return data.data.translations[0].translatedText;
+        const translatedText = data.data.translations[0].translatedText;
+        debugLog(`LibraryUI: Title translated: "${title}" -> "${translatedText}"`);
+        return translatedText;
       }
       
+      debugLog('LibraryUI: No translation returned from API');
       return title; // Return original title if no translation
     } catch (error) {
+      debugLog(`LibraryUI: Error translating title: ${error.message}`);
       console.error("Error translating title:", error);
       return title; // Return original title on error
     }
@@ -313,6 +352,7 @@ export function LibraryUI({
   // Function to add a book from search results to library
   const handleAddBook = async (book) => {
     try {
+      debugLog(`LibraryUI: Adding book: ${book.title}`);
       setLoading(true);
       
       // Format title to include the author
@@ -322,9 +362,11 @@ export function LibraryUI({
       
       // Create a properly formatted title with "by [author]"
       const formattedTitle = `${originalTitle} by ${author}`;
+      debugLog(`LibraryUI: Formatted title: ${formattedTitle}`);
       
       // Generate a consistent ID
       const bookId = book.bookId || `custom_${Date.now()}`;
+      debugLog(`LibraryUI: Generated book ID: ${bookId}`);
       
       // Format the book for storage
       const newBook = {
@@ -337,17 +379,24 @@ export function LibraryUI({
       };
       
       // Translate the title
+      debugLog('LibraryUI: Translating book title');
       const translatedTitle = await translateBookTitle(formattedTitle, book.language || "en");
+      debugLog(`LibraryUI: Title translated: ${translatedTitle}`);
       
+      debugLog('LibraryUI: Adding book to library');
       const success = await addBookToLibrary(newBook);
+      debugLog(`LibraryUI: Book added to library: ${success}`);
       
       if (success) {
         // Save the translation to persistent storage if different from original
         if (translatedTitle !== formattedTitle) {
+          debugLog('LibraryUI: Saving translated title');
           await saveTranslatedTitle(bookId, translatedTitle);
+          debugLog('LibraryUI: Translated title saved');
         }
         
         // Mark library as changed
+        debugLog('LibraryUI: Marking library as changed');
         setLibraryChanged(true);
         
         // Remove the added book from search results
@@ -356,7 +405,9 @@ export function LibraryUI({
         );
         
         // Update library
+        debugLog('LibraryUI: Reloading library');
         await loadLibrary();
+        debugLog('LibraryUI: Library reloaded');
         
         // Show success message with translated title if available
         const displayTitle = translatedTitle || formattedTitle;
@@ -370,6 +421,7 @@ export function LibraryUI({
         throw new Error("Failed to add book");
       }
     } catch (error) {
+      debugLog(`LibraryUI: Error adding book: ${error.message}`);
       const errorMessage = `${uiText.errorAddingBook || "Error adding book"}: ${error.message}`;
       if (Platform.OS === 'web') {
         alert(errorMessage);
@@ -377,48 +429,52 @@ export function LibraryUI({
         Alert.alert(uiText.error || "Error", errorMessage);
       }
     } finally {
+      debugLog('LibraryUI: Finished adding book process');
       setLoading(false);
     }
   };
   
   // ---- Search Functionality ----
+  
+  // Simple fetch with robust error handling and platform awareness
   const safeFetch = async (url, options = {}) => {
     try {
       addDebugMessage(`Fetching: ${url.substring(0, 50)}...`);
-    
+      
       // Set a reasonable timeout
       const controller = new AbortController();
       const timeoutId = setTimeout(() => {
         controller.abort();
       }, 30000); // 30 second timeout
-    
+      
       let finalOptions = {
         ...options,
         signal: controller.signal
       };
-    
+      
       let response;
-    
+      
       // Only apply proxy in web environment
       if (Platform.OS === 'web') {
         // Use a reliable CORS proxy specifically for the search functionality
         const corsProxy = 'https://api.codetabs.com/v1/proxy?quest=';
         const encodedUrl = encodeURIComponent(url);
         const proxyUrl = `${corsProxy}${encodedUrl}`;
-      
+        
         addDebugMessage(`Using proxy: ${corsProxy}`);
+        debugLog(`LibraryUI: Using proxy for web: ${corsProxy}`);
         response = await fetch(proxyUrl, finalOptions);
       } else {
         // Native platforms don't need proxy
         response = await fetch(url, finalOptions);
       }
-    
+      
       clearTimeout(timeoutId);
-    
+      
       if (!response.ok) {
         throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
       }
-    
+      
       const text = await response.text();
       addDebugMessage(`Fetch successful: ${text.length} bytes`);
       return text;
@@ -431,7 +487,7 @@ export function LibraryUI({
       throw error;
     }
   };
-    
+  
   // Function to find the best anchor in HTML content
   const findBestAnchor = (htmlContent) => {
     // Skip if no content
@@ -748,13 +804,14 @@ export function LibraryUI({
       addDebugMessage('Search stopped by user');
     }
   };
+  
   // Start search
   const handleSearch = async () => {
     if (isSearching) {
       stopSearch();
       return;
     }
-  
+    
     if (!searchQuery.trim()) {
       const message = uiText.enterSearchQuery || "Please enter a search query";
       if (Platform.OS === 'web') {
@@ -764,55 +821,63 @@ export function LibraryUI({
       }
       return;
     }
-  
+    
     // Clear previous results and debug messages
     setSearchResults([]);
     clearDebugMessages();
     setIsSearching(true);
-  
+    
     // Setup abort controller
     abortControllerRef.current = new AbortController();
-  
+    debugLog(`LibraryUI: Starting search for: ${searchQuery}`);
+    
     try {
       // Get search results
       const bookLinks = await getSearchResults(searchQuery);
-    
+      debugLog(`LibraryUI: Found ${bookLinks.length} book links in search results`);
+      
       // Process all books instead of a limited number
       let processedCount = 0;
-    
+      
       // Process each book, no arbitrary limit
       for (let i = 0; i < bookLinks.length; i++) {
         // Check if search was stopped
         if (abortControllerRef.current.signal.aborted) {
+          debugLog('LibraryUI: Search was aborted');
           throw new Error('Search stopped');
         }
-      
+        
         const link = bookLinks[i];
         addDebugMessage(`Processing book ${i+1}/${bookLinks.length}: ${link.title}`);
-      
+        debugLog(`LibraryUI: Processing book ${i+1}/${bookLinks.length}: ${link.title}`);
+        
         // Skip .txt URLs
         if (link.bookPath.toLowerCase().endsWith('.txt')) {
+          debugLog('LibraryUI: Skipping .txt file');
           continue;
         }
-      
+        
         // Process book
         const result = await processBook(link.bookPath, link.title, link.author, searchQuery);
-      
+        
         // Add to results if successful
         if (result.success) {
+          debugLog(`LibraryUI: Successfully processed book: ${link.title}`);
           setSearchResults(prev => [...prev, result.bookInfo]);
           processedCount++;
         }
-      
+        
         // Add a small delay between processing books to prevent UI freezing
         // and allow the user to start seeing results sooner
         await new Promise(resolve => setTimeout(resolve, 100));
       }
-    
+      
       addDebugMessage(`Search completed: ${processedCount} books processed successfully`);
+      debugLog(`LibraryUI: Search completed: ${processedCount} books processed successfully`);
     } catch (err) {
       if (err.message !== 'Search stopped') {
         addDebugMessage(`Error: ${err.message}`);
+        debugLog(`LibraryUI: Search error: ${err.message}`);
         const errorMessage = `${uiText.searchError || "Search error"}: ${err.message}`;
         if (Platform.OS === 'web') {
           alert(errorMessage);
@@ -822,11 +887,13 @@ export function LibraryUI({
       }
     } finally {
       setIsSearching(false);
+      debugLog('LibraryUI: Search process finished');
     }
   };
-    
+  
   // Handle closing the library modal with proper notification
   const handleClose = () => {
+    debugLog(`LibraryUI: Closing library modal, libraryChanged=${libraryChanged}`);
     if (onClose) {
       onClose(libraryChanged);
     }
@@ -836,6 +903,7 @@ export function LibraryUI({
   const handleOpenURL = (url) => {
     Linking.openURL(url).catch(err => {
       console.error('Error opening URL:', err);
+      debugLog(`LibraryUI: Error opening URL: ${err.message}`);
       const message = uiText.cannotOpenURL || "Cannot open URL";
       if (Platform.OS === 'web') {
         alert(message);
