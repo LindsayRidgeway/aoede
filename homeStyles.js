@@ -79,7 +79,8 @@ export const homeStyles = StyleSheet.create({
 
   // Input container styles
   inputContainer: {
-    width: '80%',
+    // Make container wider on mobile (90% vs 80% on web)
+    width: Platform.OS === 'web' ? '80%' : '90%',
     backgroundColor: '#fff',
     borderRadius: 10,
     borderWidth: 1,
@@ -279,17 +280,23 @@ export const homeStyles = StyleSheet.create({
     // Platform-specific adjustments
     ...(Platform.OS === 'android' 
       ? {
-          // Android needs a bit more vertical space
-          paddingVertical: 12, 
+          // Set fixed height for Android that matches input fields
+          height: 40,
+          paddingVertical: 0,
           paddingHorizontal: 10,
-          // Remove fixed height on Android
-          height: undefined
         } 
-      : {
-          // Keep existing style for iOS/Web
-          padding: 10,
-          height: 40
-        }
+      : Platform.OS === 'ios'
+        ? {
+            // iOS-specific height that matches input fields
+            height: 40,
+            paddingVertical: 0,
+            paddingHorizontal: 10,
+          }
+        : {
+            // Keep existing style for Web
+            padding: 10,
+            height: 40
+          }
     )
   },
   loadButton: {
@@ -301,30 +308,37 @@ export const homeStyles = StyleSheet.create({
     // Platform-specific adjustments
     ...(Platform.OS === 'android' 
       ? {
-          // Android needs a bit more vertical space
-          paddingVertical: 12, 
+          // Set fixed height for Android that matches input fields
+          height: 40,
+          paddingVertical: 0,
           paddingHorizontal: 10,
-          // Remove fixed height on Android
-          height: undefined,
-          // Add a bit of bottom margin to counteract text clipping
-          marginBottom: 2
         } 
-      : {
-          // Keep existing style for iOS/Web
-          padding: 10,
-          height: 40
-        }
+      : Platform.OS === 'ios'
+        ? {
+            // iOS-specific height that matches input fields
+            height: 40,
+            paddingVertical: 0,
+            paddingHorizontal: 10,
+          }
+        : {
+            // Keep existing style for Web
+            padding: 10,
+            height: 40
+          }
     )
   },
   buttonText: {
     color: '#fff',
-    fontSize: 16,
+    // Smaller font size for mobile
+    fontSize: Platform.OS === 'web' ? 16 : 14,
     fontWeight: 'bold',
-    // Fix vertical text alignment on Android
-    ...(Platform.OS === 'android' 
+    // Fix text alignment on mobile
+    textAlign: 'center',
+    // Fix vertical text alignment
+    ...(Platform.OS === 'android' || Platform.OS === 'ios'
       ? {
           includeFontPadding: false,
-          textAlignVertical: 'center'
+          textAlignVertical: 'center',
         } 
       : {}
     )

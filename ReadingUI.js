@@ -69,21 +69,7 @@ export function ReadingUI({
 
   return (
     <>
-      {/* Content Container */}
-      <View style={styles.contentContainer}>
-        {showText && (
-          <View style={styles.sentenceWrapper}>
-            <Text style={styles.foreignSentence}>{sentence}</Text>
-          </View>
-        )}
-        {showTranslation && translatedSentence && (
-          <View style={showText ? styles.translationWrapper : styles.soloTranslationWrapper}>
-            <Text style={styles.translation}>{translatedSentence}</Text>
-          </View>
-        )}
-      </View>
-
-      {/* Controls Container */}
+      {/* Controls Container - MOVED ABOVE CONTENT */}
       <View style={styles.controlsContainer}>
         <View style={styles.controls}>
           <TouchableOpacity 
@@ -133,6 +119,20 @@ export function ReadingUI({
             {uiText.rewindConfirmTitle || "Rewind"}
           </Text>
         </TouchableOpacity>
+      </View>
+
+      {/* Content Container */}
+      <View style={styles.contentContainer}>
+        {showText && (
+          <View style={styles.sentenceWrapper}>
+            <Text style={styles.foreignSentence}>{sentence}</Text>
+          </View>
+        )}
+        {showTranslation && translatedSentence && (
+          <View style={showText ? styles.translationWrapper : styles.soloTranslationWrapper}>
+            <Text style={styles.translation}>{translatedSentence}</Text>
+          </View>
+        )}
       </View>
       
       {/* Speed Control with Inline Circle Buttons */}

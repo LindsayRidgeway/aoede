@@ -8,7 +8,7 @@ export const readingStyles = StyleSheet.create({
   // Content container styles
   contentContainer: {
     width: '80%',
-    marginTop: 5,
+    marginTop: 10, // Reduced from 15 to account for buttons above
     padding: 15,
     backgroundColor: '#f9f9f9',
     borderRadius: 10,
@@ -59,7 +59,8 @@ export const readingStyles = StyleSheet.create({
   controlsContainer: {
     width: '80%',
     alignItems: 'flex-start',
-    marginBottom: 2,
+    marginTop: 5, // Small margin at top
+    marginBottom: 10, // Space before content container
     position: 'relative'  // For positioning the rewind button
   },
   controls: {
