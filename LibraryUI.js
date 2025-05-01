@@ -748,14 +748,13 @@ export function LibraryUI({
       addDebugMessage('Search stopped by user');
     }
   };
-  
   // Start search
   const handleSearch = async () => {
     if (isSearching) {
       stopSearch();
       return;
     }
-    
+  
     if (!searchQuery.trim()) {
       const message = uiText.enterSearchQuery || "Please enter a search query";
       if (Platform.OS === 'web') {
@@ -765,48 +764,51 @@ export function LibraryUI({
       }
       return;
     }
-    
+  
     // Clear previous results and debug messages
     setSearchResults([]);
     clearDebugMessages();
     setIsSearching(true);
-    
+  
     // Setup abort controller
     abortControllerRef.current = new AbortController();
-    
+  
     try {
       // Get search results
       const bookLinks = await getSearchResults(searchQuery);
-      
-      // Process a limited number of books for performance
-      const maxBooksToProcess = 5;
+    
+      // Process all books instead of a limited number
       let processedCount = 0;
-      
-      // Process each book up to the limit
-      for (let i = 0; i < Math.min(bookLinks.length, maxBooksToProcess); i++) {
+    
+      // Process each book, no arbitrary limit
+      for (let i = 0; i < bookLinks.length; i++) {
         // Check if search was stopped
         if (abortControllerRef.current.signal.aborted) {
           throw new Error('Search stopped');
         }
-        
+      
         const link = bookLinks[i];
-        addDebugMessage(`Processing book ${i+1}/${Math.min(bookLinks.length, maxBooksToProcess)}: ${link.title}`);
-        
+        addDebugMessage(`Processing book ${i+1}/${bookLinks.length}: ${link.title}`);
+      
         // Skip .txt URLs
         if (link.bookPath.toLowerCase().endsWith('.txt')) {
           continue;
         }
-        
+      
         // Process book
         const result = await processBook(link.bookPath, link.title, link.author, searchQuery);
-        
+      
         // Add to results if successful
         if (result.success) {
           setSearchResults(prev => [...prev, result.bookInfo]);
           processedCount++;
         }
-      }
       
+        // Add a small delay between processing books to prevent UI freezing
+        // and allow the user to start seeing results sooner
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    
       addDebugMessage(`Search completed: ${processedCount} books processed successfully`);
     } catch (err) {
       if (err.message !== 'Search stopped') {
@@ -822,7 +824,7 @@ export function LibraryUI({
       setIsSearching(false);
     }
   };
-  
+    
   // Handle closing the library modal with proper notification
   const handleClose = () => {
     if (onClose) {
