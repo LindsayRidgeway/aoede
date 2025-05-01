@@ -113,6 +113,8 @@ export default function App() {
   if (__DEV__) console.log("MODULE 0003: App.js.App");
   debugLog('App initialized');
 
+  // Basic UI text in English
+  const defaultUiText = {
     addBook: "Add Book",
     articulation: "Articulation",
     autoplay: "Next Sentence Auto-play",

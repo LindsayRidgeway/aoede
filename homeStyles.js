@@ -171,11 +171,13 @@ export const homeStyles = StyleSheet.create({
     alignItems: 'flex-end' // Align items at the bottom
   },
   leftColumn: {
-    width: '70%', // Width for left column
+    // Adjust width based on platform
+    width: Platform.OS === 'web' ? '70%' : '65%', // Narrower on mobile
     marginRight: 10,
   },
   rightColumn: {
-    width: '25%', // Width for right column
+    // Adjust width based on platform
+    width: Platform.OS === 'web' ? '25%' : '30%', // Wider on mobile
   },
 
   // Source Material section
@@ -278,25 +280,19 @@ export const homeStyles = StyleSheet.create({
     width: '100%',
     marginBottom: 10,
     // Platform-specific adjustments
-    ...(Platform.OS === 'android' 
+    ...(Platform.OS === 'android' || Platform.OS === 'ios'
       ? {
-          // Set fixed height for Android that matches input fields
-          height: 40,
-          paddingVertical: 0,
-          paddingHorizontal: 10,
+          // Mobile specific adjustments
+          height: 'auto',
+          minHeight: 40,
+          paddingVertical: 5,
+          paddingHorizontal: 8,
         } 
-      : Platform.OS === 'ios'
-        ? {
-            // iOS-specific height that matches input fields
-            height: 40,
-            paddingVertical: 0,
-            paddingHorizontal: 10,
-          }
-        : {
-            // Keep existing style for Web
-            padding: 10,
-            height: 40
-          }
+      : {
+          // Keep existing style for Web
+          padding: 10,
+          height: 40
+        }
     )
   },
   loadButton: {
@@ -306,35 +302,28 @@ export const homeStyles = StyleSheet.create({
     justifyContent: 'center',
     width: '100%',
     // Platform-specific adjustments
-    ...(Platform.OS === 'android' 
+    ...(Platform.OS === 'android' || Platform.OS === 'ios'
       ? {
-          // Set fixed height for Android that matches input fields
-          height: 40,
-          paddingVertical: 0,
-          paddingHorizontal: 10,
+          // Mobile specific adjustments
+          height: 'auto',
+          minHeight: 40,
+          paddingVertical: 5,
+          paddingHorizontal: 8,
         } 
-      : Platform.OS === 'ios'
-        ? {
-            // iOS-specific height that matches input fields
-            height: 40,
-            paddingVertical: 0,
-            paddingHorizontal: 10,
-          }
-        : {
-            // Keep existing style for Web
-            padding: 10,
-            height: 40
-          }
+      : {
+          // Keep existing style for Web
+          padding: 10,
+          height: 40
+        }
     )
   },
   buttonText: {
     color: '#fff',
     // Smaller font size for mobile
-    fontSize: Platform.OS === 'web' ? 16 : 14,
+    fontSize: Platform.OS === 'web' ? 16 : 12,
     fontWeight: 'bold',
-    // Fix text alignment on mobile
+    // Fix text alignment on mobile and allow wrapping
     textAlign: 'center',
-    // Fix vertical text alignment
     ...(Platform.OS === 'android' || Platform.OS === 'ios'
       ? {
           includeFontPadding: false,
