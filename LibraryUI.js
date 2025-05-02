@@ -9,7 +9,6 @@ import { styles } from './styles';
 import { getUserLibrary, removeBookFromLibrary, addBookToLibrary } from './userLibrary';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
-import { debugLog } from './DebugPanel';
 
 // Key for storing translated titles
 const TRANSLATED_TITLES_KEY = 'aoede_translated_titles';
@@ -37,20 +36,17 @@ export function LibraryUI({
   
   // Utility function to add debug messages
   const addDebugMessage = (message) => {
-    debugLog(`LibraryUI: ${message}`);
     setDebugMessages(prev => [...prev, message]);
   };
   
   // Utility function to clear debug messages
   const clearDebugMessages = () => {
-    debugLog('LibraryUI: Clearing debug messages');
     setDebugMessages([]);
   };
   
   // Load saved translated titles
   const loadTranslatedTitles = async () => {
     try {
-      debugLog('LibraryUI: Loading translated titles');
       const savedTranslations = await AsyncStorage.getItem(TRANSLATED_TITLES_KEY);
       if (savedTranslations) {
         const translationsObject = JSON.parse(savedTranslations);
@@ -110,8 +106,9 @@ export function LibraryUI({
   useEffect(() => {
     return () => {
       if (libraryChanged && onClose) {
-        debugLog(`LibraryUI: Component unmounting, libraryChanged=${libraryChanged}`);
-        onClose(libraryChanged);
+        if (onClose) {
+          onClose(libraryChanged);
+        }
       }
     };
   }, [libraryChanged, onClose]);
@@ -421,154 +418,6 @@ export function LibraryUI({
     }
   };
   
-  // Function to find the best anchor in HTML content
-  const findBestAnchor = (htmlContent) => {
-    // Skip if no content
-    if (!htmlContent || htmlContent.length === 0) {
-      return null;
-    }
-    
-    // Priority tags to look for (in order of preference)
-    const priorityTags = [
-      'chapter01', 'chapter1', 'chapter-1', 'chap01', 'chap1', 'chap-1',
-      'book01', 'book1', 'book-1',
-      'part01', 'part1', 'part-1',
-      'preface', 'introduction', 'intro',
-      'toc', 'contents', 'table-of-contents',
-      'title', 'heading', 'header'
-    ];
-    
-    // First, try to find priority anchors (best for reading)
-    for (const tag of priorityTags) {
-      // Look for id attribute
-      const idPattern = `id="${tag}"`;
-      const idIndex = htmlContent.indexOf(idPattern);
-      if (idIndex !== -1) {
-        return tag;
-      }
-      
-      // Look for name attribute
-      const namePattern = `name="${tag}"`;
-      const nameIndex = htmlContent.indexOf(namePattern);
-      if (nameIndex !== -1) {
-        return tag;
-      }
-    }
-    
-    // Second, try to find any anchor that looks like a chapter or part
-    const chapterRegex = /<a[^>]*?(?:id|name)=["'](chapter|book|part).*?["'][^>]*>/i;
-    const chapterMatch = htmlContent.match(chapterRegex);
-    if (chapterMatch && chapterMatch[1]) {
-      // Extract the full id/name value
-      const fullAnchorRegex = /<a[^>]*?(?:id|name)=["']([^"']+)["'][^>]*>/i;
-      const fullMatch = htmlContent.substring(chapterMatch.index).match(fullAnchorRegex);
-      if (fullMatch && fullMatch[1]) {
-        return fullMatch[1];
-      }
-    }
-    
-    // Third, try to find any id or name attribute in an anchor tag
-    const anyAnchorRegex = /<a[^>]*?(?:id|name)=["']([^"']+)["'][^>]*>/i;
-    const anyMatch = htmlContent.match(anyAnchorRegex);
-    if (anyMatch && anyMatch[1]) {
-      return anyMatch[1];
-    }
-    
-    // Finally, try to find any link to an internal anchor
-    const linkPattern = 'href="#';
-    const linkIndex = htmlContent.indexOf(linkPattern);
-    if (linkIndex !== -1) {
-      // Extract the anchor part
-      const startIndex = linkIndex + linkPattern.length;
-      const endIndex = htmlContent.indexOf('"', startIndex);
-      
-      if (endIndex !== -1) {
-        return htmlContent.substring(startIndex, endIndex);
-      }
-    }
-    
-    // No suitable anchor found
-    return null;
-  };
-  
-  // Extract booklinks from search page using string methods
-  const extractBookLinksFromHtml = (html) => {
-    addDebugMessage(`Extracting book links from ${html.length} bytes`);
-    const bookLinks = [];
-    
-    // Look for book entries manually with simple string searches
-    let currentIndex = 0;
-    let bookCount = 0;
-    
-    while (true) {
-      // Find the next book entry
-      const bookEntryStart = html.indexOf('<li class="booklink">', currentIndex);
-      if (bookEntryStart === -1) {
-        break; // No more book entries
-      }
-      
-      // Find the end of the book entry
-      const bookEntryEnd = html.indexOf('</li>', bookEntryStart);
-      if (bookEntryEnd === -1) {
-        break; // Malformed HTML
-      }
-      
-      // Extract the book entry HTML
-      const bookEntryHtml = html.substring(bookEntryStart, bookEntryEnd + 5);
-      
-      // Find href link
-      const hrefStart = bookEntryHtml.indexOf('href="');
-      if (hrefStart !== -1) {
-        const hrefValueStart = hrefStart + 6; // length of 'href="'
-        const hrefValueEnd = bookEntryHtml.indexOf('"', hrefValueStart);
-        if (hrefValueEnd !== -1) {
-          const bookPath = bookEntryHtml.substring(hrefValueStart, hrefValueEnd);
-          
-          // Skip .txt files
-          if (bookPath.toLowerCase().endsWith('.txt')) {
-            currentIndex = bookEntryEnd + 5;
-            continue;
-          }
-          
-          // Find title
-          let title = 'Unknown';
-          const titleStart = bookEntryHtml.indexOf('<span class="title">');
-          if (titleStart !== -1) {
-            const titleValueStart = titleStart + 20; // length of '<span class="title">'
-            const titleValueEnd = bookEntryHtml.indexOf('</span>', titleValueStart);
-            if (titleValueEnd !== -1) {
-              title = bookEntryHtml.substring(titleValueStart, titleValueEnd).trim();
-            }
-          }
-          
-          // Find author (subtitle)
-          let author = 'Unknown';
-          const authorStart = bookEntryHtml.indexOf('<span class="subtitle">');
-          if (authorStart !== -1) {
-            const authorValueStart = authorStart + 23; // length of '<span class="subtitle">'
-            const authorValueEnd = bookEntryHtml.indexOf('</span>', authorValueStart);
-            if (authorValueEnd !== -1) {
-              author = bookEntryHtml.substring(authorValueStart, authorValueEnd).trim();
-            }
-          }
-          
-          bookLinks.push({
-            bookPath,
-            title,
-            author
-          });
-          bookCount++;
-        }
-      }
-      
-      // Move to the next entry
-      currentIndex = bookEntryEnd + 5;
-    }
-    
-    addDebugMessage(`Found ${bookCount} books in search results`);
-    return bookLinks;
-  };
-
   // Function to find the best anchor in HTML content
   const findBestAnchor = (htmlContent) => {
     // Skip if no content

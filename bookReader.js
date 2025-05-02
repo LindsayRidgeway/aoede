@@ -42,6 +42,41 @@ class BookReader {
     this.readingLevel = level;
   }
 
+  // New function that encapsulates the current reading management functionality
+  previousReadingManagement() {
+    return {
+      // Interface for loading a book in Aoede 2.0 style
+      loadBook: async (studyLanguage, bookId) => {
+        return await this.handleLoadBook(studyLanguage, bookId);
+      },
+      
+      // Interface for advancing to next sentence in Aoede 2.0 style
+      advanceToNextSentence: async () => {
+        return await this.handleNextSentence();
+      },
+      
+      // Interface for rewinding a book in Aoede 2.0 style
+      rewindBook: async () => {
+        return await this.handleRewind();
+      },
+      
+      // Interface for getting current progress information
+      getProgress: () => {
+        return this.getProgress();
+      },
+      
+      // Interface for resetting the reader
+      reset: () => {
+        this.reset();
+      },
+      
+      // Get the current reading level
+      getReadingLevel: () => {
+        return this.readingLevel;
+      }
+    };
+  }
+
   async handleLoadBook(studyLanguage, bookId) {
     if (__DEV__) console.log("MODULE 0070: bookReader.handleLoadBook");
     if (this.trackerExists &&

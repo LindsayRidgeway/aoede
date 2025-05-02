@@ -212,8 +212,6 @@ _This checklist is used to test Aoede across all supported platforms before rele
 
 ## Roadmap
 
-- Forward and backward positioning of the source material
-- Replace DOM logic with raw string scanning to greatly speed up the Library search feature
 - Voice selection
 - Individual word translation and pronunciation
 
