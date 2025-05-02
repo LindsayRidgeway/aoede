@@ -9,6 +9,7 @@ import { getUserLibrary, getBookById } from './userLibrary';
 import { debugLog } from './DebugPanel';
 
 const BLOCK_SIZE = 10000;
+const CHUNK_SIZE = 10000; // Size of chunks for processing
 
 class BookReader {
   constructor() {
@@ -34,12 +35,13 @@ class BookReader {
     
     // New properties for Aoede 3.0
     this.bookText = null;          // Step 1: Full book text
+    this.bookTextPlain = null;     // Plain text version of the book for sentence extraction
     this.anchorPosition = 0;       // Step 2: Position of anchor
     this.bookSentences = [];       // Step 3: Array of all sentences in the book
     this.currentSentenceOffset = 0; // Step 4: Current sentence offset in book
     this.sentenceChunks = [];      // Step 5: Array of chunks of sentences
     this.currentChunkIndex = 0;    // Current chunk being processed
-    this.simplifiedChunks = [];    // Processed chunks with simplifications
+    this.chunkSentenceArray = [];  // Array of processed sentences for current chunk
   }
 
   initialize(callback, userLanguage = 'en') {
@@ -62,7 +64,7 @@ class BookReader {
       // Interface for loading a book in Aoede 3.0 style
       loadBook: async (studyLanguage, bookId) => {
         debugLog(`BookReader: readingManagement().loadBook(${studyLanguage}, ${bookId})`);
-        // Implement steps 1 and 2 of our algorithm
+        // Implement steps 1-7 of our algorithm
         try {
           // Step 1: Load the entire book into memory
           await this.loadEntireBook(bookId);
@@ -70,13 +72,21 @@ class BookReader {
           // Step 2: Find the anchor in the URL
           await this.findAnchor(bookId);
           
-          // Show the first 100 chars of text starting at the anchor
-          const textAtAnchor = this.bookText.substring(this.anchorPosition, this.anchorPosition + 100);
-          debugLog(`Book text at anchor (100 chars): "${textAtAnchor.replace(/\n/g, ' ')}"`);
+          // Step 3: Separate book into sentences at the anchor position
+          await this.extractSentences();
           
-          // For now, tell the user we haven't implemented further steps
-          this.simpleArray = ["Aoede 3.0 is under development. The book has been loaded and the anchor found."];
-          this.translatedArray = ["Aoede 3.0 is under development. The book has been loaded and the anchor found."];
+          // Step 4: Identify the user's previous position using the tracker
+          await this.identifyUserPosition(studyLanguage, bookId);
+          
+          // Step 5: Divide sentences into chunks
+          this.divideSentencesIntoChunks();
+          
+          // Step 6-7: Process the initial chunk and create the sentence array
+          await this.processInitialChunk(studyLanguage);
+          
+          // Display a success message
+          this.simpleArray = ["Aoede 3.0 is under development. Steps 1-7 have been completed successfully."];
+          this.translatedArray = ["Aoede 3.0 is under development. Steps 1-7 have been completed successfully."];
           this.simpleIndex = 0;
           
           if (this.onSentenceProcessed) {
@@ -134,7 +144,7 @@ class BookReader {
         return {
           currentSentenceIndex: this.simpleIndex,
           totalSentencesInMemory: this.simpleArray.length,
-          hasMoreContent: false
+          hasMoreContent: this.currentChunkIndex < this.sentenceChunks.length - 1
         };
       },
       
@@ -181,14 +191,18 @@ class BookReader {
         throw new Error("Failed to load book content");
       }
       
-      // Extract plain text from HTML using the exported bookPipeProcess module
-      this.bookText = htmlContent; // Store HTML content, not plain text for anchor searching
+      // Store the HTML content for anchor searching
+      this.bookText = htmlContent;
+      
+      // Extract plain text for sentence extraction
+      this.bookTextPlain = bookPipeProcess.extractText(htmlContent);
       
       debugLog(`Book loaded successfully: ${this.bookText.length} characters`);
       return true;
     } catch (error) {
       debugLog(`Error loading entire book: ${error.message}`);
       this.bookText = null;
+      this.bookTextPlain = null;
       throw error;
     }
   }
@@ -262,6 +276,361 @@ class BookReader {
       debugLog(`Error finding anchor: ${error.message}`);
       this.anchorPosition = 0;
       throw error;
+    }
+  }
+  
+  // Implementation of Step 3: Separate book into sentences at the anchor position
+  // Improved implementation with better sentence extraction
+  async extractSentences() {
+    debugLog(`BookReader: Step 3 - Extracting sentences from the book`);
+    
+    try {
+      if (!this.bookTextPlain) {
+        throw new Error("Book text not available");
+      }
+      
+      // Get text from the starting point in plain text
+      const textFromAnchor = this.bookTextPlain;
+      
+      // Use our improved sentence parsing algorithm
+      this.bookSentences = this.improvedSentenceExtraction(textFromAnchor);
+      
+      debugLog(`Extracted ${this.bookSentences.length} sentences from the book`);
+      
+      // Log the first few sentences
+      if (this.bookSentences.length > 0) {
+        const firstThreeSentences = this.bookSentences.slice(0, 3);
+        for (let i = 0; i < firstThreeSentences.length; i++) {
+          const sentence = firstThreeSentences[i];
+          debugLog(`Original sentence ${i + 1}: "${sentence.substring(0, 100)}${sentence.length > 100 ? '...' : ''}"`);
+        }
+      }
+      
+      return true;
+    } catch (error) {
+      debugLog(`Error extracting sentences: ${error.message}`);
+      this.bookSentences = [];
+      throw error;
+    }
+  }
+  
+  // Improved sentence extraction with sliding window algorithm
+  improvedSentenceExtraction(text) {
+    // This function extracts proper sentences from text using a sliding window approach
+    
+    // Prepare the text by normalizing whitespace and removing excessive newlines
+    const normalizedText = text.replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n');
+    
+    // Split text into paragraphs first (for better context awareness)
+    const paragraphs = normalizedText.split(/\n\n+/);
+    
+    const allSentences = [];
+    
+    // Process each paragraph
+    for (const paragraph of paragraphs) {
+      if (paragraph.trim().length === 0) continue;
+      
+      // Potential sentence end points
+      const sentenceEndPoints = [];
+      
+      // Find all potential sentence endings (., !, ?, etc.)
+      let match;
+      const sentenceEndRegex = /[.!?]['"]?\s+/g;
+      while ((match = sentenceEndRegex.exec(paragraph)) !== null) {
+        sentenceEndPoints.push(match.index + match[0].length - 1);
+      }
+      
+      // Handle case where paragraph doesn't end with punctuation
+      if (sentenceEndPoints.length === 0 || sentenceEndPoints[sentenceEndPoints.length - 1] !== paragraph.length - 1) {
+        sentenceEndPoints.push(paragraph.length);
+      }
+      
+      // Extract sentences based on end points
+      let startIndex = 0;
+      for (const endIndex of sentenceEndPoints) {
+        const sentenceCandidate = paragraph.substring(startIndex, endIndex).trim();
+        
+        // Apply additional checks to filter out false sentence breaks
+        if (this.isValidSentence(sentenceCandidate)) {
+          allSentences.push(sentenceCandidate);
+        }
+        
+        startIndex = endIndex;
+      }
+      
+      // If we couldn't extract any sentences from this paragraph, add it as one sentence
+      if (startIndex === 0 && paragraph.trim().length > 0) {
+        allSentences.push(paragraph.trim());
+      }
+    }
+    
+    return allSentences;
+  }
+  
+  // Helper method to validate if a string is a proper sentence
+  isValidSentence(text) {
+    // Minimum criteria for a valid sentence
+    if (!text) return false;
+    
+    // Remove whitespace
+    const trimmedText = text.trim();
+    
+    // Check minimum length (at least 2 characters)
+    if (trimmedText.length < 2) return false;
+    
+    // Check for at least one letter (not just punctuation or numbers)
+    if (!/[a-zA-Z]/.test(trimmedText)) return false;
+    
+    // Check for special cases - avoid breaking at abbreviations or initials
+    // Common abbreviations: Mr., Mrs., Dr., St., etc.
+    const commonAbbreviations = [
+      'mr.', 'mrs.', 'ms.', 'dr.', 'prof.', 'st.', 'jr.', 'sr.', 'e.g.', 'i.e.', 'vs.',
+      'etc.', 'a.m.', 'p.m.', 'u.s.', 'u.k.'
+    ];
+    
+    for (const abbr of commonAbbreviations) {
+      if (trimmedText.toLowerCase().endsWith(abbr + ' ')) {
+        return false; // This is an abbreviation, not a sentence end
+      }
+    }
+    
+    // Check for quoted sentences within a larger sentence
+    // This avoids splitting "He said, "Hello." Then he left." into two sentences
+    if (trimmedText.match(/^['"][^'"]*[.!?]['"]$/) !== null) {
+      return false;
+    }
+    
+    return true;
+  }
+  
+  // Implementation of Step 4: Identify the user's previous position
+  async identifyUserPosition(studyLanguage, bookId) {
+    debugLog(`BookReader: Step 4 - Identifying user position from tracker`);
+    
+    try {
+      // Get book details
+      const book = await getBookById(bookId);
+      if (!book) {
+        throw new Error(`Book with ID ${bookId} not found`);
+      }
+      
+      const bookTitle = book.title;
+      
+      // Calculate tracker key
+      const trackerKey = `book_tracker_${studyLanguage}_${bookTitle}`;
+      
+      // Try to get the existing tracker
+      const savedTracker = await AsyncStorage.getItem(trackerKey);
+      
+      if (savedTracker) {
+        try {
+          const parsedTracker = JSON.parse(savedTracker);
+          
+          // Store tracker information
+          this.tracker = parsedTracker;
+          this.trackerExists = true;
+          
+          // Get the offset from the tracker
+          const offset = parsedTracker.offset || 0;
+          
+          // Find the sentence index based on the character offset
+          // For now, we'll set the index to 0 and implement a more accurate method later
+          this.currentSentenceOffset = 0;
+          
+          debugLog(`Found tracker with offset ${offset}. Starting at sentence index ${this.currentSentenceOffset}`);
+        } catch (error) {
+          // If there's an error parsing, create a new tracker
+          debugLog(`Error parsing tracker, creating new one: ${error.message}`);
+          this.tracker = {
+            studyLanguage,
+            bookTitle,
+            offset: 0
+          };
+          this.trackerExists = true;
+          this.currentSentenceOffset = 0;
+          await this.saveTrackerState();
+        }
+      } else {
+        // If no tracker exists, create a new one
+        debugLog('No tracker found, creating new one');
+        this.tracker = {
+          studyLanguage,
+          bookTitle,
+          offset: 0
+        };
+        this.trackerExists = true;
+        this.currentSentenceOffset = 0;
+        await this.saveTrackerState();
+      }
+      
+      return true;
+    } catch (error) {
+      debugLog(`Error identifying user position: ${error.message}`);
+      
+      // Default to starting from the beginning
+      this.currentSentenceOffset = 0;
+      
+      // Create a default tracker
+      this.tracker = {
+        studyLanguage,
+        bookTitle: book ? book.title : bookId,
+        offset: 0
+      };
+      this.trackerExists = true;
+      await this.saveTrackerState();
+      
+      throw error;
+    }
+  }
+  
+  // Implementation of Step 5: Divide sentences into chunks
+  divideSentencesIntoChunks() {
+    debugLog(`BookReader: Step 5 - Dividing sentences into chunks`);
+    
+    try {
+      if (!this.bookSentences || this.bookSentences.length === 0) {
+        throw new Error("No sentences available to divide into chunks");
+      }
+      
+      const chunks = [];
+      let currentChunk = [];
+      let currentChunkSize = 0;
+      
+      // Start from the current sentence offset
+      for (let i = this.currentSentenceOffset; i < this.bookSentences.length; i++) {
+        const sentence = this.bookSentences[i];
+        
+        // If adding this sentence would exceed the chunk size and we already have sentences
+        // in the current chunk, then start a new chunk
+        if (currentChunkSize + sentence.length > CHUNK_SIZE && currentChunk.length > 0) {
+          chunks.push({
+            startIndex: i - currentChunk.length,
+            endIndex: i - 1,
+            sentences: currentChunk
+          });
+          
+          currentChunk = [sentence];
+          currentChunkSize = sentence.length;
+        } else {
+          // Otherwise, add the sentence to the current chunk
+          currentChunk.push(sentence);
+          currentChunkSize += sentence.length;
+        }
+      }
+      
+      // Add the last chunk if it has any sentences
+      if (currentChunk.length > 0) {
+        const startIndex = this.bookSentences.length - currentChunk.length;
+        chunks.push({
+          startIndex,
+          endIndex: this.bookSentences.length - 1,
+          sentences: currentChunk
+        });
+      }
+      
+      this.sentenceChunks = chunks;
+      this.currentChunkIndex = 0;
+      
+      debugLog(`Divided sentences into ${chunks.length} chunks`);
+      
+      // Log stats about the first chunk
+      if (chunks.length > 0) {
+        const firstChunk = chunks[0];
+        debugLog(`First chunk: ${firstChunk.sentences.length} sentences, indices ${firstChunk.startIndex}-${firstChunk.endIndex}`);
+      }
+      
+      return true;
+    } catch (error) {
+      debugLog(`Error dividing sentences into chunks: ${error.message}`);
+      this.sentenceChunks = [];
+      throw error;
+    }
+  }
+  
+  // Implementation of Step 6 & 7: Process chunks and create sentence arrays
+  async processInitialChunk(studyLanguage) {
+    debugLog(`BookReader: Steps 6-7 - Processing initial chunk`);
+    
+    try {
+      if (!this.sentenceChunks || this.sentenceChunks.length === 0) {
+        throw new Error("No chunks available to process");
+      }
+      
+      // Get the current chunk
+      const currentChunk = this.sentenceChunks[this.currentChunkIndex];
+      
+      // Get the sentences for processing
+      const sentencesToProcess = currentChunk.sentences;
+      
+      if (sentencesToProcess.length === 0) {
+        throw new Error("No sentences in the current chunk");
+      }
+      
+      // Get book language
+      const book = await getBookById(this.reader.bookId);
+      const bookLanguage = book ? book.language : 'en';
+      
+      // Process the chunk
+      debugLog(`Processing chunk ${this.currentChunkIndex} with ${sentencesToProcess.length} sentences`);
+      
+      // Create a chunkSentenceArray for this chunk
+      this.chunkSentenceArray = [];
+      
+      // Process all sentences in the chunk
+      for (let i = 0; i < sentencesToProcess.length; i++) {
+        const sentence = sentencesToProcess[i];
+        
+        // Get simplified and translated versions using the API
+        try {
+          const processedText = await processSourceText(
+            sentence, 
+            bookLanguage, 
+            studyLanguage, 
+            this.userLanguage, 
+            this.readingLevel
+          );
+          
+          // Extract simplified and translated sentences
+          const lines = processedText
+            .split('\n')
+            .map(line => line.trim())
+            .filter(line => line.length > 0);
+          
+          const simplified = lines[0] || sentence;
+          const translation = lines[1] || sentence;
+          
+          // Add to the chunk sentence array
+          this.chunkSentenceArray.push({
+            original: sentence,
+            simplified,
+            translation
+          });
+        } catch (error) {
+          // If there's an error, use the original sentence
+          this.chunkSentenceArray.push({
+            original: sentence,
+            simplified: sentence,
+            translation: sentence
+          });
+        }
+      }
+      
+      // Log the first 3 sentences of the chunkSentenceArray
+      if (this.chunkSentenceArray.length > 0) {
+        const numToLog = Math.min(3, this.chunkSentenceArray.length);
+        
+        debugLog(`First ${numToLog} sentences in the chunkSentenceArray:`);
+        
+        for (let i = 0; i < numToLog; i++) {
+          const sentenceObj = this.chunkSentenceArray[i];
+          debugLog(`Sentence ${i + 1} (First 100 chars): "${sentenceObj.original.substring(0, 100)}${sentenceObj.original.length > 100 ? '...' : ''}"`);
+        }
+      }
+      
+      return true;
+    } catch (error) {
+      debugLog(`Error processing initial chunk: ${error.message}`);
+      return false;
     }
   }
   
@@ -527,13 +896,14 @@ class BookReader {
     this.translatedArray = [];
     
     // Reset 3.0 properties
-    this.bookText = null;          
-    this.anchorPosition = 0;       
-    this.bookSentences = [];       
-    this.currentSentenceOffset = 0; 
-    this.sentenceChunks = [];      
-    this.currentChunkIndex = 0;    
-    this.simplifiedChunks = [];    
+    this.bookText = null;
+    this.bookTextPlain = null;
+    this.anchorPosition = 0;
+    this.bookSentences = [];
+    this.currentSentenceOffset = 0;
+    this.sentenceChunks = [];
+    this.currentChunkIndex = 0;
+    this.chunkSentenceArray = [];
   }
 
   getSL(multilineText) {
