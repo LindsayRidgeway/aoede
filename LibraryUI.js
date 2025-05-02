@@ -38,6 +38,11 @@ export function LibraryUI({
   onClose,
   uiText
 }) {
+  // Debug counters
+  const mountCountRef = useRef(0);
+  const unmountCountRef = useRef(0);
+  const modalCloseCountRef = useRef(0);
+  
   // State for user's book library
   const [books, setBooks] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -51,8 +56,38 @@ export function LibraryUI({
   const [debugMessages, setDebugMessages] = useState([]);
   const abortControllerRef = useRef(null);
   
+  // Prevent repeat callbacks flag
+  const hasCalledOnCloseRef = useRef(false);
+  
   // Current mode: 'library' or 'search'
   const [activeMode, setActiveMode] = useState('library');
+  
+  // Log component mounting
+  useEffect(() => {
+    mountCountRef.current += 1;
+    debugLog(`LibraryUI: MOUNTED #${mountCountRef.current}, visible=${visible}`);
+    
+    // Reset the onClose call flag when component mounts
+    hasCalledOnCloseRef.current = false;
+    
+    // On unmount
+    return () => {
+      unmountCountRef.current += 1;
+      debugLog(`LibraryUI: UNMOUNTED #${unmountCountRef.current}, libraryChanged=${libraryChanged}, hasCalledOnClose=${hasCalledOnCloseRef.current}`);
+    };
+  }, []); // Empty deps to run only on mount/unmount
+  
+  // Track visibility changes
+  useEffect(() => {
+    debugLog(`LibraryUI: Visibility changed to ${visible}`);
+  }, [visible]);
+  
+  // Track library changes
+  useEffect(() => {
+    if (libraryChanged) {
+      debugLog(`LibraryUI: Library marked as changed=${libraryChanged}`);
+    }
+  }, [libraryChanged]);
   
   // Utility function to add debug messages
   const addDebugMessage = (message) => {
@@ -136,15 +171,38 @@ export function LibraryUI({
     }
   }, [visible, refreshKey]);
   
-  // Notify parent when modal is closing if library changed
+  // MODIFIED: Controlled onClose notification using a synchronous approach
+  // to prevent multiple callbacks and recursion
+  const handleLibraryCloseCallback = () => {
+    // Prevent multiple calls in the same unmount cycle
+    if (hasCalledOnCloseRef.current) {
+      debugLog('LibraryUI: Preventing duplicate onClose callback');
+      return;
+    }
+    
+    modalCloseCountRef.current += 1;
+    debugLog(`LibraryUI: handleLibraryCloseCallback called #${modalCloseCountRef.current}, libraryChanged=${libraryChanged}`);
+    
+    if (libraryChanged && onClose) {
+      // Set the flag to prevent multiple calls
+      hasCalledOnCloseRef.current = true;
+      
+      // Call onClose
+      debugLog('LibraryUI: Calling onClose(true)');
+      onClose(libraryChanged);
+    }
+  };
+  
+  // MODIFIED: Separate useEffect for handling the cleanup function and
+  // wrapping it with the flag check to prevent multiple calls
   useEffect(() => {
     return () => {
-      if (libraryChanged && onClose) {
-        debugLog(`LibraryUI: Component unmounting, libraryChanged=${libraryChanged}`);
-        onClose(libraryChanged);
+      if (visible && libraryChanged) {
+        debugLog(`LibraryUI: Cleanup function running with libraryChanged=${libraryChanged}, visible=${visible}`);
+        handleLibraryCloseCallback();
       }
     };
-  }, [libraryChanged, onClose]);
+  }, [libraryChanged, visible, onClose]);
   
   // Cleanup on unmount
   useEffect(() => {
@@ -395,7 +453,7 @@ export function LibraryUI({
           debugLog('LibraryUI: Translated title saved');
         }
         
-        // Mark library as changed
+        // Mark library as changed - MODIFIED: make sure this is set before modal closes
         debugLog('LibraryUI: Marking library as changed');
         setLibraryChanged(true);
         
@@ -891,16 +949,23 @@ export function LibraryUI({
     }
   };
   
-  // Handle closing the library modal with proper notification
+  // MODIFIED: Handle closing the library modal with a safer approach
   const handleClose = () => {
-    debugLog(`LibraryUI: Closing library modal, libraryChanged=${libraryChanged}`);
+    debugLog(`LibraryUI: handleClose called, libraryChanged=${libraryChanged}`);
+    
+    // Call onClose with the current value of libraryChanged
+    // This will be picked up by the returning component
     if (onClose) {
+      modalCloseCountRef.current += 1;
+      debugLog(`LibraryUI: Explicitly calling onClose(${libraryChanged}) #${modalCloseCountRef.current}`);
+      hasCalledOnCloseRef.current = true;
       onClose(libraryChanged);
     }
   };
   
   // Handle opening URL
   const handleOpenURL = (url) => {
+    debugLog(`LibraryUI: Opening URL: ${url}`);
     Linking.openURL(url).catch(err => {
       console.error('Error opening URL:', err);
       debugLog(`LibraryUI: Error opening URL: ${err.message}`);
@@ -933,7 +998,12 @@ export function LibraryUI({
   const renderSearchResultItem = ({ item }) => (
     <View style={styles.bookListItem}>
       <View style={styles.bookInfoContainer}>
-        <TouchableOpacity onPress={() => handleOpenURL(item.url)}>
+        <TouchableOpacity 
+          onPress={() => {
+            debugLog(`LibraryUI: URL link clicked: ${item.url}`);
+            handleOpenURL(item.url);
+          }}
+        >
           <Text style={styles.bookTitleLink}>{item.title}</Text>
         </TouchableOpacity>
         <Text style={styles.bookLanguage}>{item.language}</Text>
@@ -947,12 +1017,20 @@ export function LibraryUI({
     </View>
   );
 
+  // MODIFIED: Add lifecycle debugging for modal mounting
+  useEffect(() => {
+    debugLog(`LibraryUI: Modal render cycle - visible=${visible}`);
+  });
+
   return (
     <Modal
       visible={visible}
       animationType="slide"
       transparent={true}
-      onRequestClose={handleClose}
+      onRequestClose={() => {
+        debugLog('LibraryUI: Modal onRequestClose triggered');
+        handleClose();
+      }}
     >
       <SafeAreaView style={styles.libraryModal}>
         <View style={styles.libraryContentWrapper}>
@@ -963,7 +1041,10 @@ export function LibraryUI({
             </Text>
             <TouchableOpacity 
               style={styles.exitButton} 
-              onPress={handleClose}
+              onPress={() => {
+                debugLog('LibraryUI: Exit button pressed');
+                handleClose();
+              }}
             >
               <Text style={styles.exitButtonText}>
                 {uiText.exit || "Exit"}
@@ -1033,7 +1114,16 @@ export function LibraryUI({
                 </TouchableOpacity>
               </View>
               
-              {/* Debug Messages Box Removed */}
+              {/* Debug Messages Box for iOS TestFlight debuggging */}
+              {Platform.OS === 'ios' && debugMessages.length > 0 && (
+                <View style={localStyles.debugContainer}>
+                  <ScrollView>
+                    {debugMessages.map((msg, index) => (
+                      <Text key={index} style={localStyles.debugMessage}>{msg}</Text>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
               
               {/* Search Results */}
               <View style={styles.resultsContainer}>
