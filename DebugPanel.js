@@ -7,6 +7,7 @@ let logBuffer = [];
 
 // Add a log entry (can be called from anywhere)
 export const debugLog = (message) => {
+	if (false) {
   const timestamp = new Date().toISOString().substring(11, 19); // HH:MM:SS
   const logEntry = `${timestamp}: ${message}`;
   console.log(logEntry); // Also log to console
@@ -16,6 +17,7 @@ export const debugLog = (message) => {
   if (logBuffer.length > 100) {
     logBuffer = logBuffer.slice(-100);
   }
+}
 };
 
 // Clear the log
