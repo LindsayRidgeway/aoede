@@ -170,7 +170,7 @@ _This checklist is used to test Aoede across all supported platforms before rele
 
 3. Merge updated branch, such as `aoede-2.1` and including updated `docs/index.html`, into main:
    ```
-   git merge aeode-2.1
+   git merge aoede-2.1
    ```
 
 4. Stage all changes:
