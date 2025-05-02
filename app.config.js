@@ -2,7 +2,7 @@ export default {
   expo: {
     name: "aoede",
     slug: "aoede",
-    version: "1.0.0",
+    version: "2.0.0",
     runtimeVersion: {
       policy: "appVersion"
     },
@@ -20,7 +20,7 @@ export default {
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false
       },
-      buildNumber: "107"
+      buildNumber: "212"
     },
     android: {
       adaptiveIcon: {

@@ -6,7 +6,7 @@ import {
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { styles } from './styles';
-import DebugPanel from './DebugPanel';
+import DebugPanel, { debugLog } from './DebugPanel';
 import ListeningSpeed from './listeningSpeed';
 import Constants from 'expo-constants';
 import { getUserLibrary } from './userLibrary';
@@ -93,16 +93,21 @@ export function HomeUI({
   // Load saved translated titles
   const loadTranslatedTitles = async () => {
     try {
+      debugLog('HomeUI: Loading translated titles');
       const savedTranslations = await AsyncStorage.getItem(TRANSLATED_TITLES_KEY);
       if (savedTranslations) {
         const translationsObject = JSON.parse(savedTranslations);
+        debugLog(`HomeUI: Found ${Object.keys(translationsObject).length} translated titles`);
         
         // Update uiText with saved translations
         Object.keys(translationsObject).forEach(key => {
           uiText[key] = translationsObject[key];
         });
+      } else {
+        debugLog('HomeUI: No saved translations found');
       }
     } catch (error) {
+      debugLog(`HomeUI: Error loading translated titles: ${error.message}`);
       console.error("Error loading translated titles:", error);
     }
   };
@@ -111,10 +116,12 @@ export function HomeUI({
   useEffect(() => {
     const loadUserLibrary = async () => {
       try {
+        debugLog('HomeUI: Loading user library');
         // First load any saved translations
         await loadTranslatedTitles();
         
         const userLibrary = await getUserLibrary();
+        debugLog(`HomeUI: User library loaded, found ${userLibrary.length} books`);
         
         // Sort books by their translated titles, ignoring initial articles
         const sortedBooks = [...userLibrary].sort((a, b) => {
@@ -125,13 +132,23 @@ export function HomeUI({
         
         setBookLibrary(sortedBooks);
         setFilteredBooks(sortedBooks);
+        debugLog('HomeUI: Book library state updated');
         
         // If the currently selected book was deleted, clear the selection
         if (selectedBook && !sortedBooks.some(book => book.id === selectedBook)) {
+          debugLog(`HomeUI: Selected book ${selectedBook} not found in library, clearing selection`);
           setSelectedBook("");
           setDisplayBookTitle(uiText.enterBook || "Select a book");
+        } else if (selectedBook) {
+          // Update display title for the selected book
+          const book = sortedBooks.find(b => b.id === selectedBook);
+          if (book) {
+            debugLog(`HomeUI: Selected book found: ${book.id}, updating display title`);
+            setDisplayBookTitle(getBookTitle(book));
+          }
         }
       } catch (error) {
+        debugLog(`HomeUI: Error loading library: ${error.message}`);
         console.error("Failed to load user library:", error);
       }
     };
@@ -143,13 +160,13 @@ export function HomeUI({
   useEffect(() => {
     const loadLanguages = async () => {
       try {
+        debugLog('HomeUI: Loading available languages');
         // Get user's system language for localized language names
         const userLang = typeof navigator !== 'undefined' && navigator.language
           ? navigator.language.split('-')[0]
           : 'en';
         
         // Fetch available languages from Google Translate API
-        if (__DEV__) console.log("FETCH 0002");
         const response = await fetch(
           `https://translation.googleapis.com/language/translate/v2/languages?key=${GOOGLE_API_KEY}&target=${userLang}`,
           {
@@ -170,9 +187,11 @@ export function HomeUI({
             );
             setLanguages(sortedLanguages);
             setFilteredLanguages(sortedLanguages);
+            debugLog(`HomeUI: Loaded ${sortedLanguages.length} languages`);
           }
         }
       } catch (error) {
+        debugLog(`HomeUI: Error loading languages: ${error.message}`);
         console.error("Failed to load languages:", error);
       }
     };
@@ -255,12 +274,15 @@ export function HomeUI({
 
   // Handle Load Book button click
   const handleLoadButtonClick = () => {
+    debugLog('HomeUI: Load Book button clicked');
+    debugLog(`HomeUI: Selected book: ${selectedBook}`);
     // Call the passed loadBook function from props
     loadBook();
   };
   
   // Handle Library button click - use the callback passed from parent
   const handleLibraryButtonClick = () => {
+    debugLog('HomeUI: Library button clicked');
     if (onLibraryButtonClick) {
       onLibraryButtonClick();
     }
@@ -269,6 +291,7 @@ export function HomeUI({
   // Handle language selection
   const handleLanguageChange = async (language) => {
     if (language && language.language) {
+      debugLog(`HomeUI: Language changed to ${language.language} (${language.name})`);
       // Use the language code for API calls but display the friendly name
       await ListeningSpeed.saveStudyLanguage(language.language);
       setStudyLanguage(language.language);
@@ -307,6 +330,7 @@ export function HomeUI({
   
   // Handle book selection with more robustness for Android
   const handleBookChange = (itemValue) => {
+    debugLog(`HomeUI: Book selection changed to ${itemValue}`);
     setSelectedBook(itemValue);
     handleClearContent(); // Clear content when book selection changes
     if (itemValue) {

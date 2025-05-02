@@ -79,7 +79,8 @@ export const homeStyles = StyleSheet.create({
 
   // Input container styles
   inputContainer: {
-    width: '80%',
+    // Make container wider on mobile (90% vs 80% on web)
+    width: Platform.OS === 'web' ? '80%' : '90%',
     backgroundColor: '#fff',
     borderRadius: 10,
     borderWidth: 1,
@@ -170,11 +171,13 @@ export const homeStyles = StyleSheet.create({
     alignItems: 'flex-end' // Align items at the bottom
   },
   leftColumn: {
-    width: '70%', // Width for left column
+    // Adjust width based on platform
+    width: Platform.OS === 'web' ? '70%' : '65%', // Narrower on mobile
     marginRight: 10,
   },
   rightColumn: {
-    width: '25%', // Width for right column
+    // Adjust width based on platform
+    width: Platform.OS === 'web' ? '25%' : '30%', // Wider on mobile
   },
 
   // Source Material section
@@ -277,16 +280,16 @@ export const homeStyles = StyleSheet.create({
     width: '100%',
     marginBottom: 10,
     // Platform-specific adjustments
-    ...(Platform.OS === 'android' 
+    ...(Platform.OS === 'android' || Platform.OS === 'ios'
       ? {
-          // Android needs a bit more vertical space
-          paddingVertical: 12, 
-          paddingHorizontal: 10,
-          // Remove fixed height on Android
-          height: undefined
+          // Mobile specific adjustments
+          height: 'auto',
+          minHeight: 40,
+          paddingVertical: 5,
+          paddingHorizontal: 8,
         } 
       : {
-          // Keep existing style for iOS/Web
+          // Keep existing style for Web
           padding: 10,
           height: 40
         }
@@ -299,18 +302,16 @@ export const homeStyles = StyleSheet.create({
     justifyContent: 'center',
     width: '100%',
     // Platform-specific adjustments
-    ...(Platform.OS === 'android' 
+    ...(Platform.OS === 'android' || Platform.OS === 'ios'
       ? {
-          // Android needs a bit more vertical space
-          paddingVertical: 12, 
-          paddingHorizontal: 10,
-          // Remove fixed height on Android
-          height: undefined,
-          // Add a bit of bottom margin to counteract text clipping
-          marginBottom: 2
+          // Mobile specific adjustments
+          height: 'auto',
+          minHeight: 40,
+          paddingVertical: 5,
+          paddingHorizontal: 8,
         } 
       : {
-          // Keep existing style for iOS/Web
+          // Keep existing style for Web
           padding: 10,
           height: 40
         }
@@ -318,13 +319,15 @@ export const homeStyles = StyleSheet.create({
   },
   buttonText: {
     color: '#fff',
-    fontSize: 16,
+    // Smaller font size for mobile
+    fontSize: Platform.OS === 'web' ? 16 : 12,
     fontWeight: 'bold',
-    // Fix vertical text alignment on Android
-    ...(Platform.OS === 'android' 
+    // Fix text alignment on mobile and allow wrapping
+    textAlign: 'center',
+    ...(Platform.OS === 'android' || Platform.OS === 'ios'
       ? {
           includeFontPadding: false,
-          textAlignVertical: 'center'
+          textAlignVertical: 'center',
         } 
       : {}
     )
