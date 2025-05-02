@@ -113,7 +113,8 @@ export default function App() {
   if (__DEV__) console.log("MODULE 0003: App.js.App");
 
   // Get the reader manager interface
-  const readingManager = BookReader.previousReadingManagement();
+//  const readingManager = BookReader.previousReadingManagement();
+  const readingManager = BookReader.readingManagement();
 
   // Basic UI text in English
   const defaultUiText = {

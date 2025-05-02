@@ -5,6 +5,7 @@ import { parseIntoSentences, detectLanguageCode, translateSentences } from './te
 import BookPipe from './bookPipeCore';
 import { Platform } from 'react-native';
 import { getUserLibrary, getBookById } from './userLibrary';
+import { debugLog } from './DebugPanel';
 
 const BLOCK_SIZE = 10000;
 
@@ -42,39 +43,54 @@ class BookReader {
     this.readingLevel = level;
   }
 
-  // New function that encapsulates the current reading management functionality
-  previousReadingManagement() {
+  // New function that will implement our new algorithm for Aoede 3.0
+  readingManagement() {
+    debugLog('BookReader: readingManagement() called');
+    
     return {
-      // Interface for loading a book in Aoede 2.0 style
+      // Same interface as previousReadingManagement, but with new algorithm
       loadBook: async (studyLanguage, bookId) => {
+        debugLog(`BookReader: readingManagement().loadBook(${studyLanguage}, ${bookId})`);
+        // For now, continue to use the old implementation
         return await this.handleLoadBook(studyLanguage, bookId);
       },
       
-      // Interface for advancing to next sentence in Aoede 2.0 style
       advanceToNextSentence: async () => {
+        debugLog('BookReader: readingManagement().advanceToNextSentence()');
+        // For now, continue to use the old implementation
         return await this.handleNextSentence();
       },
       
-      // Interface for rewinding a book in Aoede 2.0 style
       rewindBook: async () => {
+        debugLog('BookReader: readingManagement().rewindBook()');
+        // For now, continue to use the old implementation
         return await this.handleRewind();
       },
       
-      // Interface for getting current progress information
       getProgress: () => {
+        debugLog('BookReader: readingManagement().getProgress()');
+        // For now, continue to use the old implementation
         return this.getProgress();
       },
       
-      // Interface for resetting the reader
       reset: () => {
+        debugLog('BookReader: readingManagement().reset()');
+        // For now, continue to use the old implementation
         this.reset();
       },
       
-      // Get the current reading level
       getReadingLevel: () => {
+        debugLog('BookReader: readingManagement().getReadingLevel()');
+        // For now, continue to use the old implementation
         return this.readingLevel;
       }
     };
+  }
+
+  // We need to keep previousReadingManagement active but make it call the new function
+  previousReadingManagement() {
+    // Just redirect to the new implementation
+    return this.readingManagement();
   }
 
   async handleLoadBook(studyLanguage, bookId) {
