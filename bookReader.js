@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { processSourceText, translateBatch } from './apiServices';
 import { parseIntoSentences, detectLanguageCode, translateSentences } from './textProcessing';
 import BookPipe from './bookPipeCore';
+import { bookPipeProcess } from './bookPipeProcess';
 import { Platform } from 'react-native';
 import { getUserLibrary, getBookById } from './userLibrary';
 import { debugLog } from './DebugPanel';
@@ -11,6 +12,7 @@ const BLOCK_SIZE = 10000;
 
 class BookReader {
   constructor() {
+    // Original properties
     this.tracker = {
       studyLanguage: null,
       bookTitle: null,
@@ -29,6 +31,15 @@ class BookReader {
     this.readingLevel = 6;
     this.userLanguage = 'en';
     this.onSentenceProcessed = null;
+    
+    // New properties for Aoede 3.0
+    this.bookText = null;          // Step 1: Full book text
+    this.anchorPosition = 0;       // Step 2: Position of anchor
+    this.bookSentences = [];       // Step 3: Array of all sentences in the book
+    this.currentSentenceOffset = 0; // Step 4: Current sentence offset in book
+    this.sentenceChunks = [];      // Step 5: Array of chunks of sentences
+    this.currentChunkIndex = 0;    // Current chunk being processed
+    this.simplifiedChunks = [];    // Processed chunks with simplifications
   }
 
   initialize(callback, userLanguage = 'en') {
@@ -48,40 +59,92 @@ class BookReader {
     debugLog('BookReader: readingManagement() called');
     
     return {
-      // Same interface as previousReadingManagement, but with new algorithm
+      // Interface for loading a book in Aoede 3.0 style
       loadBook: async (studyLanguage, bookId) => {
         debugLog(`BookReader: readingManagement().loadBook(${studyLanguage}, ${bookId})`);
-        // For now, continue to use the old implementation
-        return await this.handleLoadBook(studyLanguage, bookId);
+        // Implement steps 1 and 2 of our algorithm
+        try {
+          // Step 1: Load the entire book into memory
+          await this.loadEntireBook(bookId);
+          
+          // Step 2: Find the anchor in the URL
+          await this.findAnchor(bookId);
+          
+          // Show the first 100 chars of text starting at the anchor
+          const textAtAnchor = this.bookText.substring(this.anchorPosition, this.anchorPosition + 100);
+          debugLog(`Book text at anchor (100 chars): "${textAtAnchor.replace(/\n/g, ' ')}"`);
+          
+          // For now, tell the user we haven't implemented further steps
+          this.simpleArray = ["Aoede 3.0 is under development. The book has been loaded and the anchor found."];
+          this.translatedArray = ["Aoede 3.0 is under development. The book has been loaded and the anchor found."];
+          this.simpleIndex = 0;
+          
+          if (this.onSentenceProcessed) {
+            this.onSentenceProcessed(this.simpleArray[0], this.translatedArray[0]);
+          }
+          
+          return true;
+        } catch (error) {
+          debugLog(`Error in loadBook: ${error.message}`);
+          
+          // Display error to the user
+          this.simpleArray = [`Error loading book: ${error.message}`];
+          this.translatedArray = [`Error loading book: ${error.message}`];
+          this.simpleIndex = 0;
+          
+          if (this.onSentenceProcessed) {
+            this.onSentenceProcessed(this.simpleArray[0], this.translatedArray[0]);
+          }
+          
+          return false;
+        }
       },
       
       advanceToNextSentence: async () => {
         debugLog('BookReader: readingManagement().advanceToNextSentence()');
-        // For now, continue to use the old implementation
-        return await this.handleNextSentence();
+        // Not implemented yet
+        this.simpleArray = ["Next sentence functionality will be implemented in a future version."];
+        this.translatedArray = ["Next sentence functionality will be implemented in a future version."];
+        this.simpleIndex = 0;
+        
+        if (this.onSentenceProcessed) {
+          this.onSentenceProcessed(this.simpleArray[0], this.translatedArray[0]);
+        }
+        
+        return true;
       },
       
       rewindBook: async () => {
         debugLog('BookReader: readingManagement().rewindBook()');
-        // For now, continue to use the old implementation
-        return await this.handleRewind();
+        // Not implemented yet
+        this.simpleArray = ["Rewind book functionality will be implemented in a future version."];
+        this.translatedArray = ["Rewind book functionality will be implemented in a future version."];
+        this.simpleIndex = 0;
+        
+        if (this.onSentenceProcessed) {
+          this.onSentenceProcessed(this.simpleArray[0], this.translatedArray[0]);
+        }
+        
+        return true;
       },
       
       getProgress: () => {
         debugLog('BookReader: readingManagement().getProgress()');
-        // For now, continue to use the old implementation
-        return this.getProgress();
+        // Return a simple progress object
+        return {
+          currentSentenceIndex: this.simpleIndex,
+          totalSentencesInMemory: this.simpleArray.length,
+          hasMoreContent: false
+        };
       },
       
       reset: () => {
         debugLog('BookReader: readingManagement().reset()');
-        // For now, continue to use the old implementation
         this.reset();
       },
       
       getReadingLevel: () => {
         debugLog('BookReader: readingManagement().getReadingLevel()');
-        // For now, continue to use the old implementation
         return this.readingLevel;
       }
     };
@@ -92,7 +155,116 @@ class BookReader {
     // Just redirect to the new implementation
     return this.readingManagement();
   }
-
+  
+  // Implementation of Step 1: Load the entire book into memory
+  async loadEntireBook(bookId) {
+    debugLog(`BookReader: Step 1 - Loading entire book ${bookId} into memory`);
+    
+    try {
+      // Get book details from user library
+      const book = await getBookById(bookId);
+      if (!book) {
+        throw new Error(`Book with ID ${bookId} not found`);
+      }
+      
+      // Initialize BookPipe to get access to the book URL
+      await BookPipe.initialize(bookId);
+      
+      // Store reader for later use
+      this.reader = BookPipe;
+      this.readerBookTitle = book.title;
+      
+      // Get the HTML content from BookPipe
+      const htmlContent = BookPipe.htmlContent;
+      
+      if (!htmlContent) {
+        throw new Error("Failed to load book content");
+      }
+      
+      // Extract plain text from HTML using the exported bookPipeProcess module
+      this.bookText = htmlContent; // Store HTML content, not plain text for anchor searching
+      
+      debugLog(`Book loaded successfully: ${this.bookText.length} characters`);
+      return true;
+    } catch (error) {
+      debugLog(`Error loading entire book: ${error.message}`);
+      this.bookText = null;
+      throw error;
+    }
+  }
+  
+  // Implementation of Step 2: Find the anchor in the URL
+  async findAnchor(bookId) {
+    debugLog(`BookReader: Step 2 - Finding anchor for book ${bookId}`);
+  
+    try {
+      if (!this.bookText) {
+        throw new Error("Book text not loaded");
+      }
+    
+      // Get book details from user library
+      const book = await getBookById(bookId);
+      if (!book) {
+        throw new Error(`Book with ID ${bookId} not found`);
+      }
+    
+      // Extract URL from book
+      const bookUrl = book.url;
+      if (!bookUrl) {
+        throw new Error("Book URL is missing");
+      }
+    
+      // Check if URL has a fragment identifier (anchor)
+      let fragmentId = '';
+      if (bookUrl.includes('#')) {
+        fragmentId = bookUrl.split('#')[1];
+        debugLog(`Looking for anchor: ${fragmentId}`);
+      } else {
+        throw new Error('URL does not contain an anchor fragment');
+      }
+      
+      // Define patterns to search for the anchor in HTML
+      // Order is important - we're using the patterns from Aoede 2.0
+      const anchorPatterns = [
+        new RegExp(`<a[^>]*?\\sname\\s*=\\s*["']?${fragmentId}["']?[^>]*?>((?!</a>).)*</a>`, 'i'),
+        new RegExp(`<a[^>]*?\\sname\\s*=\\s*["']?${fragmentId}["']?[^>]*?>`, 'i'),
+        new RegExp(`<[^>]+\\sid\\s*=\\s*["']?${fragmentId}["']?[^>]*?>`, 'i')
+      ];
+    
+      let match = null;
+      let patternIndex = -1;
+    
+      // Try each pattern to find the anchor
+      for (let i = 0; i < anchorPatterns.length; i++) {
+        debugLog(`Trying pattern ${i}: ${anchorPatterns[i]}`);
+        match = anchorPatterns[i].exec(this.bookText);
+        if (match) {
+          patternIndex = i;
+          debugLog(`Found match with pattern ${i}`);
+          break;
+        }
+      }
+    
+      if (match) {
+        this.anchorPosition = match.index;
+      
+        // Show the first 100 chars of text starting at the anchor
+        const textAtAnchor = this.bookText.substring(this.anchorPosition, this.anchorPosition + 100);
+        debugLog(`Found anchor "${fragmentId}" at position ${this.anchorPosition}`);
+        debugLog(`Book text at anchor (100 chars): "${textAtAnchor.replace(/\n/g, ' ')}"`);
+      
+        return true;
+      } else {
+        this.anchorPosition = 0;
+        throw new Error(`Anchor "${fragmentId}" not found in book content`);
+      }
+    } catch (error) {
+      debugLog(`Error finding anchor: ${error.message}`);
+      this.anchorPosition = 0;
+      throw error;
+    }
+  }
+  
   async handleLoadBook(studyLanguage, bookId) {
     if (__DEV__) console.log("MODULE 0070: bookReader.handleLoadBook");
     if (this.trackerExists &&
@@ -353,6 +525,15 @@ class BookReader {
     this.simpleIndex = 0;
     this.simpleArray = [];
     this.translatedArray = [];
+    
+    // Reset 3.0 properties
+    this.bookText = null;          
+    this.anchorPosition = 0;       
+    this.bookSentences = [];       
+    this.currentSentenceOffset = 0; 
+    this.sentenceChunks = [];      
+    this.currentChunkIndex = 0;    
+    this.simplifiedChunks = [];    
   }
 
   getSL(multilineText) {
