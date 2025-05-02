@@ -10,7 +10,7 @@ import BookReader from './bookReader';
 import { bookSources } from './bookSources';
 import Constants from 'expo-constants';
 import { initializeUserLibrary, getUserLibrary, getBookById } from './userLibrary';
-import DebugPanel, { debugLog } from './DebugPanel';
+import DebugPanel from './DebugPanel';
 
 // Get API key using both old and new Expo Constants paths for compatibility
 const getConstantValue = (key) => {
@@ -111,7 +111,6 @@ const getDeviceLanguage = async () => {
 
 export default function App() {
   if (__DEV__) console.log("MODULE 0003: App.js.App");
-  debugLog('App initialized');
 
   // Get the reader manager interface
   const readingManager = BookReader.previousReadingManagement();
@@ -192,22 +191,17 @@ export default function App() {
   useEffect(() => {
     const initialize = async () => {
       try {
-        debugLog('App: Starting initialization');
         // Initialize the user's library first
         await initializeUserLibrary();
-        debugLog('App: User library initialized');
         
         // Get device language
         const deviceLang = await getDeviceLanguage();
-        debugLog(`App: Device language detected: ${deviceLang}`);
         if (deviceLang && deviceLang !== 'en') {
           await translateUiToLanguage(deviceLang);
-          debugLog('App: UI translated to device language');
         }
         
         // Load stored settings
         try {
-          debugLog('App: Loading stored settings');
           const storedSelectedBook = await AsyncStorage.getItem("selectedBook");
           const storedSpeechRate = await AsyncStorage.getItem("speechRate");
           const storedReadingLevel = await AsyncStorage.getItem("readingLevel");
@@ -219,7 +213,6 @@ export default function App() {
           
           if (storedSelectedBook !== null) {
             setSelectedBook(storedSelectedBook);
-            debugLog(`App: Loaded selected book: ${storedSelectedBook}`);
           }
           
           if (storedSpeechRate !== null) {
@@ -259,22 +252,17 @@ export default function App() {
             // Initialize with default value of 3 (medium speed)
             await ListeningSpeed.saveListeningSpeed(3);
           }
-          debugLog('App: Finished loading stored settings');
         } catch (error) {
           // Silent error handling
-          debugLog(`App: Error loading settings: ${error.message}`);
         }
         
         const language = await ListeningSpeed.getStoredStudyLanguage();
         setStudyLanguage(language);
-        debugLog(`App: Set study language: ${language}`);
         
         // Initialize BookReader
         BookReader.initialize(handleSentenceProcessed, deviceLang || 'en');
-        debugLog('App: BookReader initialized');
       } catch (error) {
         // Silent error handling
-        debugLog(`App: Initialization error: ${error.message}`);
       }
     };
     
@@ -320,7 +308,6 @@ export default function App() {
   
   // Function to refresh the library
   const refreshLibrary = () => {
-    debugLog('App: Refreshing library');
     setLibraryRefreshKey(prev => prev + 1);
   };
   
@@ -510,34 +497,26 @@ export default function App() {
   
   // Handle showing the library modal
   const handleLibraryButtonClick = () => {
-    debugLog('App: Library button clicked');
     setShowLibrary(true);
   };
   
   // Handle closing the library modal
   const handleCloseLibrary = (libraryChanged) => {
-    debugLog(`App: Library modal closed, changes: ${libraryChanged}`);
     setShowLibrary(false);
     
     if (libraryChanged) {
-      debugLog('App: Refreshing library due to changes');
-      setLibraryRefreshKey(prev => {
-        debugLog(`App: Updating library refresh key: ${prev} -> ${prev + 1}`);
-        return prev + 1;
-      });
+      setLibraryRefreshKey(prev => prev + 1);
     }
   };
   
   // Handle load book button click
   const handleLoadBook = async () => {
     // Reset previous state
-    debugLog('App: Load Book button clicked');
     clearContent();
     setIsAtEndOfBook(false);
     
     // Get the selected book
     const bookId = selectedBook;
-    debugLog(`App: Selected book ID: ${bookId}`);
     
     if (!bookId) {
       let message = "Please select a book from the dropdown.";
@@ -546,7 +525,6 @@ export default function App() {
       } else {
         Alert.alert("Selection Required", message);
       }
-      debugLog('App: No book selected');
       return false;
     }
     
@@ -556,17 +534,14 @@ export default function App() {
       } else {
         Alert.alert("Language Required", "Please select a study language.");
       }
-      debugLog('App: No study language selected');
       return false;
     }
     
-    debugLog('App: Starting to load book');
     setLoadingBook(true);
     
     try {
       // Get book details from user library
       const book = await getBookById(bookId);
-      debugLog(`App: Retrieved book: ${book ? book.title : 'not found'}`);
       
       if (!book) {
         throw new Error(`Book with ID ${bookId} not found`);
@@ -574,12 +549,9 @@ export default function App() {
       
       // Set source language from book language
       setSourceLanguage(book.language);
-      debugLog(`App: Set source language: ${book.language}`);
       
       // Load the book using the new encapsulated function
-      debugLog('App: Calling readingManager.loadBook');
       const success = await readingManager.loadBook(studyLanguage, bookId);
-      debugLog(`App: Book loading result: ${success}`);
       
       if (!success) {
         throw new Error("Failed to load book");
@@ -587,12 +559,10 @@ export default function App() {
       
       return true;
     } catch (error) {
-      debugLog(`App: Error loading book: ${error.message}`);
       setStudyLangSentence(`Error: ${error.message || "Unknown error loading content."}`);
       setNativeLangSentence(`Error: ${error.message || "Unknown error loading content."}`);
       return false;
     } finally {
-      debugLog('App: Finished book loading process');
       setLoadingBook(false);
     }
   };
