@@ -320,7 +320,7 @@ export const homeStyles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     // Smaller font size for mobile
-    fontSize: Platform.OS === 'web' ? 16 : 12,
+    fontSize: Platform.OS === 'web' ? 16 : Platform.OS === 'ios' ? 12 : 10,
     fontWeight: 'bold',
     // Fix text alignment on mobile and allow wrapping
     textAlign: 'center',
