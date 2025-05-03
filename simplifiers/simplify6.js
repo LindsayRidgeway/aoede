@@ -1,13 +1,12 @@
 const getSimplificationPrompt = (sourceText, bookLanguage, studyLanguage) => {
-  return `Your input (see below) is a string of one or more sentences in ${bookLanguage}.
+  return `Your input (see below) is a sentence in ${bookLanguage}.
 
-Please produce your output following the following steps:
-1. Write the five-character sentence "/+++/" to the output.
-2. Read a sentence from the input.
-3. Translate that sentence into ${studyLanguage}.
-4. Simplify the translated sentence into one or more sentences in ${studyLanguage} so that a typical native 6-year-old ${studyLanguage}-speaking child can understand it, following the guidelines below.
-5. Write each resulting simplified sentence to the output as a separate sentence. If, for example, you create three simplified sentences from a single translated sentence, write the three simplified sentences to the output.
-6. Go back to step 1 until all of the input sentences have been processed.
+Please generate your output as follows:
+1. Translate the input sentence from ${bookLanguage} to ${studyLanguage}.
+2. Do NOT write the translated sentence to the output.
+3. Simplify the translated sentence so that a typical native 6-year-old ${studyLanguage}-speaking child can understand it, following the guidelines below. Simplifying the translated sentence will produce one or more simplified sentences.
+4. Write each simplified ${studyLanguage} sentence to the output as a separate sentence.
+5. IMPORTANT: Please be sure to end each simplified sentence with a NEWLINE.
 
 Simplification guidelines:
 - Break the translated sentence into one or more shorter ones as needed to carry out the following guidelines.
