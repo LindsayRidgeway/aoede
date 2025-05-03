@@ -8,8 +8,7 @@ import { Platform } from 'react-native';
 import { getUserLibrary, getBookById } from './userLibrary';
 import { debugLog } from './DebugPanel';
 
-const BLOCK_SIZE = 10000;
-const CHUNK_SIZE = 10000; // Size of chunks for processing
+const CHUNK_SIZE = 1000;  // Size of chunks for processing
 
 class BookReader {
   constructor() {
@@ -42,6 +41,7 @@ class BookReader {
     this.sentenceChunks = [];      // Step 5: Array of chunks of sentences
     this.currentChunkIndex = 0;    // Current chunk being processed
     this.chunkSentenceArray = [];  // Array of processed sentences for current chunk
+    this.simplifiedSentenceArray = []; // Array of simplified sentences with yes/no flags
   }
 
   initialize(callback, userLanguage = 'en') {
@@ -64,6 +64,16 @@ class BookReader {
       // Interface for loading a book in Aoede 3.0 style
       loadBook: async (studyLanguage, bookId) => {
         debugLog(`BookReader: readingManagement().loadBook(${studyLanguage}, ${bookId})`);
+        
+        // FOR TESTING ONLY: Wipe out the tracking block for this book
+        try {
+          const trackerKey = `book_tracker_${bookId}`;
+          await AsyncStorage.removeItem(trackerKey);
+          debugLog(`TEST MODE: Removed tracking for book ${bookId}`);
+        } catch (error) {
+          debugLog(`Error removing tracker: ${error.message}`);
+        }
+        
         // Implement steps 1-8 of our algorithm
         try {
           // Step 1: Load the entire book into memory
@@ -82,7 +92,7 @@ class BookReader {
           this.divideSentencesIntoChunks();
           
           // Step 6-7: Determine which chunk contains the user's position and process it
-          await this.processInitialChunk(studyLanguage);
+          await this.processChunk(studyLanguage);
           
           // Step 8: Set up the initial display
           this.setupInitialDisplay();
@@ -296,13 +306,10 @@ class BookReader {
       
       debugLog(`Extracted ${this.bookSentences.length} sentences from the book`);
       
-      // Log the first few sentences
-      if (this.bookSentences.length > 0) {
-        const firstThreeSentences = this.bookSentences.slice(0, 3);
-        for (let i = 0; i < firstThreeSentences.length; i++) {
-          const sentence = firstThreeSentences[i];
-          debugLog(`Original sentence ${i + 1}: "${sentence}"`);
-        }
+      // TEST: Log ALL sentences
+      for (let i = 0; i < this.bookSentences.length; i++) {
+        const sentence = this.bookSentences[i];
+        debugLog(`Sentence ${i + 1}: "${sentence}"`);
       }
       
       return true;
@@ -519,9 +526,9 @@ class BookReader {
     }
   }
   
-  // Implementation of Steps 6-7: Process the initial chunk
-  async processInitialChunk(studyLanguage) {
-    debugLog(`BookReader: Steps 6-7 - Processing initial chunk`);
+  // Implementation of Steps 6-7: Process the chunk
+  async processChunk(studyLanguage) {
+    debugLog(`BookReader: Steps 6-7 - Processing chunk`);
     
     try {
       if (!this.sentenceChunks || this.sentenceChunks.length === 0) {
@@ -546,23 +553,189 @@ class BookReader {
       
       debugLog(`Processing chunk ${this.currentChunkIndex} with ${currentChunk.sentences.length} sentences`);
       
-      // For now, we'll just store the original sentences
-      // In the future, this is where we'd call the OpenAI API
-      this.chunkSentenceArray = currentChunk.sentences.map(sentence => {
-        return {
-          original: sentence,
-          simplified: sentence,  // For now, no simplification
-          translation: sentence  // For now, no translation
-        };
-      });
+      // Get the book language
+      let bookLanguage = 'en';
+      if (this.reader?.bookId) {
+        const book = await getBookById(this.reader.bookId);
+        if (book) {
+          bookLanguage = book.language || 'en';
+        }
+      }
       
-      debugLog(`Stored ${this.chunkSentenceArray.length} sentences in chunkSentenceArray`);
+      // Store the sentences
+      this.chunkSentenceArray = currentChunk.sentences;
+      
+      // TEST: Log all sentences in the chunk
+      debugLog(`All sentences in current chunk:`);
+      for (let i = 0; i < this.chunkSentenceArray.length; i++) {
+        debugLog(`Chunk sentence ${i + 1}: "${this.chunkSentenceArray[i]}"`);
+      }
+      
+      // Process with the OpenAI API (Steps 9-10)
+      await this.processChunkWithOpenAI(studyLanguage, bookLanguage);
       
       return true;
     } catch (error) {
-      debugLog(`Error processing initial chunk: ${error.message}`);
+      debugLog(`Error processing chunk: ${error.message}`);
+      
+      // Create a basic sentence array as fallback
+      const currentChunk = this.sentenceChunks[this.currentChunkIndex];
+      this.simplifiedSentenceArray = currentChunk.sentences.map(sentence => ({
+        text: sentence,
+        isFirstOfGroup: true
+      }));
+      
+      // Update display arrays
+      this.simpleArray = currentChunk.sentences;
+      this.translatedArray = currentChunk.sentences;
+      
       return false;
     }
+  }
+  
+  // Implementation of Steps 9-10: Process the chunk with OpenAI API
+  async processChunkWithOpenAI(studyLanguage, bookLanguage) {
+    debugLog(`BookReader: Steps 9-10 - Processing chunk with OpenAI API for translation/simplification`);
+    
+    try {
+      if (!this.chunkSentenceArray || this.chunkSentenceArray.length === 0) {
+        throw new Error("No chunk sentences available to process");
+      }
+      
+      const originalSentences = this.chunkSentenceArray;
+      
+      debugLog(`Submitting ${originalSentences.length} sentences to OpenAI API`);
+      
+      // Combine all sentences for the API call
+      const sourceText = originalSentences.join(' ');
+      
+      // Log the exact text being sent to the API
+      debugLog(`Exact text sent to API: "${sourceText}"`);
+      
+      // Call OpenAI API to process the text
+      try {
+        debugLog(`Calling OpenAI API with reading level ${this.readingLevel}`);
+        
+        // Import the simplification prompt using dynamic import
+        let simplificationPrompt;
+        try {
+          const simplifierModule = await import('./simplifiers/simplify6.js');
+          simplificationPrompt = simplifierModule.default;
+        } catch (importError) {
+          debugLog(`Error importing simplifier: ${importError.message}`);
+          throw new Error("Could not load simplification prompt");
+        }
+        
+        // Generate the prompt
+        const prompt = simplificationPrompt(sourceText, bookLanguage, studyLanguage);
+        
+        // Call the API using processSourceText from apiServices
+        const processedText = await processSourceText(
+          sourceText, 
+          bookLanguage, 
+          studyLanguage, 
+          this.userLanguage, 
+          this.readingLevel
+        );
+        
+        if (!processedText) {
+          throw new Error("API returned empty response");
+        }
+        
+        // Log the exact text returned from the API
+        debugLog(`Exact text returned from API: "${processedText}"`);
+        
+        debugLog(`API call successful, processing results`);
+        
+        // Parse the response into the simplifiedSentenceArray
+        this.simplifiedSentenceArray = this.parseApiResponse(processedText);
+        
+        // Count 'yes' flags for verification
+        const yesCount = this.simplifiedSentenceArray.filter(item => item.isFirstOfGroup).length;
+        
+        // Log the verification results
+        debugLog(`Original sentences: ${originalSentences.length}, Sentences with 'yes' flag: ${yesCount}`);
+        
+        if (originalSentences.length !== yesCount) {
+          debugLog(`INCORRECT SIMPLIFICATION: The number of 'yes' flags (${yesCount}) does not match the number of original sentences (${originalSentences.length})`);
+        } else {
+          debugLog(`Correct simplification: The number of 'yes' flags matches the number of original sentences`);
+        }
+        
+        // TEST: Log ALL simplified sentences with their flags
+        debugLog(`All simplified sentences:`);
+        for (let i = 0; i < this.simplifiedSentenceArray.length; i++) {
+          const sample = this.simplifiedSentenceArray[i];
+          debugLog(`[${sample.isFirstOfGroup ? 'YES' : 'NO'}] "${sample.text}"`);
+        }
+        
+        // Update the simpleArray for display
+        this.simpleArray = this.simplifiedSentenceArray.map(item => item.text);
+        
+        // For now, translation is the same as simplification 
+        // (we'll implement UL translation separately later)
+        this.translatedArray = this.simplifiedSentenceArray.map(item => item.text);
+        
+        debugLog(`Successfully created simplifiedSentenceArray with ${this.simplifiedSentenceArray.length} sentences`);
+        return true;
+        
+      } catch (apiError) {
+        debugLog(`API error: ${apiError.message}`);
+        
+        // Fallback: use original sentences if API fails
+        this.simplifiedSentenceArray = originalSentences.map((sentence, index) => ({
+          text: sentence,
+          isFirstOfGroup: true // All are marked as first since we're not simplifying
+        }));
+        
+        // Update display arrays
+        this.simpleArray = originalSentences;
+        this.translatedArray = originalSentences;
+        
+        debugLog(`Using fallback: Created simplifiedSentenceArray with ${this.simplifiedSentenceArray.length} original sentences`);
+        return false;
+      }
+      
+    } catch (error) {
+      debugLog(`Error processing chunk with OpenAI API: ${error.message}`);
+      return false;
+    }
+  }
+  
+  // Parse the API response, identifying sentences that start with /+++/ marker
+  parseApiResponse(responseText) {
+    if (!responseText) {
+      return [];
+    }
+    
+    // Split the response by the marker string "/+++/"
+    const parts = responseText.split("/+++/");
+    
+    // First part will be empty if the response starts with marker as expected
+    // Remove it if it's empty
+    if (parts[0] === '') {
+      parts.shift();
+    }
+    
+    const simplifiedSentences = [];
+    
+    // Process each part (group of sentences from one original sentence)
+    for (let part of parts) {
+      // Split into individual sentences (by newline)
+      const sentences = part.split('\n')
+        .map(line => line.trim())
+        .filter(line => line.length > 0);
+      
+      // Add each sentence to the array
+      for (let i = 0; i < sentences.length; i++) {
+        simplifiedSentences.push({
+          text: sentences[i],
+          isFirstOfGroup: i === 0 // Only the first sentence of each part gets 'yes'
+        });
+      }
+    }
+    
+    return simplifiedSentences;
   }
   
   // Implementation of Step 8: Set up initial display
@@ -570,8 +743,8 @@ class BookReader {
     debugLog(`BookReader: Step 8 - Setting up initial display`);
     
     try {
-      // No chunk to display
-      if (!this.chunkSentenceArray || this.chunkSentenceArray.length === 0) {
+      // No sentences to display
+      if (!this.simplifiedSentenceArray || this.simplifiedSentenceArray.length === 0) {
         this.simpleArray = ["No content available"];
         this.translatedArray = ["No content available"];
         this.simpleIndex = 0;
@@ -588,13 +761,7 @@ class BookReader {
       const sentenceIndexInChunk = this.currentSentenceOffset - 
         this.sentenceChunks[this.currentChunkIndex].startIndex;
       
-      const sentenceToDisplay = this.chunkSentenceArray[Math.max(0, sentenceIndexInChunk)];
-      
-      // Set up display arrays with the sentences from the chunk
-      this.simpleArray = this.chunkSentenceArray.map(item => item.simplified);
-      this.translatedArray = this.chunkSentenceArray.map(item => item.translation);
-      
-      // Set current index
+      // Update current index within simpleArray
       this.simpleIndex = Math.max(0, sentenceIndexInChunk);
       
       debugLog(`Initial display set up with sentence index ${this.simpleIndex} in chunk ${this.currentChunkIndex}`);
@@ -673,6 +840,7 @@ class BookReader {
     this.sentenceChunks = [];
     this.currentChunkIndex = 0;
     this.chunkSentenceArray = [];
+    this.simplifiedSentenceArray = [];
   }
 
   // Legacy methods kept for backward compatibility
