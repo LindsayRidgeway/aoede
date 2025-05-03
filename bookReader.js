@@ -1,7 +1,7 @@
 // bookReader.js - Manages reading state for books according to the specified pseudocode
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { processSourceText, translateBatch } from './apiServices';
-import { parseIntoSentences, detectLanguageCode, translateSentences } from './textProcessing';
+import { processSourceText } from './apiServices';
+import { parseIntoSentences, detectLanguageCode } from './textProcessing';
 import BookPipe from './bookPipeCore';
 import { bookPipeProcess } from './bookPipeProcess';
 import { Platform } from 'react-native';
@@ -42,6 +42,10 @@ class BookReader {
     this.simplifiedSentences = []; // Array of simplified sentences for the current sentence
     this.currentSimplifiedIndex = 0; // Index within the simplified sentences
     this.sentenceOffsets = [];     // Array to store character offsets for each sentence
+    
+    // Cache for translated sentences (UL translations)
+    this.translationCache = {};    // Cache for translated sentences to avoid duplicate API calls
+    this.isProcessing = false;     // Flag to track if processing is in progress
   }
 
   initialize(callback, userLanguage = 'en') {
@@ -65,14 +69,8 @@ class BookReader {
       loadBook: async (studyLanguage, bookId) => {
         debugLog(`BookReader: readingManagement().loadBook(${studyLanguage}, ${bookId})`);
         
-        // FOR TESTING ONLY: Wipe out the tracking block for this book
-        try {
-          const trackerKey = `book_tracker_${bookId}`;
-          await AsyncStorage.removeItem(trackerKey);
-          debugLog(`TEST MODE: Removed tracking for book ${bookId}`);
-        } catch (error) {
-          debugLog(`Error removing tracker: ${error.message}`);
-        }
+        // Set processing flag
+        this.isProcessing = true;
         
         // Implement the simplified algorithm
         try {
@@ -97,6 +95,9 @@ class BookReader {
           // Step 7: Set up the initial display
           this.setupInitialDisplay();
           
+          // Clear processing flag
+          this.isProcessing = false;
+          
           return true;
         } catch (error) {
           debugLog(`Error in loadBook: ${error.message}`);
@@ -110,6 +111,9 @@ class BookReader {
             this.onSentenceProcessed(this.simpleArray[0], this.translatedArray[0]);
           }
           
+          // Clear processing flag
+          this.isProcessing = false;
+          
           return false;
         }
       },
@@ -117,85 +121,147 @@ class BookReader {
       advanceToNextSentence: async () => {
         debugLog('BookReader: readingManagement().advanceToNextSentence()');
         
-        // If we have more simplified sentences for the current original sentence
-        if (this.currentSimplifiedIndex < this.simplifiedSentences.length - 1) {
-          // Just move to the next simplified sentence
-          this.currentSimplifiedIndex++;
-          this.updateDisplay();
-          return true;
+        // If already processing, don't allow another operation
+        if (this.isProcessing) {
+          return false;
         }
         
-        // If we're at the end of simplified sentences, move to the next original sentence
-        if (this.currentSentenceIndex < this.bookSentences.length - 1) {
-          this.currentSentenceIndex++;
-          // Update the character offset
-          this.currentCharOffset = this.sentenceOffsets[this.currentSentenceIndex];
-          // Reset simplified index
-          this.currentSimplifiedIndex = 0;
-          // Process the new sentence
-          await this.processCurrentSentence();
-          // Update the display
-          this.updateDisplay();
-          // Save the updated position
-          await this.savePosition();
-          return true;
-        }
+        // Set processing flag
+        this.isProcessing = true;
         
-        // If we're at the end of the book
-        debugLog("Reached the end of the book");
-        return false;
+        try {
+          // If we have more simplified sentences for the current original sentence
+          if (this.currentSimplifiedIndex < this.simplifiedSentences.length - 1) {
+            // Just move to the next simplified sentence
+            this.currentSimplifiedIndex++;
+            await this.updateDisplay();
+            
+            // Clear processing flag
+            this.isProcessing = false;
+            return true;
+          }
+          
+          // If we're at the end of simplified sentences, move to the next original sentence
+          if (this.currentSentenceIndex < this.bookSentences.length - 1) {
+            this.currentSentenceIndex++;
+            // Update the character offset
+            this.currentCharOffset = this.sentenceOffsets[this.currentSentenceIndex];
+            // Reset simplified index
+            this.currentSimplifiedIndex = 0;
+            // Process the new sentence
+            await this.processCurrentSentence();
+            // Update the display
+            await this.updateDisplay();
+            // Save the updated position
+            await this.savePosition();
+            
+            // Clear processing flag
+            this.isProcessing = false;
+            return true;
+          }
+          
+          // If we're at the end of the book
+          debugLog("Reached the end of the book");
+          
+          // Clear processing flag
+          this.isProcessing = false;
+          return false;
+        } catch (error) {
+          // Clear processing flag on error
+          this.isProcessing = false;
+          throw error;
+        }
       },
       
       goToPreviousSentence: async () => {
         debugLog('BookReader: readingManagement().goToPreviousSentence()');
         
-        // If we have previous simplified sentences for the current original sentence
-        if (this.currentSimplifiedIndex > 0) {
-          // Just move to the previous simplified sentence
-          this.currentSimplifiedIndex--;
-          this.updateDisplay();
-          return true;
+        // If already processing, don't allow another operation
+        if (this.isProcessing) {
+          return false;
         }
         
-        // If we're at the beginning of simplified sentences but not at the first original sentence
-        if (this.currentSentenceIndex > 0) {
-          this.currentSentenceIndex--;
-          // Update the character offset
-          this.currentCharOffset = this.sentenceOffsets[this.currentSentenceIndex];
-          // Process the new sentence
-          await this.processCurrentSentence();
-          // Set index to the last simplified sentence
-          this.currentSimplifiedIndex = this.simplifiedSentences.length - 1;
-          // Update the display
-          this.updateDisplay();
-          // Save the updated position
-          await this.savePosition();
-          return true;
-        }
+        // Set processing flag
+        this.isProcessing = true;
         
-        // If we're at the beginning of the book
-        debugLog("At the beginning of the book");
-        return false;
+        try {
+          // If we have previous simplified sentences for the current original sentence
+          if (this.currentSimplifiedIndex > 0) {
+            // Just move to the previous simplified sentence
+            this.currentSimplifiedIndex--;
+            await this.updateDisplay();
+            
+            // Clear processing flag
+            this.isProcessing = false;
+            return true;
+          }
+          
+          // If we're at the beginning of simplified sentences but not at the first original sentence
+          if (this.currentSentenceIndex > 0) {
+            this.currentSentenceIndex--;
+            // Update the character offset
+            this.currentCharOffset = this.sentenceOffsets[this.currentSentenceIndex];
+            // Process the new sentence
+            await this.processCurrentSentence();
+            // Set index to the last simplified sentence
+            this.currentSimplifiedIndex = this.simplifiedSentences.length - 1;
+            // Update the display
+            await this.updateDisplay();
+            // Save the updated position
+            await this.savePosition();
+            
+            // Clear processing flag
+            this.isProcessing = false;
+            return true;
+          }
+          
+          // If we're at the beginning of the book
+          debugLog("At the beginning of the book");
+          
+          // Clear processing flag
+          this.isProcessing = false;
+          return false;
+        } catch (error) {
+          // Clear processing flag on error
+          this.isProcessing = false;
+          throw error;
+        }
       },
       
       rewindBook: async () => {
         debugLog('BookReader: readingManagement().rewindBook()');
         
-        // Go back to the beginning of the book
-        this.currentSentenceIndex = 0;
-        this.currentCharOffset = 0;
-        this.currentSimplifiedIndex = 0;
+        // If already processing, don't allow another operation
+        if (this.isProcessing) {
+          return false;
+        }
         
-        // Process the first sentence
-        await this.processCurrentSentence();
+        // Set processing flag
+        this.isProcessing = true;
         
-        // Update the display
-        this.updateDisplay();
-        
-        // Save the position
-        await this.savePosition();
-        
-        return true;
+        try {
+          // Go back to the beginning of the book
+          this.currentSentenceIndex = 0;
+          this.currentCharOffset = 0;
+          this.currentSimplifiedIndex = 0;
+          
+          // Process the first sentence
+          await this.processCurrentSentence();
+          
+          // Update the display
+          await this.updateDisplay();
+          
+          // Save the position
+          await this.savePosition();
+          
+          // Clear processing flag
+          this.isProcessing = false;
+          return true;
+        } catch (error) {
+          // Clear processing flag on error
+          this.isProcessing = false;
+          throw error;
+        }
       },
       
       getProgress: () => {
@@ -207,7 +273,8 @@ class BookReader {
           currentSimplifiedIndex: this.currentSimplifiedIndex,
           totalSimplifiedSentences: this.simplifiedSentences.length,
           hasMoreContent: this.currentSentenceIndex < this.bookSentences.length - 1 || 
-                          this.currentSimplifiedIndex < this.simplifiedSentences.length - 1
+                          this.currentSimplifiedIndex < this.simplifiedSentences.length - 1,
+          isProcessing: this.isProcessing
         };
       },
       
@@ -316,23 +383,17 @@ class BookReader {
     
       // Try each pattern to find the anchor
       for (let i = 0; i < anchorPatterns.length; i++) {
-        debugLog(`Trying pattern ${i}: ${anchorPatterns[i]}`);
         match = anchorPatterns[i].exec(this.bookText);
         if (match) {
           patternIndex = i;
-          debugLog(`Found match with pattern ${i}`);
+          debugLog(`Found anchor match with pattern ${i}`);
           break;
         }
       }
     
       if (match) {
         this.anchorPosition = match.index;
-      
-        // Show the first 100 chars of text starting at the anchor
-        const textAtAnchor = this.bookText.substring(this.anchorPosition, this.anchorPosition + 100);
         debugLog(`Found anchor "${fragmentId}" at position ${this.anchorPosition}`);
-        debugLog(`Book text at anchor (100 chars): "${textAtAnchor.replace(/\n/g, ' ')}"`);
-      
         return true;
       } else {
         this.anchorPosition = 0;
@@ -369,7 +430,7 @@ class BookReader {
       debugLog(`Extracted ${this.bookSentences.length} sentences from the book`);
       
       // Only log a sample of sentences to avoid flooding the debug log
-      const sampleSize = Math.min(5, this.bookSentences.length);
+      const sampleSize = Math.min(3, this.bookSentences.length);
       debugLog(`Sample of first ${sampleSize} sentences:`);
       for (let i = 0; i < sampleSize; i++) {
         const sentence = this.bookSentences[i];
@@ -498,16 +559,23 @@ class BookReader {
           this.currentCharOffset = offset;
           
           // Find the sentence index corresponding to this offset
+          let foundIndex = false;
           for (let i = 0; i < this.sentenceOffsets.length; i++) {
             if (i + 1 < this.sentenceOffsets.length) {
               if (offset >= this.sentenceOffsets[i] && offset < this.sentenceOffsets[i + 1]) {
                 this.currentSentenceIndex = i;
+                foundIndex = true;
                 break;
               }
-            } else {
-              // Last sentence
-              this.currentSentenceIndex = i;
             }
+          }
+          
+          // If we didn't find a matching sentence, use the last sentence
+          if (!foundIndex && this.sentenceOffsets.length > 0) {
+            this.currentSentenceIndex = this.sentenceOffsets.length - 1;
+          } else if (!foundIndex) {
+            // Or the first if there are no sentences
+            this.currentSentenceIndex = 0;
           }
           
           debugLog(`Found tracker with offset ${offset}. Starting at sentence index ${this.currentSentenceIndex}`);
@@ -561,26 +629,21 @@ class BookReader {
   
   // Process the current sentence through the API
   async processCurrentSentence() {
-    debugLog(`Processing sentence ${this.currentSentenceIndex + 1}/${this.bookSentences.length}`);
-    
     try {
       if (this.currentSentenceIndex >= this.bookSentences.length) {
         throw new Error("Invalid sentence index");
       }
       
       const sentence = this.bookSentences[this.currentSentenceIndex];
-      debugLog(`Original sentence: "${sentence}"`);
       
       // Make the API call for this single sentence
       const result = await this.processSentenceWithOpenAI(sentence);
       
       if (result) {
-        debugLog(`Successfully processed sentence with API`);
         return true;
       } else {
         // If API fails, use the original sentence as fallback
         this.simplifiedSentences = [sentence];
-        debugLog(`Using original sentence as fallback`);
         return false;
       }
     } catch (error) {
@@ -597,7 +660,7 @@ class BookReader {
   
   // Process a single sentence with OpenAI API
   async processSentenceWithOpenAI(sentence) {
-    debugLog(`Sending sentence to OpenAI API: "${sentence}"`);
+    debugLog(`Input to API: "${sentence}"`);
     
     try {
       // Import the simplification prompt using dynamic import
@@ -624,7 +687,7 @@ class BookReader {
       }
       
       // Log the exact text returned from the API
-      debugLog(`API returned: "${processedText}"`);
+      debugLog(`Output from API: "${processedText}"`);
       
       // Split the response into separate sentences by newlines
       const simplifiedSentences = processedText.split('\n')
@@ -638,14 +701,11 @@ class BookReader {
       // Store the simplified sentences
       this.simplifiedSentences = simplifiedSentences;
       
-      // Log the simplified sentences
-      debugLog(`Simplified into ${simplifiedSentences.length} sentences:`);
-      for (let i = 0; i < simplifiedSentences.length; i++) {
-        debugLog(`  ${i + 1}: "${simplifiedSentences[i]}"`);
-      }
-      
       // Reset the simplified index to the first sentence
       this.currentSimplifiedIndex = 0;
+      
+      // Clear translation cache for this new set of sentences
+      this.translationCache = {};
       
       return true;
     } catch (error) {
@@ -654,13 +714,47 @@ class BookReader {
     }
   }
   
+  // Simple direct translation using the OpenAI API
+  async directTranslate(sentence) {
+    try {
+      // Check if we already have a translation for this sentence
+      if (this.translationCache[sentence]) {
+        return this.translationCache[sentence];
+      }
+      
+      // Create a simple translation prompt
+      const translationPrompt = `Translate the input sentence from ${this.studyLanguage} to ${this.userLanguage}. Return only the translated sentence, with no comments or other output.
+
+Input:
+${sentence}`;
+      
+      // Call the OpenAI API directly for translation
+      const result = await processSourceText(
+        translationPrompt,
+        'en', // Prompt is in English
+	  );
+      
+      if (!result) {
+        throw new Error("Translation API returned empty response");
+      }
+      
+      // Clean up the response (remove any extra newlines or whitespace)
+      const translation = result.trim();
+      
+      // Store in cache
+      this.translationCache[sentence] = translation;
+      
+      return translation;
+    } catch (error) {
+      debugLog(`Translation error: ${error.message}`);
+      return sentence; // Fallback to original sentence
+    }
+  }
+  
   // Update the display with the current sentence
-  updateDisplay() {
-    debugLog(`Updating display with sentence ${this.currentSentenceIndex + 1}, simplified ${this.currentSimplifiedIndex + 1}`);
-    
+  async updateDisplay() {
     try {
       if (this.simplifiedSentences.length === 0) {
-        debugLog("No simplified sentences available");
         // Use the original sentence as fallback
         if (this.currentSentenceIndex < this.bookSentences.length) {
           const originalSentence = this.bookSentences[this.currentSentenceIndex];
@@ -674,8 +768,12 @@ class BookReader {
         // Use the current simplified sentence
         const currentSimplified = this.simplifiedSentences[this.currentSimplifiedIndex];
         this.simpleArray = [currentSimplified];
-        // For now, use the same text for translation (we'll implement UL translation later)
-        this.translatedArray = [currentSimplified];
+        
+        // Get translation to user language
+        const translatedSentence = await this.directTranslate(currentSimplified);
+        // Make sure we only have a single-line translation (fixes duplicate sentence issue)
+        const cleanedTranslation = translatedSentence.split('\n')[0].trim();
+        this.translatedArray = [cleanedTranslation];
       }
       
       // Call the callback to update the UI
@@ -716,11 +814,9 @@ class BookReader {
   
   // Save the current position to AsyncStorage
   async savePosition() {
-    debugLog(`Saving position: sentence ${this.currentSentenceIndex + 1}, offset ${this.currentCharOffset}`);
-    
-    if (!this.trackerExists) return false;
-    
     try {
+      if (!this.trackerExists) return false;
+      
       if (this.reader && this.reader.bookId) {
         // Save the current character offset
         const trackerKey = `book_tracker_${this.reader.bookId}`;
@@ -730,7 +826,6 @@ class BookReader {
         };
         
         await AsyncStorage.setItem(trackerKey, JSON.stringify(tracker));
-        debugLog(`Position saved successfully`);
         return true;
       }
       return false;
@@ -773,6 +868,8 @@ class BookReader {
     this.simplifiedSentences = [];
     this.currentSimplifiedIndex = 0;
     this.sentenceOffsets = [];
+    this.translationCache = {};
+    this.isProcessing = false;
   }
 
   // Legacy methods kept for backward compatibility
