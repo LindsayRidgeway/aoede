@@ -42,7 +42,7 @@ const getConstantValue = (key) => {
 const GOOGLE_API_KEY = getConstantValue('GOOGLE_API_KEY');
 
 // Direct translation method using Google Translate
-const directTranslate = async (text, sourceLang, targetLang) => {
+export const directTranslate = async (text, sourceLang, targetLang) => {
   if (!text || sourceLang === targetLang) return text;
   
   try {
@@ -367,14 +367,14 @@ export default function App() {
   // Handle next sentence button click
   const handleNextSentence = async () => {
     try {
-      setLoadingBook(true);
+//      setLoadingBook(true);
       // Use the new encapsulated function
       await readingManager.advanceToNextSentence();
     } catch (error) {
       setStudyLangSentence("Error: " + error.message);
     } finally {
       // Loading is complete
-      setLoadingBook(false);
+//      setLoadingBook(false);
 
       // Check if autoplay should be triggered
       if (autoplay && !isSpeaking) {

@@ -7,6 +7,7 @@ import { bookPipeProcess } from './bookPipeProcess';
 import { Platform } from 'react-native';
 import { getUserLibrary, getBookById } from './userLibrary';
 import { debugLog } from './DebugPanel';
+import { directTranslate } from './App';
 
 class BookReader {
   constructor() {
@@ -714,6 +715,9 @@ class BookReader {
     }
   }
   
+  
+  
+  /*
   // Simple direct translation using the OpenAI API
   async directTranslate(sentence) {
     try {
@@ -750,6 +754,7 @@ ${sentence}`;
       return sentence; // Fallback to original sentence
     }
   }
+  */
   
   // Update the display with the current sentence
   async updateDisplay() {
@@ -770,7 +775,12 @@ ${sentence}`;
         this.simpleArray = [currentSimplified];
         
         // Get translation to user language
+		/*
         const translatedSentence = await this.directTranslate(currentSimplified);
+		*/
+		
+        const translatedSentence = await directTranslate(currentSimplified, this.studyLanguage, this.userLanguage);
+		
         // Make sure we only have a single-line translation (fixes duplicate sentence issue)
         const cleanedTranslation = translatedSentence.split('\n')[0].trim();
         this.translatedArray = [cleanedTranslation];
