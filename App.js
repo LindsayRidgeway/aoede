@@ -522,6 +522,37 @@ export default function App() {
       return false;
     }
     
+    // Present a confirmation dialog
+    const confirm = () => {
+      return new Promise((resolve) => {
+        if (Platform.OS === 'web') {
+          const confirmed = window.confirm(uiText.rewindConfirmMessage || "Are you sure you want to rewind the book to the beginning?");
+          resolve(confirmed);
+        } else {
+          Alert.alert(
+            uiText.rewindConfirmTitle || "Rewind Book",
+            uiText.rewindConfirmMessage || "Are you sure you want to rewind the book to the beginning?",
+            [
+              {
+                text: uiText.cancel || "Cancel",
+                onPress: () => resolve(false),
+                style: "cancel"
+              },
+              {
+                text: uiText.yes || "Yes",
+                onPress: () => resolve(true)
+              }
+            ]
+          );
+        }
+      });
+    };
+    
+    const confirmed = await confirm();
+    if (!confirmed) {
+      return false;
+    }
+    
     try {
       // Show loading state
       setLoadingBook(true);
