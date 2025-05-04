@@ -38,15 +38,14 @@ const getConstantValue = (key) => {
   return null;
 };
 
-// Get Google API key from Expo Constants
-const GOOGLE_API_KEY = getConstantValue('GOOGLE_API_KEY');
-
+/*
 // Direct translation method using Google Translate
 export const directTranslate = async (text, sourceLang, targetLang) => {
   if (!text || sourceLang === targetLang) return text;
+
+  const GOOGLE_API_KEY = getConstantValue('GOOGLE_API_KEY');
   
   try {
-    if (__DEV__) console.log("FETCH 0001");
     const response = await fetch(
       `https://translation.googleapis.com/language/translate/v2?key=${GOOGLE_API_KEY}`,
       {
@@ -72,6 +71,51 @@ export const directTranslate = async (text, sourceLang, targetLang) => {
     return text;
   }
 };
+*/
+
+// Direct translation method using GPT-4o
+export const directTranslate = async (text, sourceLang, targetLang) => {
+  if (!text || sourceLang === targetLang) return text;
+
+  const OPENAI_API_KEY = getConstantValue('OPENAI_API_KEY');
+  const API_URL = 'https://api.openai.com/v1/chat/completions';
+  const TRANSLATION_PROMPT = `Translate the input sentence from ${sourceLang} to ${targetLang}. Return only the translated sentence, with no comments or other output. Input: ${text}`;
+
+  try {
+    const response = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o',
+        messages: [
+          {
+            role: 'user',
+            content: TRANSLATION_PROMPT
+          }
+        ],
+        max_tokens: 400,
+        temperature: 0.3
+      })
+    });
+
+    if (!response.ok) {
+      return text;
+    }
+
+    const data = await response.json();
+
+    if (!data.choices || data.choices.length === 0) {
+      return text;
+    }
+
+    return data.choices[0].message.content;
+  } catch (error) {
+    return text;
+  }
+}
 
 // Get the user's preferred locale/language using multiple methods for better reliability
 const getDeviceLanguage = async () => {

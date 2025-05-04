@@ -715,47 +715,6 @@ class BookReader {
     }
   }
   
-  
-  
-  /*
-  // Simple direct translation using the OpenAI API
-  async directTranslate(sentence) {
-    try {
-      // Check if we already have a translation for this sentence
-      if (this.translationCache[sentence]) {
-        return this.translationCache[sentence];
-      }
-      
-      // Create a simple translation prompt
-      const translationPrompt = `Translate the input sentence from ${this.studyLanguage} to ${this.userLanguage}. Return only the translated sentence, with no comments or other output.
-
-Input:
-${sentence}`;
-      
-      // Call the OpenAI API directly for translation
-      const result = await processSourceText(
-        translationPrompt,
-        'en', // Prompt is in English
-	  );
-      
-      if (!result) {
-        throw new Error("Translation API returned empty response");
-      }
-      
-      // Clean up the response (remove any extra newlines or whitespace)
-      const translation = result.trim();
-      
-      // Store in cache
-      this.translationCache[sentence] = translation;
-      
-      return translation;
-    } catch (error) {
-      debugLog(`Translation error: ${error.message}`);
-      return sentence; // Fallback to original sentence
-    }
-  }
-  */
-  
   // Update the display with the current sentence
   async updateDisplay() {
     try {
