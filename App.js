@@ -411,28 +411,35 @@ export default function App() {
   // Handle next sentence button click
   const handleNextSentence = async () => {
     try {
-//      setLoadingBook(true);
-      // Use the new encapsulated function
+      // Use the encapsulated function to advance to the next sentence
       await readingManager.advanceToNextSentence();
-    } catch (error) {
-      setStudyLangSentence("Error: " + error.message);
-    } finally {
-      // Loading is complete
-//      setLoadingBook(false);
-
+      
+      // Wait a short moment for the sentence to be processed
+      // This ensures the simplified sentences array in BookReader has been updated
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
       // Check if autoplay should be triggered
       if (autoplay && !isSpeaking) {
-        // Speak the current sentence
-        ListeningSpeed.speakSentenceWithPauses(
-          studyLangSentence, 
-          listeningSpeed, 
-          () => {
-            setIsSpeaking(false);
-          }, 
-          articulation
-        );
-        setIsSpeaking(true);
+        // Get the current sentence directly from BookReader's simplified sentences
+        const currentSentence = BookReader.simpleArray && BookReader.simpleArray.length > 0 
+          ? BookReader.simpleArray[0] 
+          : studyLangSentence;
+        
+        if (currentSentence) {
+          // Speak the current sentence
+          ListeningSpeed.speakSentenceWithPauses(
+            currentSentence,
+            listeningSpeed, 
+            () => {
+              setIsSpeaking(false);
+            }, 
+            articulation
+          );
+          setIsSpeaking(true);
+        }
       }
+    } catch (error) {
+      setStudyLangSentence("Error: " + error.message);
     }
   };
   
