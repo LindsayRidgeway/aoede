@@ -38,41 +38,6 @@ const getConstantValue = (key) => {
   return null;
 };
 
-/*
-// Direct translation method using Google Translate
-export const directTranslate = async (text, sourceLang, targetLang) => {
-  if (!text || sourceLang === targetLang) return text;
-
-  const GOOGLE_API_KEY = getConstantValue('GOOGLE_API_KEY');
-  
-  try {
-    const response = await fetch(
-      `https://translation.googleapis.com/language/translate/v2?key=${GOOGLE_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          q: text,
-          source: sourceLang,
-          target: targetLang,
-          format: "text"
-        })
-      }
-    );
-    
-    const data = await response.json();
-    
-    if (data.data?.translations?.length > 0) {
-      return data.data.translations[0].translatedText;
-    }
-    
-    return text;
-  } catch (error) {
-    return text;
-  }
-};
-*/
-
 // Direct translation method using GPT-4o
 export const directTranslate = async (text, sourceLang, targetLang) => {
   if (!text || sourceLang === targetLang) return text;
@@ -157,7 +122,6 @@ export default function App() {
   if (__DEV__) console.log("MODULE 0003: App.js.App");
 
   // Get the reader manager interface
-//  const readingManager = BookReader.previousReadingManagement();
   const readingManager = BookReader.readingManagement();
 
   // Basic UI text in English

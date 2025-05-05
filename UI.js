@@ -7,6 +7,7 @@ import { ReadingUI } from './ReadingUI';
 import { LibraryUI } from './LibraryUI';
 import * as Font from 'expo-font';
 import { initializeUserLibrary } from './userLibrary';
+import { getBookById } from './userLibrary';
 
 export function MainUI(props) {
   // State to track if content should be shown
@@ -17,6 +18,12 @@ export function MainUI(props) {
   
   // State to track if library modal is shown
   const [showLibrary, setShowLibrary] = useState(false);
+  
+  // State to track which view is active: 'home' or 'reading'
+  const [activeView, setActiveView] = useState('home');
+  
+  // State to store book title
+  const [bookTitle, setBookTitle] = useState('');
   
   // Initialize user library when the component mounts
   useEffect(() => {
@@ -30,7 +37,32 @@ export function MainUI(props) {
   // Update showContent when sentence changes
   useEffect(() => {
     setShowContent(props.sentence && props.sentence.length > 0);
+    
+    // Update activeView based on content
+    if (props.sentence && props.sentence.length > 0 && activeView === 'home') {
+      setActiveView('reading');
+    }
   }, [props.sentence]);
+  
+  // Update book title when selectedBook changes
+  useEffect(() => {
+    const fetchBookTitle = async () => {
+      if (props.selectedBook) {
+        try {
+          const book = await getBookById(props.selectedBook);
+          if (book) {
+            // Use translated title if available or fall back to original title
+            const title = props.uiText[props.selectedBook] || book.title;
+            setBookTitle(title);
+          }
+        } catch (error) {
+          console.error("Error fetching book title:", error);
+        }
+      }
+    };
+    
+    fetchBookTitle();
+  }, [props.selectedBook, props.uiText]);
   
   // Load font with aggressive retry mechanism
   useEffect(() => {
@@ -95,35 +127,51 @@ export function MainUI(props) {
       props.refreshLibrary();
     }
   };
+  
+  // Handle loading a book - switch to reading view
+  const handleLoadBook = async () => {
+    const success = await props.loadBook();
+    if (success) {
+      setActiveView('reading');
+    }
+    return success;
+  };
+  
+  // Handle going back to home view
+  const handleGoHome = () => {
+    setActiveView('home');
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollViewContent}>
         <View style={styles.innerContainer}>
-          {/* Home UI component - Contains the header and load panel */}
-          <HomeUI
-            fontsLoaded={fontsLoaded}
-            studyLanguage={props.studyLanguage}
-            setStudyLanguage={props.setStudyLanguage}
-            uiText={props.uiText}
-            selectedBook={props.selectedBook}
-            setSelectedBook={props.setSelectedBook}
-            loadBook={props.loadBook}
-            loadingBook={props.loadingBook}
-            readingLevel={props.readingLevel}
-            setReadingLevel={props.setReadingLevel}
-            handleClearContent={() => {
-              if (props.handleClearContent) {
-                props.handleClearContent();
-              }
-              setShowContent(false);
-            }}
-            onLibraryButtonClick={handleShowLibrary}
-            libraryRefreshKey={props.libraryRefreshKey}
-          />
+          {/* Home UI component - only shown when activeView is 'home' */}
+          {activeView === 'home' && (
+            <HomeUI
+              fontsLoaded={fontsLoaded}
+              studyLanguage={props.studyLanguage}
+              setStudyLanguage={props.setStudyLanguage}
+              uiText={props.uiText}
+              selectedBook={props.selectedBook}
+              setSelectedBook={props.setSelectedBook}
+              loadBook={handleLoadBook}
+              loadingBook={props.loadingBook}
+              readingLevel={props.readingLevel}
+              setReadingLevel={props.setReadingLevel}
+              handleClearContent={() => {
+                if (props.handleClearContent) {
+                  props.handleClearContent();
+                }
+                setShowContent(false);
+              }}
+              onLibraryButtonClick={handleShowLibrary}
+              libraryRefreshKey={props.libraryRefreshKey}
+            />
+          )}
           
-          {/* Reading UI component - Contains all the reading controls */}
-          {showControls && (
+          {/* Reading UI component - only shown when activeView is 'reading' */}
+          {activeView === 'reading' && (
             <ReadingUI
               sentence={props.sentence}
               translatedSentence={props.translatedSentence}
@@ -144,6 +192,9 @@ export function MainUI(props) {
               setArticulation={props.setArticulation}
               autoplay={props.autoplay}
               setAutoplay={props.setAutoplay}
+              selectedBook={props.selectedBook}
+              bookTitle={bookTitle}
+              onGoHome={handleGoHome}
             />
           )}
         </View>

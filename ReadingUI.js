@@ -2,7 +2,7 @@
 import React, { useRef } from 'react';
 import { 
   Text, View, TouchableOpacity, Switch, 
-  ActivityIndicator, Animated
+  ActivityIndicator, Animated, ScrollView
 } from 'react-native';
 import { styles } from './styles';
 
@@ -27,7 +27,11 @@ export function ReadingUI({
   setArticulation,
   // Props for autoplay
   autoplay,
-  setAutoplay
+  setAutoplay,
+  // Book title and navigation
+  selectedBook,
+  onGoHome,
+  bookTitle
 }) {
   // Animation ref for Next button
   const nextButtonAnimation = useRef(new Animated.Value(1)).current;
@@ -66,10 +70,22 @@ export function ReadingUI({
   const updateListeningSpeed = (speed) => {
     setListeningSpeed(speed);
   };
+  
+  // Handle going back to home screen
+  const handleGoHome = () => {
+    if (onGoHome) {
+      onGoHome();
+    }
+  };
 
   return (
-    <>
-      {/* Controls Container - MOVED ABOVE CONTENT */}
+    <ScrollView contentContainerStyle={styles.readingScrollContainer}>
+      {/* Book Title */}
+      <View style={styles.bookTitleContainer}>
+        <Text style={styles.bookTitle}>{bookTitle || ""}</Text>
+      </View>
+      
+      {/* Controls Container - KEPT AT THE TOP FOR NOW */}
       <View style={styles.controlsContainer}>
         <View style={styles.controls}>
           <TouchableOpacity 
@@ -178,6 +194,14 @@ export function ReadingUI({
           <Switch value={showTranslation} onValueChange={setShowTranslation} />
         </View>
       </View>
-    </>
+      
+      {/* Home Link */}
+      <TouchableOpacity 
+        style={styles.homeLink} 
+        onPress={handleGoHome}
+      >
+        <Text style={styles.homeLinkText}>Home</Text>
+      </TouchableOpacity>
+    </ScrollView>
   );
 }

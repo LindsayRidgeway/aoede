@@ -5,6 +5,25 @@ import { StyleSheet, Platform } from 'react-native';
 const themeBlue = '#3a7ca5';
 
 export const readingStyles = StyleSheet.create({
+  // New: ScrollView content container
+  readingScrollContainer: {
+    alignItems: 'center',
+    paddingBottom: 30, // Extra space at bottom for scrolling
+  },
+  
+  // New: Book title styles
+  bookTitleContainer: {
+    width: '80%',
+    marginVertical: 10,
+    alignItems: 'center',
+  },
+  bookTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2a6c95',
+    textAlign: 'center',
+  },
+  
   // Content container styles
   contentContainer: {
     width: '80%',
@@ -203,5 +222,21 @@ export const readingStyles = StyleSheet.create({
     color: '#666',
     fontSize: 14,
     fontStyle: 'italic'
+  },
+  
+  // New: Home link styles
+  homeLink: {
+    marginTop: 15,
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  homeLinkText: {
+    color: themeBlue,
+    fontWeight: '500',
+    fontSize: 14,
   }
 });
