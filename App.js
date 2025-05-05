@@ -448,69 +448,20 @@ export default function App() {
     }
   };
   
-  // Handle go to end of book button click - NEW
+  // Handle go to end of book button click - UPDATED
   const handleGoToEndOfBook = async () => {
     try {
-      // Show warning that this operation might take time for large books
-      const confirmMessage = "This will navigate to the end of the book. For large books, this operation might take a moment. Continue?";
-      
-      // Platform-specific confirmation
-      const confirmed = Platform.OS === 'web' 
-        ? window.confirm(confirmMessage)
-        : await new Promise((resolve) => {
-            Alert.alert(
-              "Go to End of Book",
-              confirmMessage,
-              [
-                {
-                  text: "Cancel",
-                  onPress: () => resolve(false),
-                  style: "cancel"
-                },
-                {
-                  text: "Continue",
-                  onPress: () => resolve(true)
-                }
-              ]
-            );
-          });
-      
-      if (!confirmed) {
-        return;
-      }
-      
       // Stop any speech that might be in progress
       if (isSpeaking) {
         ListeningSpeed.stopSpeaking();
         setIsSpeaking(false);
       }
       
-      // Set loading state
-      setLoadingBook(true);
+      // Use the new BookReader implementation directly
+      await readingManager.goToEndOfBook();
       
-      try {
-        // Implementation depends on your book reading system
-        // This is a simple implementation that just processes sentences until the end
-        // For larger books, you might want a more efficient implementation
-        let atEnd = false;
-        while (!atEnd) {
-          await readingManager.advanceToNextSentence();
-          
-          // Check if we've reached the end
-          const progress = readingManager.getProgress();
-          atEnd = !progress.hasMoreContent && 
-                 progress.currentSentenceIndex >= progress.totalSentencesInMemory - 1;
-          
-          // Add a small delay to prevent UI freezing
-          await new Promise(resolve => setTimeout(resolve, 10));
-        }
-      } finally {
-        // Clear loading state
-        setLoadingBook(false);
-      }
     } catch (error) {
       setStudyLangSentence("Error: " + error.message);
-      setLoadingBook(false);
     }
   };
   
