@@ -137,6 +137,94 @@ export function ReadingUI({
     }
   };
 
+  // Custom style for navigation buttons container - metallic appearance
+  const navigationFrameStyle = Platform.OS === 'web' 
+    ? {
+        // Web-specific metallic style with CSS
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#a0a0a0', // Base metallic color
+        paddingVertical: 10,
+        paddingHorizontal: 15,
+        borderRadius: 10,
+        marginBottom: 15,
+        boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.4), inset 0px 1px 3px rgba(255, 255, 255, 0.7), inset 0px -2px 3px rgba(0, 0, 0, 0.2)',
+        backgroundImage: 'linear-gradient(180deg, #dcdcdc 0%, #9e9e9e 50%, #757575 100%)',
+        border: '1px solid #606060'
+      }
+    : {
+        // React Native style for iOS/Android
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#a0a0a0', // Base metallic color
+        paddingVertical: 10,
+        paddingHorizontal: 15,
+        borderRadius: 10,
+        marginBottom: 15,
+        borderWidth: 1,
+        borderColor: '#606060',
+        // More pronounced shadow
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.4,
+        shadowRadius: 8,
+        elevation: 6,
+      };
+
+  // Enhanced content container style with shadows
+  const enhancedContentContainerStyle = Platform.OS === 'web'
+    ? {
+        ...styles.contentContainer,
+        boxShadow: '0px 6px 12px rgba(0, 0, 0, 0.3)',
+        border: '1px solid #e0e0e0',
+      }
+    : {
+        ...styles.contentContainer,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.3,
+        shadowRadius: 12,
+        elevation: 8,
+        borderWidth: 1,
+        borderColor: '#e0e0e0',
+      };
+
+  // Enhanced home button with 3D/gradient effect - same blue color scheme
+  const enhancedHomeButtonStyle = Platform.OS === 'web'
+    ? {
+        ...styles.homeLink,
+        backgroundImage: 'linear-gradient(180deg, #4a8ab5 0%, #3a7ca5 50%, #2a6c95 100%)',
+        boxShadow: '0px 3px 6px rgba(0, 0, 0, 0.3), inset 0px 1px 3px rgba(255, 255, 255, 0.4)',
+        border: '1px solid #2a6c95',
+        paddingVertical: 10,
+        paddingHorizontal: 15,
+      }
+    : {
+        ...styles.homeLink,
+        backgroundColor: '#3a7ca5',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.3,
+        shadowRadius: 6,
+        elevation: 4,
+        borderWidth: 1,
+        borderColor: '#2a6c95',
+        paddingVertical: 10,
+        paddingHorizontal: 15,
+      };
+
+  // Enhanced home button text style
+  const enhancedHomeLinkTextStyle = {
+    ...styles.homeLinkText,
+    color: '#ffffff',
+    fontWeight: 'bold',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2
+  };
+
   return (
     <>
       {/* Skip the header if skipHeader is true (rendered by parent instead) */}
@@ -164,13 +252,14 @@ export function ReadingUI({
             <Text style={styles.bookTitle}>{bookTitle || ""}</Text>
           </View>
           
-          {/* Enhanced Media-Player Style Navigation */}
-          <View style={styles.mediaControlsContainer}>
+          {/* Navigation buttons in metallic frame with buttons closer together */}
+          <View style={navigationFrameStyle}>
             {/* Beginning of Book (First) */}
             <TouchableOpacity
               style={[
                 styles.mediaButton,
-                (loadingBook || isAtStartOfBook) ? styles.disabledButton : null
+                (loadingBook || isAtStartOfBook) ? styles.disabledButton : null,
+                { marginHorizontal: 5 } // Reduced margin to bring buttons closer
               ]}
               onPress={handleBeginningOfBookPress}
               disabled={loadingBook || isAtStartOfBook}
@@ -182,7 +271,8 @@ export function ReadingUI({
             <TouchableOpacity
               style={[
                 styles.mediaButton,
-                (loadingBook || isAtStartOfBook) ? styles.disabledButton : null
+                (loadingBook || isAtStartOfBook) ? styles.disabledButton : null,
+                { marginHorizontal: 5 } // Reduced margin to bring buttons closer
               ]}
               onPress={handlePreviousButtonPress}
               disabled={loadingBook || isAtStartOfBook}
@@ -195,7 +285,8 @@ export function ReadingUI({
               style={[
                 styles.mediaButtonCenter, 
                 isSpeaking ? styles.activeButton : null,
-                loadingBook ? styles.disabledButton : null
+                loadingBook ? styles.disabledButton : null,
+                { marginHorizontal: 5 } // Reduced margin to bring buttons closer
               ]} 
               onPress={speakSentence} 
               disabled={loadingBook}
@@ -209,7 +300,8 @@ export function ReadingUI({
             <TouchableOpacity 
               style={[
                 styles.mediaButton, 
-                (loadingBook || isAtEndOfBook) ? styles.disabledButton : null
+                (loadingBook || isAtEndOfBook) ? styles.disabledButton : null,
+                { marginHorizontal: 5 } // Reduced margin to bring buttons closer
               ]} 
               onPress={handleNextButtonPress} 
               disabled={loadingBook || isAtEndOfBook}
@@ -230,7 +322,8 @@ export function ReadingUI({
             <TouchableOpacity
               style={[
                 styles.mediaButton,
-                (loadingBook || isAtEndOfBook) ? styles.disabledButton : null
+                (loadingBook || isAtEndOfBook) ? styles.disabledButton : null,
+                { marginHorizontal: 5 } // Reduced margin to bring buttons closer
               ]}
               onPress={handleEndOfBookPress}
               disabled={loadingBook || isAtEndOfBook}
@@ -239,8 +332,8 @@ export function ReadingUI({
             </TouchableOpacity>
           </View>
 
-          {/* Content Container */}
-          <View style={styles.contentContainer}>
+          {/* Content Container - Enhanced with shadow */}
+          <View style={enhancedContentContainerStyle}>
             {showText && (
               <View style={styles.sentenceWrapper}>
                 <Text style={styles.foreignSentence}>{sentence}</Text>
@@ -297,12 +390,12 @@ export function ReadingUI({
             </View>
           </View>
           
-          {/* Home Link */}
+          {/* Enhanced Home Link with 3D metallic style */}
           <TouchableOpacity 
-            style={styles.homeLink} 
+            style={enhancedHomeButtonStyle} 
             onPress={handleGoHome}
           >
-            <Text style={styles.homeLinkText}>{uiText.homeLink || "Home"}</Text>
+            <Text style={enhancedHomeLinkTextStyle}>{uiText.homeLink || "Home"}</Text>
           </TouchableOpacity>
         </ScrollView>
       </View>

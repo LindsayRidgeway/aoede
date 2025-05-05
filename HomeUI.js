@@ -81,6 +81,52 @@ export function HomeUI({
   // State for the user's book library
   const [bookLibrary, setBookLibrary] = useState([]);
   
+  // Enhanced Library button with 3D metallic burgundy style
+  const enhancedLibraryButtonStyle = Platform.OS === 'web'
+    ? {
+        ...styles.libraryButton,
+        backgroundImage: 'linear-gradient(180deg, #a00030 0%, #800020 50%, #600010 100%)',
+        boxShadow: '0px 3px 6px rgba(0, 0, 0, 0.3), inset 0px 1px 3px rgba(255, 255, 255, 0.4)',
+        border: '1px solid #600010',
+      }
+    : {
+        ...styles.libraryButton,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.3,
+        shadowRadius: 6,
+        elevation: 4,
+        borderWidth: 1,
+        borderColor: '#600010',
+      };
+
+  // Enhanced Load Book button with 3D metallic blue style
+  const enhancedLoadButtonStyle = Platform.OS === 'web'
+    ? {
+        ...styles.loadButton,
+        backgroundImage: 'linear-gradient(180deg, #4a8ab5 0%, #3a7ca5 50%, #2a6c95 100%)',
+        boxShadow: '0px 3px 6px rgba(0, 0, 0, 0.3), inset 0px 1px 3px rgba(255, 255, 255, 0.4)',
+        border: '1px solid #2a6c95',
+      }
+    : {
+        ...styles.loadButton,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.3,
+        shadowRadius: 6,
+        elevation: 4,
+        borderWidth: 1, 
+        borderColor: '#2a6c95',
+      };
+
+  // Enhanced button text style with subtle text shadow
+  const enhancedButtonTextStyle = {
+    ...styles.buttonText,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2
+  };
+  
   // Function to get a sort-friendly version of a title
   const getSortableTitle = (title) => {
     // Convert to lowercase for case-insensitive comparison
@@ -577,22 +623,22 @@ export function HomeUI({
           
           {/* Right column: Library and Load Book buttons */}
           <View style={styles.rightColumn}>
-            {/* Library Button */}
+            {/* Library Button - Enhanced with 3D effect */}
             <TouchableOpacity 
               style={[
-                styles.libraryButton, 
+                enhancedLibraryButtonStyle, 
                 loadingBook ? styles.disabledButton : null
               ]} 
               onPress={handleLibraryButtonClick} 
               disabled={loadingBook}
             >
-              <Text style={styles.buttonText}>{uiText.library || "Library"}</Text>
+              <Text style={enhancedButtonTextStyle}>{uiText.library || "Library"}</Text>
             </TouchableOpacity>
             
-            {/* Load Book Button */}
+            {/* Load Book Button - Enhanced with 3D effect */}
             <TouchableOpacity 
               style={[
-                styles.loadButton, 
+                enhancedLoadButtonStyle, 
                 loadingBook ? styles.disabledButton : null, 
                 !selectedBook ? styles.disabledButton : null
               ]} 
@@ -602,12 +648,12 @@ export function HomeUI({
               {loadingBook ? (
                 <View style={styles.nextButtonContent}>
                   <ActivityIndicator size="small" color="#ffffff" style={styles.buttonSpinner} />
-                  <Text style={[styles.buttonText, styles.buttonTextWithSpinner]}>
+                  <Text style={[enhancedButtonTextStyle, styles.buttonTextWithSpinner]}>
                     {uiText.loadBook || "Load Book"}
                   </Text>
                 </View>
               ) : (
-                <Text style={styles.buttonText}>{uiText.loadBook || "Load Book"}</Text>
+                <Text style={enhancedButtonTextStyle}>{uiText.loadBook || "Load Book"}</Text>
               )}
             </TouchableOpacity>
           </View>
