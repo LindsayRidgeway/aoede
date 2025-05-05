@@ -36,7 +36,11 @@ export function ReadingUI({
   // Add fontsLoaded prop
   fontsLoaded,
   // Add skipHeader prop
-  skipHeader = false
+  skipHeader = false,
+  // Add new navigation props
+  previousSentence,
+  goToEndOfBook,
+  isAtStartOfBook
 }) {
   // Animation ref for Next button
   const nextButtonAnimation = useRef(new Animated.Value(1)).current;
@@ -64,9 +68,23 @@ export function ReadingUI({
     nextSentence();
   };
   
-  // Handle rewind button press
-  const handleRewindPress = () => {
-    if (!loadingBook) {
+  // Handle previous button press
+  const handlePreviousButtonPress = () => {
+    if (previousSentence && !loadingBook && !isAtStartOfBook) {
+      previousSentence();
+    }
+  };
+  
+  // Handle end of book button press
+  const handleEndOfBookPress = () => {
+    if (goToEndOfBook && !loadingBook && !isAtEndOfBook) {
+      goToEndOfBook();
+    }
+  };
+  
+  // Handle rewind button press (renamed to beginningOfBook for clarity)
+  const handleBeginningOfBookPress = () => {
+    if (!loadingBook && !isAtStartOfBook) {
       rewindBook();
     }
   };
@@ -146,55 +164,78 @@ export function ReadingUI({
             <Text style={styles.bookTitle}>{bookTitle || ""}</Text>
           </View>
           
-          {/* Controls Container */}
-          <View style={styles.controlsContainer}>
-            <View style={styles.controls}>
-              <TouchableOpacity 
-                style={[
-                  styles.controlButton, 
-                  isSpeaking ? styles.activeButton : null,
-                  loadingBook ? styles.disabledButton : null
-                ]} 
-                onPress={speakSentence} 
-                disabled={loadingBook}
-              >
-                <Text style={styles.buttonText}>
-                  {isSpeaking ? (uiText.stop || "Stop") : (uiText.listen || "Listen")}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={[
-                  styles.controlButton, 
-                  (loadingBook || isAtEndOfBook) ? styles.disabledButton : null
-                ]} 
-                onPress={handleNextButtonPress} 
-                disabled={loadingBook || isAtEndOfBook}
-              >
-                {loadingBook ? (
-                  <View style={styles.nextButtonContent}>
-                    <ActivityIndicator size="small" color="#ffffff" style={styles.buttonSpinner} />
-                    <Text style={[styles.buttonText, styles.buttonTextWithSpinner]}>
-                      {uiText.next || "Next Sentence"}
-                    </Text>
-                  </View>
-                ) : (
-                  <Animated.View style={{transform: [{scale: nextButtonAnimation}]}}>
-                    <Text style={styles.buttonText}>{uiText.next || "Next Sentence"}</Text>
-                  </Animated.View>
-                )}
-              </TouchableOpacity>
-            </View>
-            
-            {/* Rewind button */}
+          {/* Enhanced Media-Player Style Navigation */}
+          <View style={styles.mediaControlsContainer}>
+            {/* Beginning of Book (First) */}
             <TouchableOpacity
-              style={styles.rewindButton}
-              onPress={handleRewindPress}
+              style={[
+                styles.mediaButton,
+                (loadingBook || isAtStartOfBook) ? styles.disabledButton : null
+              ]}
+              onPress={handleBeginningOfBookPress}
+              disabled={loadingBook || isAtStartOfBook}
+            >
+              <Text style={styles.mediaButtonText}>⏮</Text>
+            </TouchableOpacity>
+            
+            {/* Previous Sentence */}
+            <TouchableOpacity
+              style={[
+                styles.mediaButton,
+                (loadingBook || isAtStartOfBook) ? styles.disabledButton : null
+              ]}
+              onPress={handlePreviousButtonPress}
+              disabled={loadingBook || isAtStartOfBook}
+            >
+              <Text style={styles.mediaButtonText}>⏪</Text>
+            </TouchableOpacity>
+            
+            {/* Listen/Stop Button (center, larger) */}
+            <TouchableOpacity 
+              style={[
+                styles.mediaButtonCenter, 
+                isSpeaking ? styles.activeButton : null,
+                loadingBook ? styles.disabledButton : null
+              ]} 
+              onPress={speakSentence} 
               disabled={loadingBook}
             >
-              <Text style={styles.rewindButtonText}>
-                {uiText.rewindConfirmTitle || "Rewind"}
+              <Text style={styles.buttonText}>
+                {isSpeaking ? (uiText.stop || "Stop") : (uiText.listen || "Listen")}
               </Text>
+            </TouchableOpacity>
+            
+            {/* Next Sentence */}
+            <TouchableOpacity 
+              style={[
+                styles.mediaButton, 
+                (loadingBook || isAtEndOfBook) ? styles.disabledButton : null
+              ]} 
+              onPress={handleNextButtonPress} 
+              disabled={loadingBook || isAtEndOfBook}
+            >
+              {loadingBook ? (
+                <View style={styles.nextButtonContent}>
+                  <ActivityIndicator size="small" color="#ffffff" style={styles.buttonSpinner} />
+                  <Text style={[styles.mediaButtonText, styles.buttonTextWithSpinner]}>⏩</Text>
+                </View>
+              ) : (
+                <Animated.View style={{transform: [{scale: nextButtonAnimation}]}}>
+                  <Text style={styles.mediaButtonText}>⏩</Text>
+                </Animated.View>
+              )}
+            </TouchableOpacity>
+            
+            {/* End of Book (Last) */}
+            <TouchableOpacity
+              style={[
+                styles.mediaButton,
+                (loadingBook || isAtEndOfBook) ? styles.disabledButton : null
+              ]}
+              onPress={handleEndOfBookPress}
+              disabled={loadingBook || isAtEndOfBook}
+            >
+              <Text style={styles.mediaButtonText}>⏭</Text>
             </TouchableOpacity>
           </View>
 

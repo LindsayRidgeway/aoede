@@ -10,6 +10,7 @@ import { initializeUserLibrary } from './userLibrary';
 import { getBookById } from './userLibrary';
 import { Platform } from 'react-native';
 
+// Explicitly export MainUI as a named export
 export function MainUI(props) {
   // State to track if content should be shown
   const [showContent, setShowContent] = useState(props.sentence && props.sentence.length > 0);
@@ -25,6 +26,9 @@ export function MainUI(props) {
   
   // State to store book title
   const [bookTitle, setBookTitle] = useState('');
+  
+  // State to track if we're at the start of the book
+  const [isAtStartOfBook, setIsAtStartOfBook] = useState(true);
   
   // Initialize user library when the component mounts
   useEffect(() => {
@@ -44,6 +48,11 @@ export function MainUI(props) {
       setActiveView('reading');
     }
   }, [props.sentence]);
+  
+  // Update isAtStartOfBook based on currentSentenceIndex
+  useEffect(() => {
+    setIsAtStartOfBook(props.currentSentenceIndex === 0);
+  }, [props.currentSentenceIndex]);
   
   // Update book title when selectedBook changes
   useEffect(() => {
@@ -178,6 +187,37 @@ export function MainUI(props) {
   const handleGoHome = () => {
     setActiveView('home');
   };
+  
+  // Go to previous sentence - new function
+  const handlePreviousSentence = async () => {
+    try {
+      if (props.handlePreviousSentence) {
+        await props.handlePreviousSentence();
+      } else {
+        // Fallback implementation if not provided - uses reader functionality
+        const reader = window.BookReader && window.BookReader.readingManagement();
+        if (reader && reader.goToPreviousSentence) {
+          await reader.goToPreviousSentence();
+        }
+      }
+    } catch (error) {
+      console.error("Error going to previous sentence:", error);
+    }
+  };
+  
+  // Go to end of book - new function
+  const handleGoToEndOfBook = async () => {
+    try {
+      if (props.handleGoToEndOfBook) {
+        await props.handleGoToEndOfBook();
+      } else {
+        // Fallback implementation - will need to be implemented in BookReader
+        console.log("Go to end of book - functionality not yet implemented");
+      }
+    } catch (error) {
+      console.error("Error going to end of book:", error);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -252,6 +292,10 @@ export function MainUI(props) {
               fontsLoaded={fontsLoaded}
               // Pass skipHeader to avoid duplicate header
               skipHeader={true}
+              // New navigation props
+              previousSentence={handlePreviousSentence}
+              goToEndOfBook={handleGoToEndOfBook}
+              isAtStartOfBook={isAtStartOfBook}
             />
           )}
         </View>
@@ -266,3 +310,6 @@ export function MainUI(props) {
     </SafeAreaView>
   );
 }
+
+// Also add a default export just to be safe
+export default MainUI;

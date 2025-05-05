@@ -1,7 +1,9 @@
 // App.js - Main application component that manages global state and UI rendering for Aoede language learning app
 import React, { useState, useEffect } from 'react';
 import { Alert, Platform, NativeModules } from 'react-native';
-import { MainUI } from './UI';
+// Fix import for MainUI - try importing both ways to be safe
+import MainUI from './UI';
+// import { MainUI } from './UI';
 import ListeningSpeed from './listeningSpeed';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { processSourceText, translateBatch } from './apiServices';
@@ -148,6 +150,7 @@ export default function App() {
     errorDeletingBook: "Error deleting book",
     exit: "Exit",
     fromLibrary: "from your library",
+    homeLink: "Home",
     library: "Library",
     libraryComingSoon: "Library management features are coming soon.",
     listen: "Listen",
@@ -158,7 +161,7 @@ export default function App() {
     readingLevel: "Reading Level",
     readingSpeed: "Reading Speed",
     rewindConfirmMessage: "Are you sure you want to rewind the book to the beginning?",
-    rewindConfirmTitle: "Rewind Book",
+    rewindConfirmTitle: "Rewind",
     rewindFailed: "Failed to rewind the book.",
     search: "Search",
     searchBooks: "Search Books",
@@ -407,6 +410,110 @@ export default function App() {
     }
   };
   
+  // Handle previous sentence button click - NEW
+  const handlePreviousSentence = async () => {
+    try {
+      // Stop any speech that might be in progress
+      if (isSpeaking) {
+        ListeningSpeed.stopSpeaking();
+        setIsSpeaking(false);
+      }
+      
+      // Use the new function to go to the previous sentence
+      await readingManager.goToPreviousSentence();
+      
+      // Wait a short moment for the sentence to be processed
+      await new Promise(resolve => setTimeout(resolve, 50));
+      
+      // Check if autoplay should be triggered
+      if (autoplay && !isSpeaking) {
+        const currentSentence = BookReader.simpleArray && BookReader.simpleArray.length > 0 
+          ? BookReader.simpleArray[0] 
+          : studyLangSentence;
+        
+        if (currentSentence) {
+          ListeningSpeed.speakSentenceWithPauses(
+            currentSentence,
+            listeningSpeed, 
+            () => {
+              setIsSpeaking(false);
+            }, 
+            articulation
+          );
+          setIsSpeaking(true);
+        }
+      }
+    } catch (error) {
+      setStudyLangSentence("Error: " + error.message);
+    }
+  };
+  
+  // Handle go to end of book button click - NEW
+  const handleGoToEndOfBook = async () => {
+    try {
+      // Show warning that this operation might take time for large books
+      const confirmMessage = "This will navigate to the end of the book. For large books, this operation might take a moment. Continue?";
+      
+      // Platform-specific confirmation
+      const confirmed = Platform.OS === 'web' 
+        ? window.confirm(confirmMessage)
+        : await new Promise((resolve) => {
+            Alert.alert(
+              "Go to End of Book",
+              confirmMessage,
+              [
+                {
+                  text: "Cancel",
+                  onPress: () => resolve(false),
+                  style: "cancel"
+                },
+                {
+                  text: "Continue",
+                  onPress: () => resolve(true)
+                }
+              ]
+            );
+          });
+      
+      if (!confirmed) {
+        return;
+      }
+      
+      // Stop any speech that might be in progress
+      if (isSpeaking) {
+        ListeningSpeed.stopSpeaking();
+        setIsSpeaking(false);
+      }
+      
+      // Set loading state
+      setLoadingBook(true);
+      
+      try {
+        // Implementation depends on your book reading system
+        // This is a simple implementation that just processes sentences until the end
+        // For larger books, you might want a more efficient implementation
+        let atEnd = false;
+        while (!atEnd) {
+          await readingManager.advanceToNextSentence();
+          
+          // Check if we've reached the end
+          const progress = readingManager.getProgress();
+          atEnd = !progress.hasMoreContent && 
+                 progress.currentSentenceIndex >= progress.totalSentencesInMemory - 1;
+          
+          // Add a small delay to prevent UI freezing
+          await new Promise(resolve => setTimeout(resolve, 10));
+        }
+      } finally {
+        // Clear loading state
+        setLoadingBook(false);
+      }
+    } catch (error) {
+      setStudyLangSentence("Error: " + error.message);
+      setLoadingBook(false);
+    }
+  };
+  
   // Handle book selection change
   const handleBookChange = async (bookId) => {
     setSelectedBook(bookId);
@@ -614,6 +721,11 @@ export default function App() {
     }
   };
   
+  if (typeof MainUI === 'undefined') {
+    console.error('MainUI component is undefined!');
+    return <div>Error: MainUI component not found</div>;
+  }
+  
   return (
     <MainUI
       uiText={uiText}
@@ -652,6 +764,8 @@ export default function App() {
       showLibrary={showLibrary}
       onLibraryButtonClick={handleLibraryButtonClick}
       onCloseLibrary={handleCloseLibrary}
+      handlePreviousSentence={handlePreviousSentence}
+      handleGoToEndOfBook={handleGoToEndOfBook}
     />
   );
 }

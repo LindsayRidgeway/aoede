@@ -24,6 +24,60 @@ export const readingStyles = StyleSheet.create({
     textAlign: 'center',
   },
   
+  // Media Player Style Controls - NEW
+  mediaControlsContainer: {
+    width: '90%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  mediaButton: {
+    backgroundColor: themeBlue,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    margin: 4,
+    // Add subtle shadow
+    ...(Platform.OS !== 'web' ? {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 2,
+    } : {}),
+    ...(Platform.OS === 'web' ? {
+      boxShadow: '0px 2px 3px rgba(0, 0, 0, 0.2)'
+    } : {}),
+    elevation: 2
+  },
+  mediaButtonCenter: {
+    backgroundColor: themeBlue,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minWidth: 90,
+    // Add subtle shadow
+    ...(Platform.OS !== 'web' ? {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.2,
+      shadowRadius: 2,
+    } : {}),
+    ...(Platform.OS === 'web' ? {
+      boxShadow: '0px 2px 3px rgba(0, 0, 0, 0.2)'
+    } : {}),
+    elevation: 2
+  },
+  mediaButtonText: {
+    fontSize: 18,
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  
   // Content container styles
   contentContainer: {
     width: '80%',
@@ -74,7 +128,7 @@ export const readingStyles = StyleSheet.create({
     lineHeight: 24
   },
 
-  // Control buttons
+  // Control buttons (legacy style)
   controlsContainer: {
     width: '80%',
     alignItems: 'flex-start',
@@ -109,6 +163,19 @@ export const readingStyles = StyleSheet.create({
   rewindButtonText: {
     fontSize: 14,
     color: '#333'
+  },
+  
+  // Shared button styles
+  buttonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  activeButton: {
+    backgroundColor: '#d16666', // Reddish color for active state
+  },
+  disabledButton: {
+    backgroundColor: '#a9a9a9', // Gray for disabled state
+    opacity: 0.6,
   },
 
   // Speed control
