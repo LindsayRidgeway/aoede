@@ -56,7 +56,9 @@ export function HomeUI({
   setReadingLevel,
   handleClearContent,
   onLibraryButtonClick,
-  libraryRefreshKey
+  libraryRefreshKey,
+  // Add skipHeader prop
+  skipHeader = false
 }) {
   // State for displayed book title and modals
   const [displayBookTitle, setDisplayBookTitle] = useState("");
@@ -507,20 +509,22 @@ export function HomeUI({
 
   return (
     <>
-      {/* Header with logo */}
-      <View style={styles.headerContainer}>
-        <Image 
-          source={require('./assets/aoede_logo.png')} 
-          style={styles.headerLogo} 
-          resizeMode="contain"
-        />
-        <View style={styles.titleContainer}>
-          <Text style={getHeaderTextStyle()}>
-            Aoede
-          </Text>
-          <Text style={styles.headerPronunciation}>(ay-EE-dee)</Text>
+      {/* Skip the header if skipHeader is true (rendered by parent instead) */}
+      {!skipHeader && (
+        <View style={styles.headerContainer}>
+          <Image 
+            source={require('./assets/aoede_logo.png')} 
+            style={styles.headerLogo} 
+            resizeMode="contain"
+          />
+          <View style={styles.titleContainer}>
+            <Text style={getHeaderTextStyle()}>
+              Aoede
+            </Text>
+            <Text style={styles.headerPronunciation}>(ay-EE-dee)</Text>
+          </View>
         </View>
-      </View>
+      )}
 
       <DebugPanel />
 

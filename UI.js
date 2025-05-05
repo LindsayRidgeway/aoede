@@ -1,6 +1,6 @@
 // UI.js - Main UI file that imports and renders module components
 import React, { useState, useEffect } from 'react';
-import { SafeAreaView, ScrollView, View } from 'react-native';
+import { SafeAreaView, ScrollView, View, Text, Image } from 'react-native';
 import { styles } from './styles';
 import { HomeUI } from './HomeUI';
 import { ReadingUI } from './ReadingUI';
@@ -8,6 +8,7 @@ import { LibraryUI } from './LibraryUI';
 import * as Font from 'expo-font';
 import { initializeUserLibrary } from './userLibrary';
 import { getBookById } from './userLibrary';
+import { Platform } from 'react-native';
 
 export function MainUI(props) {
   // State to track if content should be shown
@@ -106,6 +107,42 @@ export function MainUI(props) {
       mounted = false;
     };
   }, []);
+  
+  // Define the header style based on platform and font loading
+  const getHeaderTextStyle = () => {
+    if (Platform.OS === 'android') {
+      // Android needs explicit style parameters
+      if (fontsLoaded) {
+        return {
+          fontSize: 36,
+          fontWeight: 'bold',
+          color: '#3a7ca5',
+          fontFamily: 'Cinzel-ExtraBold', // Try the ExtraBold version for Android
+        };
+      } else {
+        return {
+          fontSize: 36,
+          fontWeight: 'bold',
+          color: '#3a7ca5',
+        };
+      }
+    } else if (Platform.OS === 'ios') {
+      // iOS may need different font handling
+      return fontsLoaded ? 
+        {
+          fontSize: 36,
+          fontWeight: 'bold',
+          color: '#3a7ca5',
+          fontFamily: 'Cinzel',
+        } : 
+        styles.header;
+    } else {
+      // Web should work fine with the standard approach
+      return fontsLoaded ? 
+        [styles.header, {fontFamily: 'Cinzel'}] : 
+        styles.header;
+    }
+  };
 
   // Define showControls early to avoid reference issues
   const showControls = showContent && props.sentence && props.sentence.length > 0;
@@ -146,6 +183,21 @@ export function MainUI(props) {
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollViewContent}>
         <View style={styles.innerContainer}>
+          {/* Common Header - ALWAYS VISIBLE */}
+          <View style={styles.headerContainer}>
+            <Image 
+              source={require('./assets/aoede_logo.png')} 
+              style={styles.headerLogo} 
+              resizeMode="contain"
+            />
+            <View style={styles.titleContainer}>
+              <Text style={getHeaderTextStyle()}>
+                Aoede
+              </Text>
+              <Text style={styles.headerPronunciation}>(ay-EE-dee)</Text>
+            </View>
+          </View>
+          
           {/* Home UI component - only shown when activeView is 'home' */}
           {activeView === 'home' && (
             <HomeUI
@@ -167,6 +219,8 @@ export function MainUI(props) {
               }}
               onLibraryButtonClick={handleShowLibrary}
               libraryRefreshKey={props.libraryRefreshKey}
+              // Pass skipHeader to avoid duplicate header
+              skipHeader={true}
             />
           )}
           
@@ -196,6 +250,8 @@ export function MainUI(props) {
               bookTitle={bookTitle}
               onGoHome={handleGoHome}
               fontsLoaded={fontsLoaded}
+              // Pass skipHeader to avoid duplicate header
+              skipHeader={true}
             />
           )}
         </View>
