@@ -127,6 +127,71 @@ export function HomeUI({
     textShadowRadius: 2
   };
   
+  // Enhanced reading level button style - raised appearance
+  const enhancedReadingLevelButtonStyle = Platform.OS === 'web'
+    ? {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#f0f0f0',
+        marginRight: 10,
+        boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.2), inset 0px 1px 2px rgba(255, 255, 255, 0.8)',
+        backgroundImage: 'linear-gradient(180deg, #ffffff 0%, #f0f0f0 100%)',
+        border: '1px solid #ccc',
+        cursor: 'pointer',
+      }
+    : {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#f0f0f0',
+        marginRight: 10,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 2,
+        elevation: 3,
+        borderWidth: 1,
+        borderColor: '#ccc',
+      };
+
+  // Enhanced active reading level button - pressed appearance
+  const enhancedReadingLevelButtonActiveStyle = Platform.OS === 'web'
+    ? {
+        backgroundColor: '#3a7ca5',
+        backgroundImage: 'linear-gradient(180deg, #3a7ca5 0%, #2a6c95 100%)',
+        boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.2), inset 0px 1px 1px rgba(0, 0, 0, 0.3)',
+        transform: 'translateY(1px)',
+        border: '1px solid #1a5c85',
+      }
+    : {
+        backgroundColor: '#3a7ca5',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 1,
+        elevation: 1,
+        borderWidth: 1,
+        borderColor: '#1a5c85',
+        // We can't translate in React Native styles, but we can modify the margin to create 
+        // the impression that the button is pressed down
+        marginTop: 1,
+        marginBottom: -1,
+      };
+
+  // Enhanced text style for active button
+  const enhancedReadingLevelButtonTextActiveStyle = {
+    color: '#fff',
+    fontWeight: '500',
+    textShadowColor: 'rgba(0, 0, 0, 0.4)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
+  };
+  
   // Function to get a sort-friendly version of a title
   const getSortableTitle = (title) => {
     // Convert to lowercase for case-insensitive comparison
@@ -593,8 +658,8 @@ export function HomeUI({
                   <TouchableOpacity
                     key={level}
                     style={[
-                      styles.readingLevelButton,
-                      readingLevel === level ? styles.readingLevelButtonActive : null
+                      enhancedReadingLevelButtonStyle,
+                      readingLevel === level ? enhancedReadingLevelButtonActiveStyle : null
                     ]}
                     onPress={() => {
                       setReadingLevel(level);
@@ -604,7 +669,7 @@ export function HomeUI({
                     <Text 
                       style={[
                         styles.readingLevelButtonText,
-                        readingLevel === level ? styles.readingLevelButtonTextActive : null
+                        readingLevel === level ? enhancedReadingLevelButtonTextActiveStyle : null
                       ]}
                     >
                       {level}

@@ -10,7 +10,7 @@ import { getUserLibrary, removeBookFromLibrary, addBookToLibrary } from './userL
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 
-// Key for storing translated titles
+// Storage key for translated titles
 const TRANSLATED_TITLES_KEY = 'aoede_translated_titles';
 
 export function LibraryUI({
@@ -33,6 +33,72 @@ export function LibraryUI({
   
   // Current mode: 'library' or 'search'
   const [activeMode, setActiveMode] = useState('library');
+  
+  // Enhanced Exit button with 3D metallic burgundy style
+  const enhancedExitButtonStyle = Platform.OS === 'web'
+    ? {
+        ...styles.exitButton,
+        backgroundImage: 'linear-gradient(180deg, #a00030 0%, #800020 50%, #600010 100%)',
+        boxShadow: '0px 3px 6px rgba(0, 0, 0, 0.3), inset 0px 1px 3px rgba(255, 255, 255, 0.4)',
+        border: '1px solid #600010',
+      }
+    : {
+        ...styles.exitButton,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.3,
+        shadowRadius: 6,
+        elevation: 4,
+        borderWidth: 1,
+        borderColor: '#600010',
+      };
+  
+  // Enhanced Search button with 3D metallic blue style
+  const enhancedSearchButtonStyle = Platform.OS === 'web'
+    ? {
+        ...styles.searchButton,
+        backgroundImage: 'linear-gradient(180deg, #4a8ab5 0%, #3a7ca5 50%, #2a6c95 100%)',
+        boxShadow: '0px 3px 6px rgba(0, 0, 0, 0.3), inset 0px 1px 3px rgba(255, 255, 255, 0.4)',
+        border: '1px solid #2a6c95',
+      }
+    : {
+        ...styles.searchButton,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.3,
+        shadowRadius: 6,
+        elevation: 4,
+        borderWidth: 1,
+        borderColor: '#2a6c95',
+      };
+  
+  // Enhanced red Stop button style (when searching)
+  const enhancedStopButtonStyle = Platform.OS === 'web'
+    ? {
+        ...styles.searchButton,
+        backgroundImage: 'linear-gradient(180deg, #ff5555 0%, #d9534f 50%, #c9302c 100%)',
+        boxShadow: '0px 3px 6px rgba(0, 0, 0, 0.3), inset 0px 1px 3px rgba(255, 255, 255, 0.4)',
+        border: '1px solid #c9302c',
+      }
+    : {
+        ...styles.searchButton,
+        backgroundColor: '#d9534f',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.3,
+        shadowRadius: 6,
+        elevation: 4,
+        borderWidth: 1,
+        borderColor: '#c9302c',
+      };
+  
+  // Enhanced button text style with subtle text shadow
+  const enhancedButtonTextStyle = {
+    ...styles.buttonText,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 2
+  };
   
   // Utility function to add debug messages
   const addDebugMessage = (message) => {
@@ -883,10 +949,10 @@ export function LibraryUI({
               {uiText.library || "Library"}
             </Text>
             <TouchableOpacity 
-              style={styles.exitButton} 
+              style={enhancedExitButtonStyle} 
               onPress={handleClose}
             >
-              <Text style={styles.exitButtonText}>
+              <Text style={enhancedButtonTextStyle}>
                 {uiText.exit || "Exit"}
               </Text>
             </TouchableOpacity>
@@ -940,13 +1006,10 @@ export function LibraryUI({
                   editable={!isSearching}
                 />
                 <TouchableOpacity
-                  style={[
-                    styles.searchButton,
-                    isSearching ? styles.stopButton : null
-                  ]}
+                  style={isSearching ? enhancedStopButtonStyle : enhancedSearchButtonStyle}
                   onPress={handleSearch}
                 >
-                  <Text style={styles.searchButtonText}>
+                  <Text style={enhancedButtonTextStyle}>
                     {isSearching 
                       ? (uiText.stopSearch || "Stop") 
                       : (uiText.search || "Search")}
