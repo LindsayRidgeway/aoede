@@ -195,6 +195,7 @@ export function MainUI(props) {
               selectedBook={props.selectedBook}
               bookTitle={bookTitle}
               onGoHome={handleGoHome}
+              fontsLoaded={fontsLoaded}
             />
           )}
         </View>

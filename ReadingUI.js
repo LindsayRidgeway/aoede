@@ -2,7 +2,8 @@
 import React, { useRef } from 'react';
 import { 
   Text, View, TouchableOpacity, Switch, 
-  ActivityIndicator, Animated, ScrollView
+  ActivityIndicator, Animated, ScrollView,
+  Platform, Image
 } from 'react-native';
 import { styles } from './styles';
 
@@ -31,7 +32,9 @@ export function ReadingUI({
   // Book title and navigation
   selectedBook,
   onGoHome,
-  bookTitle
+  bookTitle,
+  // Add fontsLoaded prop
+  fontsLoaded
 }) {
   // Animation ref for Next button
   const nextButtonAnimation = useRef(new Animated.Value(1)).current;
@@ -77,131 +80,184 @@ export function ReadingUI({
       onGoHome();
     }
   };
+  
+  // Define the header style based on platform and font loading
+  const getHeaderTextStyle = () => {
+    if (Platform.OS === 'android') {
+      // Android needs explicit style parameters
+      if (fontsLoaded) {
+        return {
+          fontSize: 36,
+          fontWeight: 'bold',
+          color: '#3a7ca5',
+          fontFamily: 'Cinzel-ExtraBold', // Try the ExtraBold version for Android
+        };
+      } else {
+        return {
+          fontSize: 36,
+          fontWeight: 'bold',
+          color: '#3a7ca5',
+        };
+      }
+    } else if (Platform.OS === 'ios') {
+      // iOS may need different font handling
+      return fontsLoaded ? 
+        {
+          fontSize: 36,
+          fontWeight: 'bold',
+          color: '#3a7ca5',
+          fontFamily: 'Cinzel',
+        } : 
+        styles.header;
+    } else {
+      // Web should work fine with the standard approach
+      return fontsLoaded ? 
+        [styles.header, {fontFamily: 'Cinzel'}] : 
+        styles.header;
+    }
+  };
 
   return (
-    <ScrollView contentContainerStyle={styles.readingScrollContainer}>
-      {/* Book Title */}
-      <View style={styles.bookTitleContainer}>
-        <Text style={styles.bookTitle}>{bookTitle || ""}</Text>
+    <View style={styles.inputContainer}>
+      {/* Header with logo - Matching HomeUI */}
+      <View style={styles.headerContainer}>
+        <Image 
+          source={require('./assets/aoede_logo.png')} 
+          style={styles.headerLogo} 
+          resizeMode="contain"
+        />
+        <View style={styles.titleContainer}>
+          <Text style={getHeaderTextStyle()}>
+            Aoede
+          </Text>
+          <Text style={styles.headerPronunciation}>(ay-EE-dee)</Text>
+        </View>
       </View>
       
-      {/* Controls Container - KEPT AT THE TOP FOR NOW */}
-      <View style={styles.controlsContainer}>
-        <View style={styles.controls}>
-          <TouchableOpacity 
-            style={[
-              styles.controlButton, 
-              isSpeaking ? styles.activeButton : null,
-              loadingBook ? styles.disabledButton : null
-            ]} 
-            onPress={speakSentence} 
+      <ScrollView contentContainerStyle={styles.readingScrollContainer}>
+        {/* Book Title */}
+        <View style={styles.bookTitleContainer}>
+          <Text style={styles.bookTitle}>{bookTitle || ""}</Text>
+        </View>
+        
+        {/* Controls Container - KEPT AT THE TOP FOR NOW */}
+        <View style={styles.controlsContainer}>
+          <View style={styles.controls}>
+            <TouchableOpacity 
+              style={[
+                styles.controlButton, 
+                isSpeaking ? styles.activeButton : null,
+                loadingBook ? styles.disabledButton : null
+              ]} 
+              onPress={speakSentence} 
+              disabled={loadingBook}
+            >
+              <Text style={styles.buttonText}>
+                {isSpeaking ? (uiText.stop || "Stop") : (uiText.listen || "Listen")}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[
+                styles.controlButton, 
+                (loadingBook || isAtEndOfBook) ? styles.disabledButton : null
+              ]} 
+              onPress={handleNextButtonPress} 
+              disabled={loadingBook || isAtEndOfBook}
+            >
+              {loadingBook ? (
+                <View style={styles.nextButtonContent}>
+                  <ActivityIndicator size="small" color="#ffffff" style={styles.buttonSpinner} />
+                  <Text style={[styles.buttonText, styles.buttonTextWithSpinner]}>
+                    {uiText.next || "Next Sentence"}
+                  </Text>
+                </View>
+              ) : (
+                <Animated.View style={{transform: [{scale: nextButtonAnimation}]}}>
+                  <Text style={styles.buttonText}>{uiText.next || "Next Sentence"}</Text>
+                </Animated.View>
+              )}
+            </TouchableOpacity>
+          </View>
+          
+          {/* Rewind button */}
+          <TouchableOpacity
+            style={styles.rewindButton}
+            onPress={handleRewindPress}
             disabled={loadingBook}
           >
-            <Text style={styles.buttonText}>
-              {isSpeaking ? (uiText.stop || "Stop") : (uiText.listen || "Listen")}
+            <Text style={styles.rewindButtonText}>
+              {uiText.rewindConfirmTitle || "Rewind"}
             </Text>
           </TouchableOpacity>
+        </View>
 
-          <TouchableOpacity 
-            style={[
-              styles.controlButton, 
-              (loadingBook || isAtEndOfBook) ? styles.disabledButton : null
-            ]} 
-            onPress={handleNextButtonPress} 
-            disabled={loadingBook || isAtEndOfBook}
-          >
-            {loadingBook ? (
-              <View style={styles.nextButtonContent}>
-                <ActivityIndicator size="small" color="#ffffff" style={styles.buttonSpinner} />
-                <Text style={[styles.buttonText, styles.buttonTextWithSpinner]}>
-                  {uiText.next || "Next Sentence"}
-                </Text>
-              </View>
-            ) : (
-              <Animated.View style={{transform: [{scale: nextButtonAnimation}]}}>
-                <Text style={styles.buttonText}>{uiText.next || "Next Sentence"}</Text>
-              </Animated.View>
-            )}
-          </TouchableOpacity>
+        {/* Content Container */}
+        <View style={styles.contentContainer}>
+          {showText && (
+            <View style={styles.sentenceWrapper}>
+              <Text style={styles.foreignSentence}>{sentence}</Text>
+            </View>
+          )}
+          {showTranslation && translatedSentence && (
+            <View style={showText ? styles.translationWrapper : styles.soloTranslationWrapper}>
+              <Text style={styles.translation}>{translatedSentence}</Text>
+            </View>
+          )}
         </View>
         
-        {/* Rewind button */}
-        <TouchableOpacity
-          style={styles.rewindButton}
-          onPress={handleRewindPress}
-          disabled={loadingBook}
+        {/* Speed Control with Inline Circle Buttons */}
+        <View style={styles.speedControlRow}>
+          <Text style={styles.speedLabel}>{uiText.readingSpeed || "Listening Speed"}:</Text>
+          <View style={styles.speedCircleContainer}>
+            {[1, 2, 3, 4, 5].map((speed) => (
+              <TouchableOpacity
+                key={speed}
+                style={[
+                  styles.speedCircle,
+                  listeningSpeed === speed ? styles.speedCircleActive : null
+                ]}
+                onPress={() => updateListeningSpeed(speed)}
+              />
+            ))}
+          </View>
+        </View>
+
+        {/* Toggle Controls */}
+        <View style={styles.toggleContainer}>
+          {/* Articulation toggle */}
+          <View style={styles.toggleItem}>
+            <Text style={styles.toggleLabel}>{uiText.articulation || "Articulation"}:</Text>
+            <Switch value={articulation} onValueChange={setArticulation} />
+          </View>
+          
+          {/* Auto-play toggle */}
+          <View style={styles.toggleItem}>
+            <Text style={styles.toggleLabel}>{uiText.autoplay || "Next Sentence Auto-play"}:</Text>
+            <Switch value={autoplay} onValueChange={setAutoplay} />
+          </View>
+          
+          {/* Show Text toggle */}
+          <View style={styles.toggleItem}>
+            <Text style={styles.toggleLabel}>{uiText.showText || "Show Foreign Sentence"}:</Text>
+            <Switch value={showText} onValueChange={setShowText} />
+          </View>
+          
+          {/* Show Translation toggle */}
+          <View style={styles.toggleItem}>
+            <Text style={styles.toggleLabel}>{uiText.showTranslation || "Show Translation"}:</Text>
+            <Switch value={showTranslation} onValueChange={setShowTranslation} />
+          </View>
+        </View>
+        
+        {/* Home Link */}
+        <TouchableOpacity 
+          style={styles.homeLink} 
+          onPress={handleGoHome}
         >
-          <Text style={styles.rewindButtonText}>
-            {uiText.rewindConfirmTitle || "Rewind"}
-          </Text>
+          <Text style={styles.homeLinkText}>{uiText.homeLink || "Home"}</Text>
         </TouchableOpacity>
-      </View>
-
-      {/* Content Container */}
-      <View style={styles.contentContainer}>
-        {showText && (
-          <View style={styles.sentenceWrapper}>
-            <Text style={styles.foreignSentence}>{sentence}</Text>
-          </View>
-        )}
-        {showTranslation && translatedSentence && (
-          <View style={showText ? styles.translationWrapper : styles.soloTranslationWrapper}>
-            <Text style={styles.translation}>{translatedSentence}</Text>
-          </View>
-        )}
-      </View>
-      
-      {/* Speed Control with Inline Circle Buttons */}
-      <View style={styles.speedControlRow}>
-        <Text style={styles.speedLabel}>{uiText.readingSpeed || "Listening Speed"}:</Text>
-        <View style={styles.speedCircleContainer}>
-          {[1, 2, 3, 4, 5].map((speed) => (
-            <TouchableOpacity
-              key={speed}
-              style={[
-                styles.speedCircle,
-                listeningSpeed === speed ? styles.speedCircleActive : null
-              ]}
-              onPress={() => updateListeningSpeed(speed)}
-            />
-          ))}
-        </View>
-      </View>
-
-      {/* Toggle Controls */}
-      <View style={styles.toggleContainer}>
-        {/* Articulation toggle */}
-        <View style={styles.toggleItem}>
-          <Text style={styles.toggleLabel}>{uiText.articulation || "Articulation"}:</Text>
-          <Switch value={articulation} onValueChange={setArticulation} />
-        </View>
-        
-        {/* Auto-play toggle */}
-        <View style={styles.toggleItem}>
-          <Text style={styles.toggleLabel}>{uiText.autoplay || "Next Sentence Auto-play"}:</Text>
-          <Switch value={autoplay} onValueChange={setAutoplay} />
-        </View>
-        
-        {/* Show Text toggle */}
-        <View style={styles.toggleItem}>
-          <Text style={styles.toggleLabel}>{uiText.showText || "Show Foreign Sentence"}:</Text>
-          <Switch value={showText} onValueChange={setShowText} />
-        </View>
-        
-        {/* Show Translation toggle */}
-        <View style={styles.toggleItem}>
-          <Text style={styles.toggleLabel}>{uiText.showTranslation || "Show Translation"}:</Text>
-          <Switch value={showTranslation} onValueChange={setShowTranslation} />
-        </View>
-      </View>
-      
-      {/* Home Link */}
-      <TouchableOpacity 
-        style={styles.homeLink} 
-        onPress={handleGoHome}
-      >
-        <Text style={styles.homeLinkText}>Home</Text>
-      </TouchableOpacity>
-    </ScrollView>
+      </ScrollView>
+    </View>
   );
 }
