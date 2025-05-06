@@ -296,6 +296,9 @@ export function MainUI(props) {
               previousSentence={handlePreviousSentence}
               goToEndOfBook={handleGoToEndOfBook}
               isAtStartOfBook={isAtStartOfBook}
+              // Pass totalSentences from props
+              totalSentences={props.totalSentences}
+              currentSentenceIndex={props.currentSentenceIndex}
             />
           )}
         </View>

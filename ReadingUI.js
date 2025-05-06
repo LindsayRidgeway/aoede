@@ -40,7 +40,10 @@ export function ReadingUI({
   // Add new navigation props
   previousSentence,
   goToEndOfBook,
-  isAtStartOfBook
+  isAtStartOfBook,
+  // Access to the total sentences information - make sure it's passed from App.js
+  totalSentences = 0,
+  currentSentenceIndex = 0
 }) {
   // Animation ref for Next button
   const nextButtonAnimation = useRef(new Animated.Value(1)).current;
@@ -173,6 +176,36 @@ export function ReadingUI({
         elevation: 6,
         // We can't do gradients directly in RN styles, 
         // but we can get a slight metallic effect with the right shadow and border
+      };
+
+  // Style for the sentence count display
+  const sentenceCountStyle = Platform.OS === 'web'
+    ? {
+        backgroundColor: '#f0f0f0',
+        paddingVertical: 3,
+        paddingHorizontal: 10,
+        borderRadius: 12,
+        marginBottom: 15,
+        marginTop: 10,
+        alignSelf: 'center',
+        boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.15)',
+        border: '1px solid #ddd',
+      }
+    : {
+        backgroundColor: '#f0f0f0',
+        paddingVertical: 3,
+        paddingHorizontal: 10,
+        borderRadius: 12,
+        marginBottom: 15,
+        marginTop: 10,
+        alignSelf: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.15,
+        shadowRadius: 4,
+        elevation: 2,
+        borderWidth: 1,
+        borderColor: '#ddd',
       };
 
   // Enhanced content container style with shadows
@@ -397,6 +430,13 @@ export function ReadingUI({
             >
               <Text style={styles.mediaButtonText}>⏭</Text>
             </TouchableOpacity>
+          </View>
+          
+          {/* Sentence Count Display - NEW */}
+          <View style={sentenceCountStyle}>
+            <Text style={{ fontSize: 14, fontWeight: '500', color: '#555' }}>
+              {totalSentences}
+            </Text>
           </View>
 
           {/* Content Container - Enhanced with shadow */}

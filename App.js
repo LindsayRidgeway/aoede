@@ -177,6 +177,7 @@ export default function App() {
     stopSearch: "Stop",
     studyLanguage: "Study Language",
     success: "Success",
+    totalSentences: "Total Sentences",
     yes: "Yes"
   };
   
@@ -343,7 +344,14 @@ export default function App() {
     // Update progress indicators
     const progress = readingManager.getProgress();
     setCurrentSentenceIndex(progress.currentSentenceIndex);
-    setTotalSentences(progress.totalSentencesInMemory);
+    
+    // Update totalSentences from bookSentences.length
+    if (BookReader.bookSentences && BookReader.bookSentences.length > 0) {
+      setTotalSentences(BookReader.bookSentences.length);
+    } else {
+      setTotalSentences(progress.totalSentencesInBook || 0);
+    }
+    
     setIsAtEndOfBook(!progress.hasMoreContent && progress.currentSentenceIndex === progress.totalSentencesInMemory - 1);
   };
   
@@ -708,6 +716,11 @@ export default function App() {
       
       if (!success) {
         throw new Error("Failed to load book");
+      }
+      
+      // Update total sentences after book is loaded
+      if (BookReader.bookSentences) {
+        setTotalSentences(BookReader.bookSentences.length);
       }
       
       return true;
