@@ -150,6 +150,8 @@ export default function App() {
     errorDeletingBook: "Error deleting book",
     exit: "Exit",
     fromLibrary: "from your library",
+    goToEndConfirmMessage: "Go to the end of the book?",
+    goToEndConfirmTitle: "End of Book",
     homeLink: "Home",
     library: "Library",
     libraryComingSoon: "Library management features are coming soon.",
@@ -451,17 +453,63 @@ export default function App() {
   // Handle go to end of book button click - UPDATED
   const handleGoToEndOfBook = async () => {
     try {
+      // Prevent operation during loading
+      if (loadingBook) {
+        return false;
+      }
+      
       // Stop any speech that might be in progress
       if (isSpeaking) {
         ListeningSpeed.stopSpeaking();
         setIsSpeaking(false);
       }
       
-      // Use the new BookReader implementation directly
-      await readingManager.goToEndOfBook();
+      // Present a confirmation dialog
+      const confirm = () => {
+        return new Promise((resolve) => {
+          if (Platform.OS === 'web') {
+            const confirmed = window.confirm(uiText.goToEndConfirmMessage || "Go to the end of the book?");
+            resolve(confirmed);
+          } else {
+            Alert.alert(
+              uiText.goToEndConfirmTitle || "End of Book",
+              uiText.goToEndConfirmMessage || "Go to the end of the book?",
+              [
+                {
+                  text: uiText.cancel || "Cancel",
+                  onPress: () => resolve(false),
+                  style: "cancel"
+                },
+                {
+                  text: uiText.yes || "Yes",
+                  onPress: () => resolve(true)
+                }
+              ]
+            );
+          }
+        });
+      };
       
+      const confirmed = await confirm();
+      if (!confirmed) {
+        return false;
+      }
+      
+      setLoadingBook(true);
+      
+      try {
+        // Use the BookReader implementation
+        await readingManager.goToEndOfBook();
+        return true;
+      } catch (error) {
+        setStudyLangSentence("Error: " + error.message);
+        return false;
+      } finally {
+        setLoadingBook(false);
+      }
     } catch (error) {
       setStudyLangSentence("Error: " + error.message);
+      return false;
     }
   };
   

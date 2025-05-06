@@ -246,35 +246,6 @@ class BookReader {
             throw new Error("No sentences available in the book");
           }
           
-          // Show a simple confirmation
-          const confirmMessage = "Go to the end of the book?";
-          
-          // Platform-specific confirmation
-          const confirmed = Platform.OS === 'web' 
-            ? window.confirm(confirmMessage)
-            : await new Promise((resolve) => {
-                Alert.alert(
-                  "End of Book",
-                  confirmMessage,
-                  [
-                    {
-                      text: "Cancel",
-                      onPress: () => resolve(false),
-                      style: "cancel"
-                    },
-                    {
-                      text: "Continue",
-                      onPress: () => resolve(true)
-                    }
-                  ]
-                );
-              });
-          
-          if (!confirmed) {
-            this.isProcessing = false;
-            return false;
-          }
-          
           // Direct navigation to the last sentence
           this.currentSentenceIndex = this.bookSentences.length - 1;
           
