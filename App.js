@@ -130,7 +130,7 @@ export default function App() {
   const defaultUiText = {
     addBook: "Add Book",
     articulation: "Articulation",
-    autoplay: "Next Sentence Auto-play",
+    autoplay: "Sentence Auto-play",
     bookAdded: "Book added to library",
     bookDetails: "Book Details",
     bookSelection: "Book Selection",
@@ -160,7 +160,7 @@ export default function App() {
     next: "Next Sentence",
     readingLevel: "Reading Level",
     readingSpeed: "Reading Speed",
-    rewindConfirmMessage: "Are you sure you want to rewind the book to the beginning?",
+    rewindConfirmMessage: "Rewind the book to the beginning?",
     rewindConfirmTitle: "Rewind",
     rewindFailed: "Failed to rewind the book.",
     search: "Search",
@@ -168,7 +168,7 @@ export default function App() {
     searchError: "Search error",
     searchPlaceholder: "Search Project Gutenberg by title, author, or subject",
     searching: "Searching...",
-    showText: "Show Foreign Sentence",
+    showText: "Show Sentence",
     showTranslation: "Show Translation",
     sourceMaterial: "Source Material",
     stop: "Stop",
@@ -548,12 +548,12 @@ export default function App() {
     const confirm = () => {
       return new Promise((resolve) => {
         if (Platform.OS === 'web') {
-          const confirmed = window.confirm(uiText.rewindConfirmMessage || "Are you sure you want to rewind the book to the beginning?");
+          const confirmed = window.confirm(uiText.rewindConfirmMessage || "Rewind the book to the beginning?");
           resolve(confirmed);
         } else {
           Alert.alert(
             uiText.rewindConfirmTitle || "Rewind Book",
-            uiText.rewindConfirmMessage || "Are you sure you want to rewind the book to the beginning?",
+            uiText.rewindConfirmMessage || "Rewind the book to the beginning?",
             [
               {
                 text: uiText.cancel || "Cancel",

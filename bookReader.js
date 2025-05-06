@@ -247,14 +247,14 @@ class BookReader {
           }
           
           // Show a simple confirmation
-          const confirmMessage = "Navigate to the end of the book?";
+          const confirmMessage = "Go to the end of the book?";
           
           // Platform-specific confirmation
           const confirmed = Platform.OS === 'web' 
             ? window.confirm(confirmMessage)
             : await new Promise((resolve) => {
                 Alert.alert(
-                  "Go to End of Book",
+                  "End of Book",
                   confirmMessage,
                   [
                     {

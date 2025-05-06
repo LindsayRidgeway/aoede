@@ -130,12 +130,12 @@ const ContentDisplay = ({
         
         {/* Auto-play toggle */}
         <View style={styles.toggleItem}>
-          <Text style={styles.toggleLabel}>{uiText.autoplay || "Next Sentence Auto-play"}:</Text>
+          <Text style={styles.toggleLabel}>{uiText.autoplay || "Sentence Auto-play"}:</Text>
           <Switch value={autoplay} onValueChange={setAutoplay} />
         </View>
         
         <View style={styles.toggleItem}>
-          <Text style={styles.toggleLabel}>{uiText.showText || "Show Foreign Sentence"}:</Text>
+          <Text style={styles.toggleLabel}>{uiText.showText || "Show Sentence"}:</Text>
           <Switch value={showText} onValueChange={setShowText} />
         </View>
         
