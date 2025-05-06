@@ -41,7 +41,7 @@ export function ReadingUI({
   previousSentence,
   goToEndOfBook,
   isAtStartOfBook,
-  // Access to the total sentences information - make sure it's passed from App.js
+  // Access to the total sentences information
   totalSentences = 0,
   currentSentenceIndex = 0
 }) {
@@ -432,10 +432,10 @@ export function ReadingUI({
             </TouchableOpacity>
           </View>
           
-          {/* Sentence Count Display - NEW */}
+          {/* Sentence Count Display - UPDATED to show currentIndex/totalSentences */}
           <View style={sentenceCountStyle}>
             <Text style={{ fontSize: 14, fontWeight: '500', color: '#555' }}>
-              {totalSentences}
+              {(currentSentenceIndex + 1)}/{totalSentences}
             </Text>
           </View>
 
