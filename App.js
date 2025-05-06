@@ -160,6 +160,7 @@ export default function App() {
     loading: "Loading...",
     myLibrary: "My Library",
     next: "Next Sentence",
+    position: "Position",
     readingLevel: "Reading Level",
     readingSpeed: "Reading Speed",
     rewindConfirmMessage: "Rewind the book to the beginning?",

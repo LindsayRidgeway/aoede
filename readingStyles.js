@@ -8,13 +8,13 @@ export const readingStyles = StyleSheet.create({
   // New: ScrollView content container
   readingScrollContainer: {
     alignItems: 'center',
-    paddingBottom: 30, // Extra space at bottom for scrolling
+    paddingBottom: 20, // REDUCED extra space at bottom for scrolling (from 30)
   },
   
   // New: Book title styles
   bookTitleContainer: {
     width: '80%',
-    marginVertical: 10,
+    marginVertical: 8, // REDUCED vertical margin (from 10)
     alignItems: 'center',
   },
   bookTitle: {
@@ -30,7 +30,7 @@ export const readingStyles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: 10, // REDUCED bottom margin (from 15)
   },
   mediaButton: {
     backgroundColor: themeBlue,
@@ -81,7 +81,7 @@ export const readingStyles = StyleSheet.create({
   // Content container styles
   contentContainer: {
     width: '80%',
-    marginTop: 10, // Reduced from 15 to account for buttons above
+    marginTop: 5, // REDUCED top margin (from 10)
     padding: 15,
     backgroundColor: '#f9f9f9',
     borderRadius: 10,
@@ -89,7 +89,7 @@ export const readingStyles = StyleSheet.create({
     borderColor: '#ddd',
     // No fixed height - allows content to determine size
     minHeight: 100, // Minimum height for empty content
-    marginBottom: 10,
+    marginBottom: 8, // REDUCED bottom margin (from 10)
     ...(Platform.OS !== 'web' ? {
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 1 },
@@ -102,7 +102,7 @@ export const readingStyles = StyleSheet.create({
     elevation: 2
   },
   navigationContainer: {
-    marginBottom: 10
+    marginBottom: 8 // REDUCED bottom margin (from 10)
   },
   sentenceWrapper: {
     marginBottom: 12
@@ -132,8 +132,8 @@ export const readingStyles = StyleSheet.create({
   controlsContainer: {
     width: '80%',
     alignItems: 'flex-start',
-    marginTop: 5, // Small margin at top
-    marginBottom: 10, // Space before content container
+    marginTop: 5, // REDUCED top margin (kept at 5)
+    marginBottom: 8, // REDUCED bottom margin (from 10)
     position: 'relative'  // For positioning the rewind button
   },
   controls: {
@@ -151,7 +151,7 @@ export const readingStyles = StyleSheet.create({
     width: '45%'
   },
   rewindButton: {
-    marginTop: 10,
+    marginTop: 8, // REDUCED top margin (from 10)
     alignSelf: 'flex-end',
     backgroundColor: '#f0f0f0',
     paddingVertical: 5,
@@ -161,7 +161,7 @@ export const readingStyles = StyleSheet.create({
     borderColor: '#ccc'
   },
   rewindButtonText: {
-    fontSize: 14,
+    fontSize: 12, // REDUCED font size (from 14)
     color: '#333'
   },
   
@@ -169,6 +169,7 @@ export const readingStyles = StyleSheet.create({
   buttonText: {
     color: 'white',
     fontWeight: 'bold',
+    fontSize: 14, // REDUCED font size (from 16)
   },
   activeButton: {
     backgroundColor: '#d16666', // Reddish color for active state
@@ -183,8 +184,8 @@ export const readingStyles = StyleSheet.create({
     width: '80%',
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 10,
-    marginBottom: 12  // Increased space after speed control
+    marginTop: 8, // REDUCED top margin (from 10)
+    marginBottom: 10  // REDUCED space after speed control (from 12)
   },
   speedLabel: {
     fontSize: 14,
@@ -238,19 +239,20 @@ export const readingStyles = StyleSheet.create({
   toggleContainer: {
     width: '80%',
     marginTop: 0,
-    marginBottom: 5
+    marginBottom: 5 // Keep at 5
   },
   toggleItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
-    // Platform-specific heights to fix vertical spacing in web
+    // Platform-specific adjustments
     ...(Platform.OS === 'web' ? {
-      height: 24, // Reduced height for web
-      marginVertical: 2 // Small vertical margin for web
+      // Web-specific adjustments
+      height: 22, // REDUCED height (from 24)
+      marginVertical: 2 // Keep at 2
     } : {
-      height: Platform.OS === 'android' ? 25 : 35, // Original heights for native
-      marginVertical: Platform.OS === 'android' ? 0 : 2 // Original margins for native
+      height: Platform.OS === 'android' ? 24 : 32, // REDUCED height (from 25/35)
+      marginVertical: Platform.OS === 'android' ? 0 : 2 // Keep as is
     })
   },
   toggleLabel: {
@@ -293,8 +295,8 @@ export const readingStyles = StyleSheet.create({
   
   // New: Home link styles
   homeLink: {
-    marginTop: 15,
-    paddingVertical: 8,
+    marginTop: 8, // REDUCED top margin (from 15)
+    paddingVertical: 6, // REDUCED vertical padding (from 8)
     paddingHorizontal: 15,
     backgroundColor: '#f0f0f0',
     borderRadius: 5,
@@ -304,6 +306,6 @@ export const readingStyles = StyleSheet.create({
   homeLinkText: {
     color: themeBlue,
     fontWeight: '500',
-    fontSize: 14,
+    fontSize: 12, // REDUCED font size (from 14)
   }
 });

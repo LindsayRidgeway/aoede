@@ -151,7 +151,7 @@ export function ReadingUI({
         paddingVertical: 10,
         paddingHorizontal: 15,
         borderRadius: 10,
-        marginBottom: 15,
+        marginBottom: 5, // REDUCED gap between navigation panel and progress meter
         boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.4), inset 0px 1px 3px rgba(255, 255, 255, 0.7), inset 0px -2px 3px rgba(0, 0, 0, 0.2)',
         backgroundImage: 'linear-gradient(180deg, #dcdcdc 0%, #9e9e9e 50%, #757575 100%)',
         border: '1px solid #606060'
@@ -165,7 +165,7 @@ export function ReadingUI({
         paddingVertical: 10,
         paddingHorizontal: 15,
         borderRadius: 10,
-        marginBottom: 15,
+        marginBottom: 5, // REDUCED gap between navigation panel and progress meter
         borderWidth: 1,
         borderColor: '#606060',
         // More pronounced shadow
@@ -182,22 +182,18 @@ export function ReadingUI({
   const sentenceCountStyle = Platform.OS === 'web'
     ? {
         backgroundColor: '#f0f0f0',
-        paddingVertical: 3,
-        paddingHorizontal: 10,
-        borderRadius: 12,
-        marginBottom: 15,
-        marginTop: 10,
+        paddingVertical: 2, // REDUCED vertical padding
+        paddingHorizontal: 8,
+        borderRadius: 10,
         alignSelf: 'center',
         boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.15)',
         border: '1px solid #ddd',
       }
     : {
         backgroundColor: '#f0f0f0',
-        paddingVertical: 3,
-        paddingHorizontal: 10,
-        borderRadius: 12,
-        marginBottom: 15,
-        marginTop: 10,
+        paddingVertical: 2, // REDUCED vertical padding
+        paddingHorizontal: 8,
+        borderRadius: 10,
         alignSelf: 'center',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
@@ -233,8 +229,9 @@ export function ReadingUI({
         backgroundImage: 'linear-gradient(180deg, #4a8ab5 0%, #3a7ca5 50%, #2a6c95 100%)',
         boxShadow: '0px 3px 6px rgba(0, 0, 0, 0.3), inset 0px 1px 3px rgba(255, 255, 255, 0.4)',
         border: '1px solid #2a6c95',
-        paddingVertical: 10,
+        paddingVertical: 8, // REDUCED vertical padding
         paddingHorizontal: 15,
+        marginTop: 8, // REDUCED margin above home button
       }
     : {
         ...styles.homeLink,
@@ -246,8 +243,9 @@ export function ReadingUI({
         elevation: 4,
         borderWidth: 1,
         borderColor: '#2a6c95',
-        paddingVertical: 10,
+        paddingVertical: 8, // REDUCED vertical padding
         paddingHorizontal: 15,
+        marginTop: 8, // REDUCED margin above home button
       };
 
   // Enhanced home button text style
@@ -255,6 +253,7 @@ export function ReadingUI({
     ...styles.homeLinkText,
     color: '#ffffff',
     fontWeight: 'bold',
+    fontSize: 12, // REDUCED font size (from 14)
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2
@@ -391,7 +390,7 @@ export function ReadingUI({
               onPress={speakSentence} 
               disabled={loadingBook}
             >
-              <Text style={styles.buttonText}>
+              <Text style={[styles.buttonText, { fontSize: 14 }]}> {/* REDUCED font size (from 16) */}
                 {isSpeaking ? (uiText.stop || "Stop") : (uiText.listen || "Listen")}
               </Text>
             </TouchableOpacity>
@@ -432,11 +431,16 @@ export function ReadingUI({
             </TouchableOpacity>
           </View>
           
-          {/* Sentence Count Display - UPDATED to show currentIndex/totalSentences */}
-          <View style={sentenceCountStyle}>
-            <Text style={{ fontSize: 14, fontWeight: '500', color: '#555' }}>
-              {(currentSentenceIndex + 1)}/{totalSentences}
+          {/* Progress label with meter in rectangle */}
+          <View style={{flexDirection: 'row', alignItems: 'center', marginTop: 0, marginBottom: 10}}>
+            <Text style={[styles.toggleLabel, { fontStyle: 'italic' }]}>
+              {uiText.position || "Position"}:
             </Text>
+            <View style={sentenceCountStyle}>
+              <Text style={{ fontSize: 11, fontWeight: '500', color: '#555' }}>
+                {(currentSentenceIndex + 1)}/{totalSentences}
+              </Text>
+            </View>
           </View>
 
           {/* Content Container - Enhanced with shadow */}
@@ -455,7 +459,9 @@ export function ReadingUI({
           
           {/* Speed Control with Inline Circle Buttons */}
           <View style={styles.speedControlRow}>
-            <Text style={styles.speedLabel}>{uiText.readingSpeed || "Listening Speed"}:</Text>
+            <Text style={[styles.speedLabel, { fontStyle: 'italic' }]}>
+              {uiText.readingSpeed || "Listening Speed"}:
+            </Text>
             <View style={styles.speedCircleContainer}>
               {[1, 2, 3, 4, 5].map((speed) => (
                 <TouchableOpacity
@@ -474,25 +480,33 @@ export function ReadingUI({
           <View style={styles.toggleContainer}>
             {/* Articulation toggle */}
             <View style={styles.toggleItem}>
-              <Text style={styles.toggleLabel}>{uiText.articulation || "Articulation"}:</Text>
+              <Text style={[styles.toggleLabel, { fontStyle: 'italic' }]}>
+                {uiText.articulation || "Articulation"}:
+              </Text>
               <Switch value={articulation} onValueChange={setArticulation} />
             </View>
             
             {/* Auto-play toggle */}
             <View style={styles.toggleItem}>
-              <Text style={styles.toggleLabel}>{uiText.autoplay || "Sentence Auto-play"}:</Text>
+              <Text style={[styles.toggleLabel, { fontStyle: 'italic' }]}>
+                {uiText.autoplay || "Sentence Auto-play"}:
+              </Text>
               <Switch value={autoplay} onValueChange={setAutoplay} />
             </View>
             
             {/* Show Text toggle */}
             <View style={styles.toggleItem}>
-              <Text style={styles.toggleLabel}>{uiText.showText || "Show Sentence"}:</Text>
+              <Text style={[styles.toggleLabel, { fontStyle: 'italic' }]}>
+                {uiText.showText || "Show Sentence"}:
+              </Text>
               <Switch value={showText} onValueChange={setShowText} />
             </View>
             
             {/* Show Translation toggle */}
             <View style={styles.toggleItem}>
-              <Text style={styles.toggleLabel}>{uiText.showTranslation || "Show Translation"}:</Text>
+              <Text style={[styles.toggleLabel, { fontStyle: 'italic' }]}>
+                {uiText.showTranslation || "Show Translation"}:
+              </Text>
               <Switch value={showTranslation} onValueChange={setShowTranslation} />
             </View>
           </View>
