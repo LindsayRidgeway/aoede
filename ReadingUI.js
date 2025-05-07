@@ -163,9 +163,10 @@ export function ReadingUI({
         alignItems: 'center',
         backgroundColor: '#a0a0a0', // Base metallic color
         paddingVertical: 10,
-        paddingHorizontal: 15,
+        paddingHorizontal: 20, // INCREASED horizontal padding for mobile
         borderRadius: 10,
-        marginBottom: 5, // REDUCED gap between navigation panel and progress meter
+        marginHorizontal: 8, // ADDED horizontal margin to prevent edge cutoff
+        marginBottom: 5, 
         borderWidth: 1,
         borderColor: '#606060',
         // More pronounced shadow
@@ -174,8 +175,6 @@ export function ReadingUI({
         shadowOpacity: 0.4,
         shadowRadius: 8,
         elevation: 6,
-        // We can't do gradients directly in RN styles, 
-        // but we can get a slight metallic effect with the right shadow and border
       };
 
   // Style for the sentence count display
@@ -323,6 +322,13 @@ export function ReadingUI({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 1,
   };
+  
+  // Media button styles with spacing adjustments for mobile
+  const mediaButtonStyle = [
+    styles.mediaButton,
+    // Adjust horizontal margin to prevent edge cutoff
+    Platform.OS !== 'web' ? { marginHorizontal: 2 } : { marginHorizontal: 5 }
+  ];
 
   return (
     <>
@@ -356,9 +362,8 @@ export function ReadingUI({
             {/* Beginning of Book (First) */}
             <TouchableOpacity
               style={[
-                styles.mediaButton,
-                (loadingBook || isAtStartOfBook) ? styles.disabledButton : null,
-                { marginHorizontal: 5 } // Reduced margin to bring buttons closer
+                mediaButtonStyle,
+                (loadingBook || isAtStartOfBook) ? styles.disabledButton : null
               ]}
               onPress={handleBeginningOfBookPress}
               disabled={loadingBook || isAtStartOfBook}
@@ -369,9 +374,8 @@ export function ReadingUI({
             {/* Previous Sentence */}
             <TouchableOpacity
               style={[
-                styles.mediaButton,
-                (loadingBook || isAtStartOfBook) ? styles.disabledButton : null,
-                { marginHorizontal: 5 } // Reduced margin to bring buttons closer
+                mediaButtonStyle,
+                (loadingBook || isAtStartOfBook) ? styles.disabledButton : null
               ]}
               onPress={handlePreviousButtonPress}
               disabled={loadingBook || isAtStartOfBook}
@@ -385,7 +389,7 @@ export function ReadingUI({
                 styles.mediaButtonCenter, 
                 isSpeaking ? styles.activeButton : null,
                 loadingBook ? styles.disabledButton : null,
-                { marginHorizontal: 5 } // Reduced margin to bring buttons closer
+                Platform.OS !== 'web' ? { marginHorizontal: 4 } : { marginHorizontal: 5 }
               ]} 
               onPress={speakSentence} 
               disabled={loadingBook}
@@ -398,9 +402,8 @@ export function ReadingUI({
             {/* Next Sentence */}
             <TouchableOpacity 
               style={[
-                styles.mediaButton, 
-                (loadingBook || isAtEndOfBook) ? styles.disabledButton : null,
-                { marginHorizontal: 5 } // Reduced margin to bring buttons closer
+                mediaButtonStyle,
+                (loadingBook || isAtEndOfBook) ? styles.disabledButton : null
               ]} 
               onPress={handleNextButtonPress} 
               disabled={loadingBook || isAtEndOfBook}
@@ -420,9 +423,8 @@ export function ReadingUI({
             {/* End of Book (Last) */}
             <TouchableOpacity
               style={[
-                styles.mediaButton,
-                (loadingBook || isAtEndOfBook) ? styles.disabledButton : null,
-                { marginHorizontal: 5 } // Reduced margin to bring buttons closer
+                mediaButtonStyle,
+                (loadingBook || isAtEndOfBook) ? styles.disabledButton : null
               ]}
               onPress={handleEndOfBookPress}
               disabled={loadingBook || isAtEndOfBook}
