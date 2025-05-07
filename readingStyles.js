@@ -13,7 +13,7 @@ export const readingStyles = StyleSheet.create({
   
   // New: Book title styles
   bookTitleContainer: {
-    width: '80%',
+    width: '90%', // INCREASED from 80% to match contentContainer's new width
     marginVertical: 8, // REDUCED vertical margin (from 10)
     alignItems: 'center',
   },
@@ -26,7 +26,7 @@ export const readingStyles = StyleSheet.create({
   
   // Media Player Style Controls - NEW
   mediaControlsContainer: {
-    width: '90%',
+    width: '95%', // INCREASED from 90% to make control panel wider
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -80,7 +80,7 @@ export const readingStyles = StyleSheet.create({
   
   // Content container styles
   contentContainer: {
-    width: '80%',
+    width: '95%', // INCREASED from 80% to make content container wider
     marginTop: 5, // REDUCED top margin (from 10)
     padding: 15,
     backgroundColor: '#f9f9f9',
@@ -102,7 +102,8 @@ export const readingStyles = StyleSheet.create({
     elevation: 2
   },
   navigationContainer: {
-    marginBottom: 8 // REDUCED bottom margin (from 10)
+    marginBottom: 8, // REDUCED bottom margin (from 10)
+    width: '95%', // INCREASED width to match other containers
   },
   sentenceWrapper: {
     marginBottom: 12
@@ -130,7 +131,7 @@ export const readingStyles = StyleSheet.create({
 
   // Control buttons (legacy style)
   controlsContainer: {
-    width: '80%',
+    width: '95%', // INCREASED from 80% to match other containers
     alignItems: 'flex-start',
     marginTop: 5, // REDUCED top margin (kept at 5)
     marginBottom: 8, // REDUCED bottom margin (from 10)
@@ -181,7 +182,7 @@ export const readingStyles = StyleSheet.create({
 
   // Speed control
   speedControlRow: {
-    width: '80%',
+    width: '95%', // INCREASED from 80% to match other containers
     flexDirection: 'row',
     alignItems: 'center',
     marginTop: 8, // REDUCED top margin (from 10)
@@ -237,7 +238,7 @@ export const readingStyles = StyleSheet.create({
 
   // Toggle controls
   toggleContainer: {
-    width: '80%',
+    width: '95%', // INCREASED from 80% to match other containers
     marginTop: 0,
     marginBottom: 5 // Keep at 5
   },

@@ -79,8 +79,8 @@ export const homeStyles = StyleSheet.create({
 
   // Input container styles
   inputContainer: {
-    // Make container wider on mobile (90% vs 80% on web)
-    width: Platform.OS === 'web' ? '80%' : '90%',
+    // Make container wider for all platforms (95% instead of 80%/90%)
+    width: '95%',
     backgroundColor: '#fff',
     borderRadius: 10,
     borderWidth: 1,
