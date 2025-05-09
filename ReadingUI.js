@@ -3,9 +3,10 @@ import React, { useRef, useEffect, useState } from 'react';
 import { 
   Text, View, TouchableOpacity, Switch, 
   ActivityIndicator, Animated, ScrollView,
-  Platform, Image, AppState
+  Platform, Image
 } from 'react-native';
 import { styles } from './styles';
+import { debugLog } from './DebugPanel';
 
 export function ReadingUI({
   sentence,
@@ -51,7 +52,7 @@ export function ReadingUI({
   // State to track which setting is currently selected for gamepad navigation
   const [selectedSetting, setSelectedSetting] = useState('showText');
   
-  // State to track if gamepad is connected
+  // State to track if gamepad is connected - maintaining for Android functionality
   const [gamepadConnected, setGamepadConnected] = useState(false);
   
   // Visual feedback for gamepad selection
@@ -67,188 +68,127 @@ export function ReadingUI({
     const currentIndex = settingsOrder.indexOf(selectedSetting);
     const nextIndex = (currentIndex + 1) % settingsOrder.length;
     setSelectedSetting(settingsOrder[nextIndex]);
+    debugLog(`Cycled setting to: ${settingsOrder[nextIndex]}`);
   };
   
   // Toggle the currently selected setting (X button function)
   const toggleSelectedSetting = () => {
+    debugLog(`Toggling setting: ${selectedSetting}`);
     switch (selectedSetting) {
       case 'showText':
         setShowText(!showText);
+        debugLog(`Show Text set to: ${!showText}`);
         break;
       case 'showTranslation':
         setShowTranslation(!showTranslation);
+        debugLog(`Show Translation set to: ${!showTranslation}`);
         break;
       case 'articulation':
         setArticulation(!articulation);
+        debugLog(`Articulation set to: ${!articulation}`);
         break;
       case 'autoplay':
         setAutoplay(!autoplay);
+        debugLog(`Autoplay set to: ${!autoplay}`);
         break;
     }
   };
   
-  // Handle keydown events for gamepad support
+  // Gamepad event handling for Android
+  // This is kept minimal with no external libraries
   useEffect(() => {
-    // This will only work on web platform
-    if (Platform.OS === 'web') {
-      // Track gamepad connection
-      const checkForGamepad = () => {
-        const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
-        const hasGamepad = Array.from(gamepads).some(gamepad => gamepad !== null);
-        setGamepadConnected(hasGamepad);
-      };
-      
-      // Check for gamepad on component mount
-      checkForGamepad();
-      
-      // Set up gamepad connection event listeners
-      window.addEventListener('gamepadconnected', () => {
-        setGamepadConnected(true);
-      });
-      
-      window.addEventListener('gamepaddisconnected', () => {
-        checkForGamepad();
-      });
-      
-      // Poll for gamepad input
-      const pollGamepadInterval = setInterval(() => {
-        const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+    // Map native Android gamepad events to actions
+    if (Platform.OS === 'android') {
+      try {
+        // This is a placeholder for any native module integration
+        // that would be needed for Android gamepad support
         
-        for (const gamepad of gamepads) {
-          if (!gamepad) continue;
-          
-          // Update gamepad connection status
-          if (!gamepadConnected) {
-            setGamepadConnected(true);
-          }
-          
-          // Handle gamepad buttons
-          // A button (0) - Play/pause
-          if (gamepad.buttons[0]?.pressed) {
-            if (!loadingBook) {
-              speakSentence();
-            }
-          }
-          
-          // B button (1) - Cycle settings
-          if (gamepad.buttons[1]?.pressed) {
-            cycleSettings();
-          }
-          
-          // X button (2) - Toggle selected setting
-          if (gamepad.buttons[2]?.pressed) {
-            toggleSelectedSetting();
-          }
-          
-          // Left shoulder (4) - Previous sentence
-          if (gamepad.buttons[4]?.pressed) {
-            if (!loadingBook && !isAtStartOfBook && previousSentence) {
-              previousSentence();
-            }
-          }
-          
-          // Right shoulder (5) - Next sentence 
-          if (gamepad.buttons[5]?.pressed) {
-            if (!loadingBook && !isAtEndOfBook) {
-              nextSentence();
-            }
-          }
-          
-          // D-pad handling
-          // For standard d-pad:
-          // Left - Rewind
-          if (gamepad.buttons[14]?.pressed) {
-            if (!loadingBook && !isAtStartOfBook) {
-              rewindBook();
-            }
-          }
-          
-          // Right - Go to end
-          if (gamepad.buttons[15]?.pressed) {
-            if (!loadingBook && !isAtEndOfBook && goToEndOfBook) {
-              goToEndOfBook();
-            }
-          }
-          
-          // Up - Increase speed
-          if (gamepad.buttons[12]?.pressed) {
-            if (listeningSpeed < 5) {
-              setListeningSpeed(listeningSpeed + 1);
-            }
-          }
-          
-          // Down - Decrease speed
-          if (gamepad.buttons[13]?.pressed) {
-            if (listeningSpeed > 1) {
-              setListeningSpeed(listeningSpeed - 1);
-            }
-          }
-          
-          // Alternative axis-based d-pad handling
-          if (gamepad.axes && gamepad.axes.length >= 2) {
-            // Horizontal axis (left/right)
-            if (gamepad.axes[0] <= -0.5) {
-              // Left - Rewind
-              if (!loadingBook && !isAtStartOfBook) {
-                rewindBook();
-              }
-            } else if (gamepad.axes[0] >= 0.5) {
-              // Right - Go to end
-              if (!loadingBook && !isAtEndOfBook && goToEndOfBook) {
-                goToEndOfBook();
-              }
-            }
-            
-            // Vertical axis (up/down)
-            if (gamepad.axes[1] <= -0.5) {
-              // Up - Increase speed
-              if (listeningSpeed < 5) {
-                setListeningSpeed(listeningSpeed + 1);
-              }
-            } else if (gamepad.axes[1] >= 0.5) {
-              // Down - Decrease speed
-              if (listeningSpeed > 1) {
-                setListeningSpeed(listeningSpeed - 1);
-              }
-            }
-          }
-        }
-      }, 150); // Poll every 150ms
-      
-      return () => {
-        clearInterval(pollGamepadInterval);
-        window.removeEventListener('gamepadconnected', () => {
-          setGamepadConnected(true);
-        });
-        window.removeEventListener('gamepaddisconnected', () => {
-          checkForGamepad();
-        });
-      };
-    } else {
-      // For native platforms - detect gamepads through an alternative method
-      // This is a simplified approach since not all React Native platforms 
-      // have built-in gamepad support
-      
-      // App state change listener to try detecting gamepad on resume
-      const handleAppStateChange = (nextAppState) => {
-        if (nextAppState === 'active') {
-          // When app becomes active, check if we have a gamepad connected
-          // This is platform-specific and may need additional native modules
-          setGamepadConnected(false); // Default to false for now
-        }
-      };
-      
-      const subscription = AppState.addEventListener('change', handleAppStateChange);
-      
-      return () => {
-        subscription.remove();
-      };
+        // Log initial state
+        debugLog("Android gamepad support initialized");
+        
+        // For actual Android gamepad functionality, custom native modules 
+        // would need to be implemented and integrated here
+        
+        // This is where we would connect to Android GameController API
+        // or other native gamepad interfaces
+      } catch (error) {
+        debugLog(`Error initializing Android gamepad: ${error.message}`);
+      }
     }
+    
+    return () => {
+      // Cleanup when component unmounts
+      if (Platform.OS === 'android') {
+        debugLog("Cleaning up Android gamepad listeners");
+        // Cleanup code for any native modules would go here
+      }
+    };
   }, [
     loadingBook, isAtStartOfBook, isAtEndOfBook, listeningSpeed, 
-    selectedSetting, showText, showTranslation, articulation, autoplay,
-    gamepadConnected
+    selectedSetting, showText, showTranslation, articulation, autoplay
   ]);
+  
+  // Global key and gamepad event handler for debugging
+  // This is function is called by the native side when events occur
+  if (typeof window !== 'undefined' && !window.handleGamepadEvent) {
+    window.handleGamepadEvent = (eventType, buttonIndex) => {
+      debugLog(`Native gamepad event: ${eventType}, Button: ${buttonIndex}`);
+      
+      // Handle button actions based on mapping
+      switch (buttonIndex) {
+        case 0: // A button - Play/Pause
+          debugLog("A button - Play/Pause activated");
+          if (!loadingBook) {
+            speakSentence();
+          }
+          break;
+        case 1: // B button - Cycle settings
+          debugLog("B button - Cycle Settings activated");
+          cycleSettings();
+          break;
+        case 2: // X button - Toggle selected setting
+          debugLog("X button - Toggle Setting activated");
+          toggleSelectedSetting();
+          break;
+        case 4: // Left shoulder - Previous sentence
+          debugLog("Left Shoulder - Previous Sentence activated");
+          if (!loadingBook && !isAtStartOfBook && previousSentence) {
+            previousSentence();
+          }
+          break;
+        case 5: // Right shoulder - Next sentence
+          debugLog("Right Shoulder - Next Sentence activated");
+          if (!loadingBook && !isAtEndOfBook) {
+            nextSentence();
+          }
+          break;
+        case 12: // D-pad up - Increase speed
+          debugLog("D-pad Up - Increase Speed activated");
+          if (listeningSpeed < 5) {
+            setListeningSpeed(listeningSpeed + 1);
+          }
+          break;
+        case 13: // D-pad down - Decrease speed
+          debugLog("D-pad Down - Decrease Speed activated");
+          if (listeningSpeed > 1) {
+            setListeningSpeed(listeningSpeed - 1);
+          }
+          break;
+        case 14: // D-pad left - Rewind
+          debugLog("D-pad Left - Rewind activated");
+          if (!loadingBook && !isAtStartOfBook) {
+            rewindBook();
+          }
+          break;
+        case 15: // D-pad right - End of book
+          debugLog("D-pad Right - End of Book activated");
+          if (!loadingBook && !isAtEndOfBook && goToEndOfBook) {
+            goToEndOfBook();
+          }
+          break;
+      }
+    };
+  }
   
   // Animate the Next button
   const animateNextButton = () => {

@@ -114,7 +114,7 @@ class BookReader {
         }
       },
       
-      advanceToNextSentence: async () => {};
+      advanceToNextSentence: async () => {
         // If already processing, don't allow another operation
         if (this.isProcessing) {
           return false;
@@ -163,7 +163,7 @@ class BookReader {
           this.isProcessing = false;
           throw error;
         }
-      },
+	},
       
       goToPreviousSentence: async () => {
         // If already processing, don't allow another operation

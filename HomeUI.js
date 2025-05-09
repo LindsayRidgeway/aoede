@@ -6,7 +6,6 @@ import {
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { styles } from './styles';
-import DebugPanel from './DebugPanel';
 import ListeningSpeed from './listeningSpeed';
 import Constants from 'expo-constants';
 import { getUserLibrary } from './userLibrary';
@@ -636,8 +635,6 @@ export function HomeUI({
           </View>
         </View>
       )}
-
-      <DebugPanel />
 
       {/* Input container is always visible */}
       <View style={styles.inputContainer}>

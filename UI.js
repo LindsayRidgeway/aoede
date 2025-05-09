@@ -5,6 +5,7 @@ import { styles } from './styles';
 import { HomeUI } from './HomeUI';
 import { ReadingUI } from './ReadingUI';
 import { LibraryUI } from './LibraryUI';
+import DebugPanel from './DebugPanel';
 import * as Font from 'expo-font';
 import { initializeUserLibrary } from './userLibrary';
 import { getBookById } from './userLibrary';
@@ -237,6 +238,9 @@ export function MainUI(props) {
               <Text style={styles.headerPronunciation}>(ay-EE-dee)</Text>
             </View>
           </View>
+          
+          {/* Debug Panel - Now visible on BOTH screens */}
+          <DebugPanel />
           
           {/* Home UI component - only shown when activeView is 'home' */}
           {activeView === 'home' && (
