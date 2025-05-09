@@ -1,9 +1,9 @@
 // ReadingUI.js - Component for the reading controls
-import React, { useRef } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { 
   Text, View, TouchableOpacity, Switch, 
   ActivityIndicator, Animated, ScrollView,
-  Platform, Image
+  Platform, Image, AppState
 } from 'react-native';
 import { styles } from './styles';
 
@@ -47,6 +47,208 @@ export function ReadingUI({
 }) {
   // Animation ref for Next button
   const nextButtonAnimation = useRef(new Animated.Value(1)).current;
+  
+  // State to track which setting is currently selected for gamepad navigation
+  const [selectedSetting, setSelectedSetting] = useState('showText');
+  
+  // State to track if gamepad is connected
+  const [gamepadConnected, setGamepadConnected] = useState(false);
+  
+  // Visual feedback for gamepad selection
+  const getSettingStyle = (setting) => {
+    return selectedSetting === setting && gamepadConnected ? 
+      { backgroundColor: 'rgba(58, 124, 165, 0.1)', borderRadius: 5, padding: 2 } : 
+      {};
+  };
+  
+  // Cycle through settings (B button function)
+  const cycleSettings = () => {
+    const settingsOrder = ['showText', 'showTranslation', 'articulation', 'autoplay'];
+    const currentIndex = settingsOrder.indexOf(selectedSetting);
+    const nextIndex = (currentIndex + 1) % settingsOrder.length;
+    setSelectedSetting(settingsOrder[nextIndex]);
+  };
+  
+  // Toggle the currently selected setting (X button function)
+  const toggleSelectedSetting = () => {
+    switch (selectedSetting) {
+      case 'showText':
+        setShowText(!showText);
+        break;
+      case 'showTranslation':
+        setShowTranslation(!showTranslation);
+        break;
+      case 'articulation':
+        setArticulation(!articulation);
+        break;
+      case 'autoplay':
+        setAutoplay(!autoplay);
+        break;
+    }
+  };
+  
+  // Handle keydown events for gamepad support
+  useEffect(() => {
+    // This will only work on web platform
+    if (Platform.OS === 'web') {
+      // Track gamepad connection
+      const checkForGamepad = () => {
+        const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+        const hasGamepad = Array.from(gamepads).some(gamepad => gamepad !== null);
+        setGamepadConnected(hasGamepad);
+      };
+      
+      // Check for gamepad on component mount
+      checkForGamepad();
+      
+      // Set up gamepad connection event listeners
+      window.addEventListener('gamepadconnected', () => {
+        setGamepadConnected(true);
+      });
+      
+      window.addEventListener('gamepaddisconnected', () => {
+        checkForGamepad();
+      });
+      
+      // Poll for gamepad input
+      const pollGamepadInterval = setInterval(() => {
+        const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+        
+        for (const gamepad of gamepads) {
+          if (!gamepad) continue;
+          
+          // Update gamepad connection status
+          if (!gamepadConnected) {
+            setGamepadConnected(true);
+          }
+          
+          // Handle gamepad buttons
+          // A button (0) - Play/pause
+          if (gamepad.buttons[0]?.pressed) {
+            if (!loadingBook) {
+              speakSentence();
+            }
+          }
+          
+          // B button (1) - Cycle settings
+          if (gamepad.buttons[1]?.pressed) {
+            cycleSettings();
+          }
+          
+          // X button (2) - Toggle selected setting
+          if (gamepad.buttons[2]?.pressed) {
+            toggleSelectedSetting();
+          }
+          
+          // Left shoulder (4) - Previous sentence
+          if (gamepad.buttons[4]?.pressed) {
+            if (!loadingBook && !isAtStartOfBook && previousSentence) {
+              previousSentence();
+            }
+          }
+          
+          // Right shoulder (5) - Next sentence 
+          if (gamepad.buttons[5]?.pressed) {
+            if (!loadingBook && !isAtEndOfBook) {
+              nextSentence();
+            }
+          }
+          
+          // D-pad handling
+          // For standard d-pad:
+          // Left - Rewind
+          if (gamepad.buttons[14]?.pressed) {
+            if (!loadingBook && !isAtStartOfBook) {
+              rewindBook();
+            }
+          }
+          
+          // Right - Go to end
+          if (gamepad.buttons[15]?.pressed) {
+            if (!loadingBook && !isAtEndOfBook && goToEndOfBook) {
+              goToEndOfBook();
+            }
+          }
+          
+          // Up - Increase speed
+          if (gamepad.buttons[12]?.pressed) {
+            if (listeningSpeed < 5) {
+              setListeningSpeed(listeningSpeed + 1);
+            }
+          }
+          
+          // Down - Decrease speed
+          if (gamepad.buttons[13]?.pressed) {
+            if (listeningSpeed > 1) {
+              setListeningSpeed(listeningSpeed - 1);
+            }
+          }
+          
+          // Alternative axis-based d-pad handling
+          if (gamepad.axes && gamepad.axes.length >= 2) {
+            // Horizontal axis (left/right)
+            if (gamepad.axes[0] <= -0.5) {
+              // Left - Rewind
+              if (!loadingBook && !isAtStartOfBook) {
+                rewindBook();
+              }
+            } else if (gamepad.axes[0] >= 0.5) {
+              // Right - Go to end
+              if (!loadingBook && !isAtEndOfBook && goToEndOfBook) {
+                goToEndOfBook();
+              }
+            }
+            
+            // Vertical axis (up/down)
+            if (gamepad.axes[1] <= -0.5) {
+              // Up - Increase speed
+              if (listeningSpeed < 5) {
+                setListeningSpeed(listeningSpeed + 1);
+              }
+            } else if (gamepad.axes[1] >= 0.5) {
+              // Down - Decrease speed
+              if (listeningSpeed > 1) {
+                setListeningSpeed(listeningSpeed - 1);
+              }
+            }
+          }
+        }
+      }, 150); // Poll every 150ms
+      
+      return () => {
+        clearInterval(pollGamepadInterval);
+        window.removeEventListener('gamepadconnected', () => {
+          setGamepadConnected(true);
+        });
+        window.removeEventListener('gamepaddisconnected', () => {
+          checkForGamepad();
+        });
+      };
+    } else {
+      // For native platforms - detect gamepads through an alternative method
+      // This is a simplified approach since not all React Native platforms 
+      // have built-in gamepad support
+      
+      // App state change listener to try detecting gamepad on resume
+      const handleAppStateChange = (nextAppState) => {
+        if (nextAppState === 'active') {
+          // When app becomes active, check if we have a gamepad connected
+          // This is platform-specific and may need additional native modules
+          setGamepadConnected(false); // Default to false for now
+        }
+      };
+      
+      const subscription = AppState.addEventListener('change', handleAppStateChange);
+      
+      return () => {
+        subscription.remove();
+      };
+    }
+  }, [
+    loadingBook, isAtStartOfBook, isAtEndOfBook, listeningSpeed, 
+    selectedSetting, showText, showTranslation, articulation, autoplay,
+    gamepadConnected
+  ]);
   
   // Animate the Next button
   const animateNextButton = () => {
@@ -330,6 +532,19 @@ export function ReadingUI({
     Platform.OS !== 'web' ? { marginHorizontal: 2 } : { marginHorizontal: 5 }
   ];
 
+  // Gamepad control guide tooltip - only show when gamepad is connected
+  const gamepadHelpStyle = {
+    marginTop: 5,
+    marginBottom: 8,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    backgroundColor: 'rgba(58, 124, 165, 0.1)',
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: 'rgba(58, 124, 165, 0.3)',
+    display: gamepadConnected ? 'flex' : 'none' // Only show when gamepad connected
+  };
+
   return (
     <>
       {/* Skip the header if skipHeader is true (rendered by parent instead) */}
@@ -445,6 +660,16 @@ export function ReadingUI({
             </View>
           </View>
 
+          {/* Gamepad control guide - only visible when gamepad connected */}
+          {gamepadConnected && (
+            <View style={gamepadHelpStyle}>
+              <Text style={{ fontSize: 10, color: '#3a7ca5', textAlign: 'center' }}>
+                Gamepad: Shoulder L/R = Prev/Next • D-pad L/R = Start/End • 
+                D-pad Up/Down = Speed • A = Play/Stop • B = Cycle • X = Toggle
+              </Text>
+            </View>
+          )}
+
           {/* Content Container - Enhanced with shadow */}
           <View style={enhancedContentContainerStyle}>
             {showText && (
@@ -481,7 +706,7 @@ export function ReadingUI({
           {/* Toggle Controls */}
           <View style={styles.toggleContainer}>
             {/* Articulation toggle */}
-            <View style={styles.toggleItem}>
+            <View style={[styles.toggleItem, getSettingStyle('articulation')]}>
               <Text style={[styles.toggleLabel, { fontStyle: 'italic' }]}>
                 {uiText.articulation || "Articulation"}:
               </Text>
@@ -489,7 +714,7 @@ export function ReadingUI({
             </View>
             
             {/* Auto-play toggle */}
-            <View style={styles.toggleItem}>
+            <View style={[styles.toggleItem, getSettingStyle('autoplay')]}>
               <Text style={[styles.toggleLabel, { fontStyle: 'italic' }]}>
                 {uiText.autoplay || "Sentence Auto-play"}:
               </Text>
@@ -497,7 +722,7 @@ export function ReadingUI({
             </View>
             
             {/* Show Text toggle */}
-            <View style={styles.toggleItem}>
+            <View style={[styles.toggleItem, getSettingStyle('showText')]}>
               <Text style={[styles.toggleLabel, { fontStyle: 'italic' }]}>
                 {uiText.showText || "Show Sentence"}:
               </Text>
@@ -505,7 +730,7 @@ export function ReadingUI({
             </View>
             
             {/* Show Translation toggle */}
-            <View style={styles.toggleItem}>
+            <View style={[styles.toggleItem, getSettingStyle('showTranslation')]}>
               <Text style={[styles.toggleLabel, { fontStyle: 'italic' }]}>
                 {uiText.showTranslation || "Show Translation"}:
               </Text>

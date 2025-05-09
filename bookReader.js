@@ -63,13 +63,10 @@ class BookReader {
 
   // New function that will implement our new algorithm for Aoede 3.0
   readingManagement() {
-    debugLog('BookReader: readingManagement() called');
     
     return {
       // Interface for loading a book in Aoede 3.0 style
       loadBook: async (studyLanguage, bookId) => {
-        debugLog(`BookReader: readingManagement().loadBook(${studyLanguage}, ${bookId})`);
-        
         // Set processing flag
         this.isProcessing = true;
         
@@ -101,8 +98,6 @@ class BookReader {
           
           return true;
         } catch (error) {
-          debugLog(`Error in loadBook: ${error.message}`);
-          
           // Display error to the user
           this.simpleArray = [`Error loading book: ${error.message}`];
           this.translatedArray = [`Error loading book: ${error.message}`];
@@ -119,9 +114,7 @@ class BookReader {
         }
       },
       
-      advanceToNextSentence: async () => {
-        debugLog('BookReader: readingManagement().advanceToNextSentence()');
-        
+      advanceToNextSentence: async () => {};
         // If already processing, don't allow another operation
         if (this.isProcessing) {
           return false;
@@ -162,8 +155,6 @@ class BookReader {
           }
           
           // If we're at the end of the book
-          debugLog("Reached the end of the book");
-          
           // Clear processing flag
           this.isProcessing = false;
           return false;
@@ -175,8 +166,6 @@ class BookReader {
       },
       
       goToPreviousSentence: async () => {
-        debugLog('BookReader: readingManagement().goToPreviousSentence()');
-        
         // If already processing, don't allow another operation
         if (this.isProcessing) {
           return false;
@@ -217,8 +206,6 @@ class BookReader {
           }
           
           // If we're at the beginning of the book
-          debugLog("At the beginning of the book");
-          
           // Clear processing flag
           this.isProcessing = false;
           return false;
@@ -230,8 +217,6 @@ class BookReader {
       },
       
       goToEndOfBook: async () => {
-        debugLog('BookReader: readingManagement().goToEndOfBook()');
-        
         // If already processing, don't allow another operation
         if (this.isProcessing) {
           return false;
@@ -268,15 +253,12 @@ class BookReader {
           this.isProcessing = false;
           return true;
         } catch (error) {
-          debugLog(`Error going to end of book: ${error.message}`);
           this.isProcessing = false;
           throw error;
         }
       },
       
       rewindBook: async () => {
-        debugLog('BookReader: readingManagement().rewindBook()');
-        
         // If already processing, don't allow another operation
         if (this.isProcessing) {
           return false;
@@ -311,7 +293,6 @@ class BookReader {
       },
       
       getProgress: () => {
-        debugLog('BookReader: readingManagement().getProgress()');
         // Return a simple progress object
         return {
           currentSentenceIndex: this.currentSentenceIndex,
@@ -325,12 +306,10 @@ class BookReader {
       },
       
       reset: () => {
-        debugLog('BookReader: readingManagement().reset()');
         this.reset();
       },
       
       getReadingLevel: () => {
-        debugLog('BookReader: readingManagement().getReadingLevel()');
         return this.readingLevel;
       }
     };
@@ -344,8 +323,6 @@ class BookReader {
   
   // Implementation of Step 1: Load the entire book into memory
   async loadEntireBook(bookId) {
-    debugLog(`BookReader: Step 1 - Loading entire book ${bookId} into memory`);
-    
     try {
       // Get book details from user library
       const book = await getBookById(bookId);
@@ -376,10 +353,8 @@ class BookReader {
       // Extract plain text for sentence extraction
       this.bookTextPlain = bookPipeProcess.extractText(htmlContent);
       
-      debugLog(`Book loaded successfully: ${this.bookText.length} characters`);
       return true;
     } catch (error) {
-      debugLog(`Error loading entire book: ${error.message}`);
       this.bookText = null;
       this.bookTextPlain = null;
       throw error;
@@ -388,7 +363,6 @@ class BookReader {
   
   // Implementation of Step 2: Find the anchor in the URL
   async findAnchor(bookId) {
-    debugLog(`BookReader: Step 2 - Finding anchor for book ${bookId}`);
   
     try {
       if (!this.bookText) {
@@ -411,7 +385,6 @@ class BookReader {
       let fragmentId = '';
       if (bookUrl.includes('#')) {
         fragmentId = bookUrl.split('#')[1];
-        debugLog(`Looking for anchor: ${fragmentId}`);
       } else {
         throw new Error('URL does not contain an anchor fragment');
       }
@@ -432,21 +405,18 @@ class BookReader {
         match = anchorPatterns[i].exec(this.bookText);
         if (match) {
           patternIndex = i;
-          debugLog(`Found anchor match with pattern ${i}`);
           break;
         }
       }
     
       if (match) {
         this.anchorPosition = match.index;
-        debugLog(`Found anchor "${fragmentId}" at position ${this.anchorPosition}`);
         return true;
       } else {
         this.anchorPosition = 0;
         throw new Error(`Anchor "${fragmentId}" not found in book content`);
       }
     } catch (error) {
-      debugLog(`Error finding anchor: ${error.message}`);
       this.anchorPosition = 0;
       throw error;
     }
@@ -454,8 +424,6 @@ class BookReader {
   
   // Implementation of Step 3: Separate book into sentences AFTER THE ANCHOR POSITION
   async extractSentences() {
-    debugLog(`BookReader: Step 3 - Extracting sentences from the book`);
-    
     try {
       if (!this.bookTextPlain) {
         throw new Error("Book text not available");
@@ -473,19 +441,17 @@ class BookReader {
       // Extract sentences using our improved method
       this.bookSentences = this.extractSentencesFromText(textFromAnchor);
       
-      debugLog(`Extracted ${this.bookSentences.length} sentences from the book`);
-      
+	  /*
       // Only log a sample of sentences to avoid flooding the debug log
       const sampleSize = Math.min(3, this.bookSentences.length);
-      debugLog(`Sample of first ${sampleSize} sentences:`);
       for (let i = 0; i < sampleSize; i++) {
         const sentence = this.bookSentences[i];
         debugLog(`Sentence ${i + 1}: "${sentence}"`);
       }
+	  */
       
       return true;
     } catch (error) {
-      debugLog(`Error extracting sentences: ${error.message}`);
       this.bookSentences = [];
       throw error;
     }
@@ -493,8 +459,6 @@ class BookReader {
   
   // Calculate offsets for each sentence (for position tracking)
   calculateSentenceOffsets() {
-    debugLog(`Calculating character offsets for each sentence`);
-    
     this.sentenceOffsets = [];
     let currentOffset = 0;
     
@@ -505,7 +469,6 @@ class BookReader {
       currentOffset += this.bookSentences[i].length;
     }
     
-    debugLog(`Calculated offsets for ${this.sentenceOffsets.length} sentences`);
     return true;
   }
   
@@ -568,8 +531,6 @@ class BookReader {
   
   // Implementation of Step 5: Identify the user's previous position
   async identifyUserPosition(studyLanguage, bookId) {
-    debugLog(`BookReader: Step 5 - Identifying user position from tracker`);
-    
     try {
       // Store the study language
       this.studyLanguage = studyLanguage;
@@ -624,10 +585,8 @@ class BookReader {
             this.currentSentenceIndex = 0;
           }
           
-          debugLog(`Found tracker with offset ${offset}. Starting at sentence index ${this.currentSentenceIndex}`);
         } catch (error) {
           // If there's an error parsing, create a new tracker
-          debugLog(`Error parsing tracker, creating new one: ${error.message}`);
           this.tracker = {
             studyLanguage,
             bookTitle,
@@ -640,7 +599,6 @@ class BookReader {
         }
       } else {
         // If no tracker exists, create a new one
-        debugLog('No tracker found, creating new one');
         this.tracker = {
           studyLanguage,
           bookTitle,
@@ -654,8 +612,6 @@ class BookReader {
       
       return true;
     } catch (error) {
-      debugLog(`Error identifying user position: ${error.message}`);
-      
       // Default to starting from the beginning
       this.currentSentenceIndex = 0;
       this.currentCharOffset = 0;
@@ -693,7 +649,6 @@ class BookReader {
         return false;
       }
     } catch (error) {
-      debugLog(`Error processing sentence: ${error.message}`);
       // Fallback to using the original sentence
       if (this.currentSentenceIndex < this.bookSentences.length) {
         this.simplifiedSentences = [this.bookSentences[this.currentSentenceIndex]];
@@ -706,8 +661,6 @@ class BookReader {
   
   // Process a single sentence with OpenAI API
   async processSentenceWithOpenAI(sentence) {
-    debugLog(`Input to API: "${sentence}"`);
-    
     try {
       // Import the simplification prompt using dynamic import
       let simplificationPrompt;
@@ -715,7 +668,6 @@ class BookReader {
         const simplifierModule = await import('./simplifiers/simplify6.js');
         simplificationPrompt = simplifierModule.default;
       } catch (importError) {
-        debugLog(`Error importing simplifier: ${importError.message}`);
         throw new Error("Could not load simplification prompt");
       }
       
@@ -731,9 +683,6 @@ class BookReader {
       if (!processedText) {
         throw new Error("API returned empty response");
       }
-      
-      // Log the exact text returned from the API
-      debugLog(`Output from API: "${processedText}"`);
       
       // Split the response into separate sentences by newlines
       const simplifiedSentences = processedText.split('\n')
@@ -755,7 +704,6 @@ class BookReader {
       
       return true;
     } catch (error) {
-      debugLog(`API error: ${error.message}`);
       return false;
     }
   }
@@ -800,8 +748,6 @@ class BookReader {
       
       return true;
     } catch (error) {
-      debugLog(`Error updating display: ${error.message}`);
-      
       // Set fallback content
       this.simpleArray = [`Error: ${error.message}`];
       this.translatedArray = [`Error: ${error.message}`];
@@ -820,8 +766,6 @@ class BookReader {
   
   // Implementation of Step 7: Set up initial display
   setupInitialDisplay() {
-    debugLog(`BookReader: Step 7 - Setting up initial display`);
-    
     // Just call updateDisplay to show the current sentence
     return this.updateDisplay();
   }
@@ -844,7 +788,6 @@ class BookReader {
       }
       return false;
     } catch (error) {
-      debugLog(`Error saving position: ${error.message}`);
       return false;
     }
   }
