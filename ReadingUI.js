@@ -1,12 +1,11 @@
 // ReadingUI.js - Component for the reading controls
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { 
   Text, View, TouchableOpacity, Switch, 
   ActivityIndicator, Animated, ScrollView,
   Platform, Image
 } from 'react-native';
 import { styles } from './styles';
-import { debugLog } from './DebugPanel';
 
 export function ReadingUI({
   sentence,
@@ -49,146 +48,28 @@ export function ReadingUI({
   // Animation ref for Next button
   const nextButtonAnimation = useRef(new Animated.Value(1)).current;
   
-  // State to track which setting is currently selected for gamepad navigation
-  const [selectedSetting, setSelectedSetting] = useState('showText');
+  // State for tracking which element has focus (for enhanced visual indication)
+  const [focusedElementId, setFocusedElementId] = useState(null);
   
-  // State to track if gamepad is connected - maintaining for Android functionality
-  const [gamepadConnected, setGamepadConnected] = useState(false);
-  
-  // Visual feedback for gamepad selection
-  const getSettingStyle = (setting) => {
-    return selectedSetting === setting && gamepadConnected ? 
-      { backgroundColor: 'rgba(58, 124, 165, 0.1)', borderRadius: 5, padding: 2 } : 
-      {};
-  };
-  
-  // Cycle through settings (B button function)
-  const cycleSettings = () => {
-    const settingsOrder = ['showText', 'showTranslation', 'articulation', 'autoplay'];
-    const currentIndex = settingsOrder.indexOf(selectedSetting);
-    const nextIndex = (currentIndex + 1) % settingsOrder.length;
-    setSelectedSetting(settingsOrder[nextIndex]);
-    debugLog(`Cycled setting to: ${settingsOrder[nextIndex]}`);
-  };
-  
-  // Toggle the currently selected setting (X button function)
-  const toggleSelectedSetting = () => {
-    debugLog(`Toggling setting: ${selectedSetting}`);
-    switch (selectedSetting) {
-      case 'showText':
-        setShowText(!showText);
-        debugLog(`Show Text set to: ${!showText}`);
-        break;
-      case 'showTranslation':
-        setShowTranslation(!showTranslation);
-        debugLog(`Show Translation set to: ${!showTranslation}`);
-        break;
-      case 'articulation':
-        setArticulation(!articulation);
-        debugLog(`Articulation set to: ${!articulation}`);
-        break;
-      case 'autoplay':
-        setAutoplay(!autoplay);
-        debugLog(`Autoplay set to: ${!autoplay}`);
-        break;
-    }
-  };
-  
-  // Gamepad event handling for Android
-  // This is kept minimal with no external libraries
+  // Track focus changes
   useEffect(() => {
-    // Map native Android gamepad events to actions
-    if (Platform.OS === 'android') {
-      try {
-        // This is a placeholder for any native module integration
-        // that would be needed for Android gamepad support
-        
-        // Log initial state
-        debugLog("Android gamepad support initialized");
-        
-        // For actual Android gamepad functionality, custom native modules 
-        // would need to be implemented and integrated here
-        
-        // This is where we would connect to Android GameController API
-        // or other native gamepad interfaces
-      } catch (error) {
-        debugLog(`Error initializing Android gamepad: ${error.message}`);
-      }
-    }
-    
-    return () => {
-      // Cleanup when component unmounts
-      if (Platform.OS === 'android') {
-        debugLog("Cleaning up Android gamepad listeners");
-        // Cleanup code for any native modules would go here
-      }
-    };
-  }, [
-    loadingBook, isAtStartOfBook, isAtEndOfBook, listeningSpeed, 
-    selectedSetting, showText, showTranslation, articulation, autoplay
-  ]);
-  
-  // Global key and gamepad event handler for debugging
-  // This is function is called by the native side when events occur
-  if (typeof window !== 'undefined' && !window.handleGamepadEvent) {
-    window.handleGamepadEvent = (eventType, buttonIndex) => {
-      debugLog(`Native gamepad event: ${eventType}, Button: ${buttonIndex}`);
+    // Listen for focus changes if on web
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      const handleFocusChange = () => {
+        const activeElement = document.activeElement;
+        if (activeElement && activeElement.id) {
+          setFocusedElementId(activeElement.id);
+        } else {
+          setFocusedElementId(null);
+        }
+      };
       
-      // Handle button actions based on mapping
-      switch (buttonIndex) {
-        case 0: // A button - Play/Pause
-          debugLog("A button - Play/Pause activated");
-          if (!loadingBook) {
-            speakSentence();
-          }
-          break;
-        case 1: // B button - Cycle settings
-          debugLog("B button - Cycle Settings activated");
-          cycleSettings();
-          break;
-        case 2: // X button - Toggle selected setting
-          debugLog("X button - Toggle Setting activated");
-          toggleSelectedSetting();
-          break;
-        case 4: // Left shoulder - Previous sentence
-          debugLog("Left Shoulder - Previous Sentence activated");
-          if (!loadingBook && !isAtStartOfBook && previousSentence) {
-            previousSentence();
-          }
-          break;
-        case 5: // Right shoulder - Next sentence
-          debugLog("Right Shoulder - Next Sentence activated");
-          if (!loadingBook && !isAtEndOfBook) {
-            nextSentence();
-          }
-          break;
-        case 12: // D-pad up - Increase speed
-          debugLog("D-pad Up - Increase Speed activated");
-          if (listeningSpeed < 5) {
-            setListeningSpeed(listeningSpeed + 1);
-          }
-          break;
-        case 13: // D-pad down - Decrease speed
-          debugLog("D-pad Down - Decrease Speed activated");
-          if (listeningSpeed > 1) {
-            setListeningSpeed(listeningSpeed - 1);
-          }
-          break;
-        case 14: // D-pad left - Rewind
-          debugLog("D-pad Left - Rewind activated");
-          if (!loadingBook && !isAtStartOfBook) {
-            rewindBook();
-          }
-          break;
-        case 15: // D-pad right - End of book
-          debugLog("D-pad Right - End of Book activated");
-          if (!loadingBook && !isAtEndOfBook && goToEndOfBook) {
-            goToEndOfBook();
-          }
-          break;
-      }
-    };
-  }
+      document.addEventListener('focusin', handleFocusChange);
+      return () => {
+        document.removeEventListener('focusin', handleFocusChange);
+      };
+    }
+  }, []);
   
   // Animate the Next button
   const animateNextButton = () => {
@@ -213,7 +94,7 @@ export function ReadingUI({
     nextSentence();
   };
   
-  // Handle previous button press
+  // Handle previous sentence button press
   const handlePreviousButtonPress = () => {
     if (previousSentence && !loadingBook && !isAtStartOfBook) {
       previousSentence();
@@ -399,71 +280,6 @@ export function ReadingUI({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2
   };
-
-  // Enhanced reading level button style - raised appearance
-  const enhancedReadingLevelButtonStyle = Platform.OS === 'web'
-    ? {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#f0f0f0',
-        marginRight: 10,
-        boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.2), inset 0px 1px 2px rgba(255, 255, 255, 0.8)',
-        backgroundImage: 'linear-gradient(180deg, #ffffff 0%, #f0f0f0 100%)',
-        border: '1px solid #ccc',
-        cursor: 'pointer',
-      }
-    : {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#f0f0f0',
-        marginRight: 10,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 2,
-        elevation: 3,
-        borderWidth: 1,
-        borderColor: '#ccc',
-      };
-
-  // Enhanced active reading level button - pressed appearance
-  const enhancedReadingLevelButtonActiveStyle = Platform.OS === 'web'
-    ? {
-        backgroundColor: '#3a7ca5',
-        backgroundImage: 'linear-gradient(180deg, #3a7ca5 0%, #2a6c95 100%)',
-        boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.2), inset 0px 1px 1px rgba(0, 0, 0, 0.3)',
-        transform: 'translateY(1px)',
-        border: '1px solid #1a5c85',
-      }
-    : {
-        backgroundColor: '#3a7ca5',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.2,
-        shadowRadius: 1,
-        elevation: 1,
-        borderWidth: 1,
-        borderColor: '#1a5c85',
-        // We can't translate in React Native styles, but we can modify the margin to create 
-        // the impression that the button is pressed down
-        marginTop: 1,
-        marginBottom: -1,
-      };
-
-  // Enhanced text style for active button
-  const enhancedReadingLevelButtonTextActiveStyle = {
-    color: '#fff',
-    fontWeight: '500',
-    textShadowColor: 'rgba(0, 0, 0, 0.4)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 1,
-  };
   
   // Media button styles with spacing adjustments for mobile
   const mediaButtonStyle = [
@@ -471,18 +287,23 @@ export function ReadingUI({
     // Adjust horizontal margin to prevent edge cutoff
     Platform.OS !== 'web' ? { marginHorizontal: 2 } : { marginHorizontal: 5 }
   ];
-
-  // Gamepad control guide tooltip - only show when gamepad is connected
-  const gamepadHelpStyle = {
-    marginTop: 5,
-    marginBottom: 8,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    backgroundColor: 'rgba(58, 124, 165, 0.1)',
-    borderRadius: 5,
-    borderWidth: 1,
-    borderColor: 'rgba(58, 124, 165, 0.3)',
-    display: gamepadConnected ? 'flex' : 'none' // Only show when gamepad connected
+  
+  // Style for focused toggle item - VERY prominent visual indication
+  const getFocusedStyle = (id) => {
+    const isFocused = id === focusedElementId;
+    
+    if (Platform.OS === 'web') {
+      return isFocused ? {
+        backgroundColor: 'rgba(58, 124, 165, 0.2)',
+        borderWidth: 2,
+        borderColor: '#3a7ca5',
+        borderRadius: 8,
+        margin: -2, // Compensate for border width
+        boxShadow: '0 0 8px rgba(58, 124, 165, 0.8)'
+      } : {};
+    } else {
+      return {};
+    }
   };
 
   return (
@@ -516,38 +337,56 @@ export function ReadingUI({
           <View style={navigationFrameStyle}>
             {/* Beginning of Book (First) */}
             <TouchableOpacity
+              id="begin-button"
               style={[
                 mediaButtonStyle,
-                (loadingBook || isAtStartOfBook) ? styles.disabledButton : null
+                (loadingBook || isAtStartOfBook) ? styles.disabledButton : null,
+                getFocusedStyle("begin-button")
               ]}
               onPress={handleBeginningOfBookPress}
               disabled={loadingBook || isAtStartOfBook}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={uiText.rewindConfirmTitle || "Go to beginning of book"}
+              tabIndex={1}
             >
               <Text style={styles.mediaButtonText}>⏮</Text>
             </TouchableOpacity>
             
             {/* Previous Sentence */}
             <TouchableOpacity
+              id="prev-button"
               style={[
                 mediaButtonStyle,
-                (loadingBook || isAtStartOfBook) ? styles.disabledButton : null
+                (loadingBook || isAtStartOfBook) ? styles.disabledButton : null,
+                getFocusedStyle("prev-button")
               ]}
               onPress={handlePreviousButtonPress}
               disabled={loadingBook || isAtStartOfBook}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Previous sentence"
+              tabIndex={2}
             >
               <Text style={styles.mediaButtonText}>⏪</Text>
             </TouchableOpacity>
             
             {/* Listen/Stop Button (center, larger) */}
             <TouchableOpacity 
+              id="listen-button"
               style={[
                 styles.mediaButtonCenter, 
                 isSpeaking ? styles.activeButton : null,
                 loadingBook ? styles.disabledButton : null,
-                Platform.OS !== 'web' ? { marginHorizontal: 4 } : { marginHorizontal: 5 }
+                Platform.OS !== 'web' ? { marginHorizontal: 4 } : { marginHorizontal: 5 },
+                getFocusedStyle("listen-button")
               ]} 
               onPress={speakSentence} 
               disabled={loadingBook}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={isSpeaking ? (uiText.stop || "Stop") : (uiText.listen || "Listen")}
+              tabIndex={3}
             >
               <Text style={[styles.buttonText, { fontSize: 14 }]}> {/* REDUCED font size (from 16) */}
                 {isSpeaking ? (uiText.stop || "Stop") : (uiText.listen || "Listen")}
@@ -556,12 +395,18 @@ export function ReadingUI({
             
             {/* Next Sentence */}
             <TouchableOpacity 
+              id="next-button"
               style={[
                 mediaButtonStyle,
-                (loadingBook || isAtEndOfBook) ? styles.disabledButton : null
+                (loadingBook || isAtEndOfBook) ? styles.disabledButton : null,
+                getFocusedStyle("next-button")
               ]} 
               onPress={handleNextButtonPress} 
               disabled={loadingBook || isAtEndOfBook}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel="Next sentence"
+              tabIndex={4}
             >
               {loadingBook ? (
                 <View style={styles.nextButtonContent}>
@@ -577,12 +422,18 @@ export function ReadingUI({
             
             {/* End of Book (Last) */}
             <TouchableOpacity
+              id="end-button"
               style={[
                 mediaButtonStyle,
-                (loadingBook || isAtEndOfBook) ? styles.disabledButton : null
+                (loadingBook || isAtEndOfBook) ? styles.disabledButton : null,
+                getFocusedStyle("end-button")
               ]}
               onPress={handleEndOfBookPress}
               disabled={loadingBook || isAtEndOfBook}
+              accessible={true}
+              accessibilityRole="button" 
+              accessibilityLabel={uiText.goToEndConfirmTitle || "Go to end of book"}
+              tabIndex={5}
             >
               <Text style={styles.mediaButtonText}>⏭</Text>
             </TouchableOpacity>
@@ -599,16 +450,6 @@ export function ReadingUI({
               </Text>
             </View>
           </View>
-
-          {/* Gamepad control guide - only visible when gamepad connected */}
-          {gamepadConnected && (
-            <View style={gamepadHelpStyle}>
-              <Text style={{ fontSize: 10, color: '#3a7ca5', textAlign: 'center' }}>
-                Gamepad: Shoulder L/R = Prev/Next • D-pad L/R = Start/End • 
-                D-pad Up/Down = Speed • A = Play/Stop • B = Cycle • X = Toggle
-              </Text>
-            </View>
-          )}
 
           {/* Content Container - Enhanced with shadow */}
           <View style={enhancedContentContainerStyle}>
@@ -633,55 +474,126 @@ export function ReadingUI({
               {[1, 2, 3, 4, 5].map((speed) => (
                 <TouchableOpacity
                   key={speed}
+                  id={`speed-${speed}`}
                   style={[
                     styles.speedCircle,
-                    listeningSpeed === speed ? styles.speedCircleActive : null
+                    listeningSpeed === speed ? styles.speedCircleActive : null,
+                    getFocusedStyle(`speed-${speed}`)
                   ]}
                   onPress={() => updateListeningSpeed(speed)}
+                  accessible={true}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Speed ${speed}`}
+                  accessibilityState={{ selected: listeningSpeed === speed }}
+                  tabIndex={5 + speed}
                 />
               ))}
             </View>
           </View>
 
-          {/* Toggle Controls */}
+          {/* Toggle Controls - Keeping original styling but adding focus highlighting */}
           <View style={styles.toggleContainer}>
             {/* Articulation toggle */}
-            <View style={[styles.toggleItem, getSettingStyle('articulation')]}>
+            <View 
+              style={[
+                styles.toggleItem,
+                getFocusedStyle("articulation-toggle")
+              ]}
+            >
               <Text style={[styles.toggleLabel, { fontStyle: 'italic' }]}>
                 {uiText.articulation || "Articulation"}:
               </Text>
-              <Switch value={articulation} onValueChange={setArticulation} />
+              <Switch 
+                id="articulation-toggle"
+                value={articulation} 
+                onValueChange={setArticulation}
+                accessible={true}
+                accessibilityRole="switch"
+                accessibilityState={{ checked: articulation }}
+                accessibilityLabel={`${uiText.articulation || "Articulation"} ${articulation ? "on" : "off"}`}
+                tabIndex={11}
+              />
             </View>
             
             {/* Auto-play toggle */}
-            <View style={[styles.toggleItem, getSettingStyle('autoplay')]}>
+            <View 
+              style={[
+                styles.toggleItem,
+                getFocusedStyle("autoplay-toggle")
+              ]}
+            >
               <Text style={[styles.toggleLabel, { fontStyle: 'italic' }]}>
                 {uiText.autoplay || "Sentence Auto-play"}:
               </Text>
-              <Switch value={autoplay} onValueChange={setAutoplay} />
+              <Switch 
+                id="autoplay-toggle"
+                value={autoplay} 
+                onValueChange={setAutoplay}
+                accessible={true}
+                accessibilityRole="switch"
+                accessibilityState={{ checked: autoplay }}
+                accessibilityLabel={`${uiText.autoplay || "Sentence Auto-play"} ${autoplay ? "on" : "off"}`}
+                tabIndex={12}
+              />
             </View>
             
             {/* Show Text toggle */}
-            <View style={[styles.toggleItem, getSettingStyle('showText')]}>
+            <View 
+              style={[
+                styles.toggleItem,
+                getFocusedStyle("showtext-toggle")
+              ]}
+            >
               <Text style={[styles.toggleLabel, { fontStyle: 'italic' }]}>
                 {uiText.showText || "Show Sentence"}:
               </Text>
-              <Switch value={showText} onValueChange={setShowText} />
+              <Switch 
+                id="showtext-toggle"
+                value={showText} 
+                onValueChange={setShowText}
+                accessible={true}
+                accessibilityRole="switch"
+                accessibilityState={{ checked: showText }}
+                accessibilityLabel={`${uiText.showText || "Show Sentence"} ${showText ? "on" : "off"}`}
+                tabIndex={13}
+              />
             </View>
             
             {/* Show Translation toggle */}
-            <View style={[styles.toggleItem, getSettingStyle('showTranslation')]}>
+            <View 
+              style={[
+                styles.toggleItem,
+                getFocusedStyle("showtranslation-toggle")
+              ]}
+            >
               <Text style={[styles.toggleLabel, { fontStyle: 'italic' }]}>
                 {uiText.showTranslation || "Show Translation"}:
               </Text>
-              <Switch value={showTranslation} onValueChange={setShowTranslation} />
+              <Switch 
+                id="showtranslation-toggle"
+                value={showTranslation} 
+                onValueChange={setShowTranslation}
+                accessible={true}
+                accessibilityRole="switch"
+                accessibilityState={{ checked: showTranslation }}
+                accessibilityLabel={`${uiText.showTranslation || "Show Translation"} ${showTranslation ? "on" : "off"}`}
+                tabIndex={14}
+              />
             </View>
           </View>
           
           {/* Enhanced Home Link with 3D metallic style */}
           <TouchableOpacity 
-            style={enhancedHomeButtonStyle} 
+            id="home-button"
+            style={[
+              enhancedHomeButtonStyle,
+              getFocusedStyle("home-button")
+            ]} 
             onPress={handleGoHome}
+            accessible={true}
+            accessibilityRole="button"
+            accessibilityLabel={uiText.homeLink || "Home"}
+            tabIndex={15}
           >
             <Text style={enhancedHomeLinkTextStyle}>{uiText.homeLink || "Home"}</Text>
           </TouchableOpacity>

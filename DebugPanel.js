@@ -37,6 +37,7 @@ const DebugPanel = () => {
   
   // Always show the debug panel, even if empty
   return (
+	  /*
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerText}>Debug Panel</Text>
@@ -56,9 +57,8 @@ const DebugPanel = () => {
         ))}
       </ScrollView>
     </View>
-/*
+	  */
 	  <View/>
-*/
   );
 };
 

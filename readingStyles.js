@@ -246,20 +246,48 @@ export const readingStyles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
+    paddingHorizontal: 8, // Added padding to make focus effect look better
+    paddingVertical: 6,   // Added padding to make focus effect look better
+    marginVertical: 4,    // Increased for better separation
+    borderRadius: 8,      // Added for nicer focus effect
+    borderWidth: 1,       // Added for focus state
+    borderColor: 'transparent', // Invisible by default
     // Platform-specific adjustments
     ...(Platform.OS === 'web' ? {
       // Web-specific adjustments
-      height: 22, // REDUCED height (from 24)
-      marginVertical: 2 // Keep at 2
+      height: 38, // Increased height for better visibility and touch target
+      transition: 'all 0.2s ease', // Smooth transition for focus effects
+      // Web focus styles - these apply when the item has keyboard focus
+      ':focus-within': {
+        backgroundColor: 'rgba(58, 124, 165, 0.2)',
+        borderColor: '#3a7ca5',
+        boxShadow: '0 0 8px rgba(58, 124, 165, 0.8)',
+      }
     } : {
-      height: Platform.OS === 'android' ? 24 : 32, // REDUCED height (from 25/35)
-      marginVertical: Platform.OS === 'android' ? 0 : 2 // Keep as is
+      height: Platform.OS === 'android' ? 46 : 46, // Increased height
+      // Native platforms get focus indication through other means
+    })
+  },
+  // Style for focused toggle items - this is applied through React state 
+  // for native platforms and works with the gamepad navigation
+  focusedToggleItem: {
+    backgroundColor: 'rgba(58, 124, 165, 0.15)',
+    borderColor: '#3a7ca5',
+    ...(Platform.OS !== 'web' ? {
+      shadowColor: '#3a7ca5',
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.5,
+      shadowRadius: 5,
+      elevation: 3,
+    } : {
+      boxShadow: '0 0 8px rgba(58, 124, 165, 0.8)'
     })
   },
   toggleLabel: {
     fontSize: 14,
     marginRight: 10,
-    color: '#555'
+    color: '#555',
+    flex: 1, // Let the label take available space
   },
 
   // Next button with spinner
@@ -308,5 +336,26 @@ export const readingStyles = StyleSheet.create({
     color: themeBlue,
     fontWeight: '500',
     fontSize: 12, // REDUCED font size (from 14)
+  },
+
+  // Focused element styles - significantly more prominent
+  focusedElement: {
+    ...(Platform.OS !== 'web' ? {
+      borderWidth: 2,
+      borderColor: themeBlue,
+      backgroundColor: 'rgba(58, 124, 165, 0.15)',
+      shadowColor: themeBlue,
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.8,
+      shadowRadius: 4,
+      elevation: 4,
+    } : {
+      outlineWidth: '3px',
+      outlineStyle: 'solid',
+      outlineColor: themeBlue,
+      borderColor: themeBlue,
+      backgroundColor: 'rgba(58, 124, 165, 0.15)',
+      boxShadow: '0 0 10px rgba(58, 124, 165, 0.8)',
+    })
   }
 });
