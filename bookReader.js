@@ -1,13 +1,12 @@
 // bookReader.js - Manages reading state for books according to the specified pseudocode
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { processSourceText } from './apiServices';
+import { processSourceText, apiTranslateSentenceCheap } from './apiServices';
 import { parseIntoSentences, detectLanguageCode } from './textProcessing';
 import BookPipe from './bookPipeCore';
 import { bookPipeProcess } from './bookPipeProcess';
 import { Platform, Alert } from 'react-native';
 import { getUserLibrary, getBookById } from './userLibrary';
 import { debugLog } from './DebugPanel';
-import { directTranslate } from './App';
 
 class BookReader {
   constructor() {
@@ -726,9 +725,9 @@ class BookReader {
         const currentSimplified = this.simplifiedSentences[this.currentSimplifiedIndex];
         this.simpleArray = [currentSimplified];
         
-        // Get translation to user language		
-        const translatedSentence = await directTranslate(currentSimplified, this.studyLanguage, this.userLanguage);
-		
+        // Get translation to user language
+        const translatedSentence = await apiTranslateSentenceCheap(currentSimplified, this.studyLanguage, this.userLanguage);
+        
         // Make sure we only have a single-line translation (fixes duplicate sentence issue)
         const cleanedTranslation = translatedSentence.split('\n')[0].trim();
         this.translatedArray = [cleanedTranslation];

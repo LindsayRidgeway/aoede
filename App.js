@@ -6,7 +6,7 @@ import MainUI from './UI';
 // import { MainUI } from './UI';
 import ListeningSpeed from './listeningSpeed';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { processSourceText, translateBatch } from './apiServices';
+import { processSourceText, translateBatch, apiTranslateSentenceCheap, apiTranslateSentenceFast } from './apiServices';
 import { translateSentences, detectLanguageCode } from './textProcessing';
 import BookReader from './bookReader';
 import { bookSources } from './bookSources';
@@ -39,50 +39,6 @@ const getConstantValue = (key) => {
   
   return null;
 };
-
-// Direct translation method using GPT-4o
-export const directTranslate = async (text, sourceLang, targetLang) => {
-  if (!text || sourceLang === targetLang) return text;
-
-  const OPENAI_API_KEY = getConstantValue('OPENAI_API_KEY');
-  const API_URL = 'https://api.openai.com/v1/chat/completions';
-  const TRANSLATION_PROMPT = `Translate the input sentence from ${sourceLang} to ${targetLang}. Return only the translated sentence, with no comments or other output. Input: ${text}`;
-
-  try {
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [
-          {
-            role: 'user',
-            content: TRANSLATION_PROMPT
-          }
-        ],
-        max_tokens: 400,
-        temperature: 0.3
-      })
-    });
-
-    if (!response.ok) {
-      return text;
-    }
-
-    const data = await response.json();
-
-    if (!data.choices || data.choices.length === 0) {
-      return text;
-    }
-
-    return data.choices[0].message.content;
-  } catch (error) {
-    return text;
-  }
-}
 
 // Get the user's preferred locale/language using multiple methods for better reliability
 const getDeviceLanguage = async () => {
@@ -294,7 +250,7 @@ export default function App() {
       const translatedElements = {};
       for (const [key, value] of Object.entries(defaultUiText)) {
         try {
-          const translated = await directTranslate(value, 'en', targetLang);
+          const translated = await apiTranslateSentenceFast(value, 'en', targetLang);
           translatedElements[key] = translated;
         } catch (error) {
           translatedElements[key] = value;
@@ -309,7 +265,7 @@ export default function App() {
       
       for (const book of userLibrary) {
         try {
-          const translatedTitle = await directTranslate(book.title, 'en', targetLang);
+          const translatedTitle = await apiTranslateSentenceFast(book.title, 'en', targetLang);
           translatedBooks[book.id] = translatedTitle;
         } catch (error) {
           translatedBooks[book.id] = book.title;

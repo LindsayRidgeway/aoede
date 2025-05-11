@@ -8,6 +8,7 @@ import {
 import { styles } from './styles';
 import { getUserLibrary, removeBookFromLibrary, addBookToLibrary } from './userLibrary';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { apiTranslateSentenceFast } from './apiServices';
 import Constants from 'expo-constants';
 
 // Storage key for translated titles
@@ -304,60 +305,12 @@ export function LibraryUI({
         return title;
       }
       
-      // Get Google API key if available
-      const GOOGLE_API_KEY = getGoogleApiKey();
-      if (!GOOGLE_API_KEY) {
-        return title; // Can't translate without API key
-      }
-      
-      // Translate the title
-      const response = await fetch(
-        `https://translation.googleapis.com/language/translate/v2?key=${GOOGLE_API_KEY}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            q: title,
-            source: originalLanguage,
-            target: userLang,
-            format: "text"
-          })
-        }
-      );
-      
-      if (!response.ok) {
-        return title; // Return original title if translation fails
-      }
-      
-      const data = await response.json();
-      
-      if (data.data?.translations?.length > 0) {
-        const translatedText = data.data.translations[0].translatedText;
-        return translatedText;
-      }
-      
-      return title; // Return original title if no translation
+      // Use the apiTranslateSentenceFast function for translation
+      return await apiTranslateSentenceFast(title, originalLanguage, userLang);
     } catch (error) {
       console.error("Error translating title:", error);
       return title; // Return original title on error
     }
-  };
-  
-  // Get Google API key from Expo Constants
-  const getGoogleApiKey = () => {
-    if (Constants?.expoConfig?.extra?.GOOGLE_API_KEY) {
-      return Constants.expoConfig.extra.GOOGLE_API_KEY;
-    }
-    
-    if (Constants?.manifest?.extra?.GOOGLE_API_KEY) {
-      return Constants.manifest.extra.GOOGLE_API_KEY;
-    }
-    
-    if (Constants?.extra?.GOOGLE_API_KEY) {
-      return Constants.extra.GOOGLE_API_KEY;
-    }
-    
-    return null;
   };
   
   // Function to add a book from search results to library
