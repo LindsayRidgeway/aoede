@@ -726,11 +726,7 @@ class BookReader {
         const currentSimplified = this.simplifiedSentences[this.currentSimplifiedIndex];
         this.simpleArray = [currentSimplified];
         
-        // Get translation to user language
-		/*
-        const translatedSentence = await this.directTranslate(currentSimplified);
-		*/
-		
+        // Get translation to user language		
         const translatedSentence = await directTranslate(currentSimplified, this.studyLanguage, this.userLanguage);
 		
         // Make sure we only have a single-line translation (fixes duplicate sentence issue)
