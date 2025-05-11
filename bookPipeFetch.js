@@ -1,6 +1,5 @@
 // bookPipeFetch.js - Handles fetching book content from URLs
 import { Platform } from 'react-native';
-import { CORS_PROXY } from './apiServices';
 import { getBookById } from './userLibrary';
 
 // Book content fetching operations
@@ -34,7 +33,7 @@ export const bookPipeFetch = {
       
       // List of CORS proxies to try
       const corsProxies = [
-        `${CORS_PROXY}`,
+        'https://thingproxy.freeboard.io/fetch/',
         'https://corsproxy.io/?',
         'https://api.allorigins.win/raw?url=',
         'https://proxy.cors.sh/'

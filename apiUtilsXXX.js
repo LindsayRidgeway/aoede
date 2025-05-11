@@ -3,9 +3,7 @@ import Constants from 'expo-constants';
 
 const {
   OPENAI_API_KEY,
-  ANTHROPIC_API_KEY,
-  GOOGLE_API_KEY,
-  CORS_PROXY
+  GOOGLE_API_KEY
 } = Constants.expoConfig.extra;
 
 // Example usage:
@@ -13,9 +11,7 @@ export const getApiKey = (name) => {
   if (__DEV__) console.log("MODULE 0033: apiUtilsXXX.getApiKey");
   switch (name) {
     case 'openai': return OPENAI_API_KEY;
-    case 'anthropic': return ANTHROPIC_API_KEY;
     case 'google': return GOOGLE_API_KEY;
-    case 'proxy': return CORS_PROXY;
     default: return null;
   }
 };

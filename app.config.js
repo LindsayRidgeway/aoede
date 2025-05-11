@@ -35,7 +35,6 @@ export default {
     extra: {
       OPENAI_API_KEY: process.env.OPENAI_API_KEY,
       GOOGLE_API_KEY: process.env.GOOGLE_API_KEY,
-      CORS_PROXY: process.env.CORS_PROXY,
       NO_IMMEDIATE: true,
       eas: {
         projectId: "0e70cf3b-940d-4f03-b264-4ea7953da859"

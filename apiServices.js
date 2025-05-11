@@ -9,10 +9,8 @@ import getSimplificationPrompt15 from './simplifiers/simplify15';
 import getSimplificationPrompt18 from './simplifiers/simplify18';
 
 // Get API keys using updated function
-const anthropicKey = getConstantValue('ANTHROPIC_API_KEY');
 const googleKey = getConstantValue('GOOGLE_API_KEY');
 const openaiKey = getConstantValue('OPENAI_API_KEY');
-export const CORS_PROXY = getConstantValue('CORS_PROXY') || '';
 
 // Global cache for supported languages
 let supportedLanguagesCache = null;

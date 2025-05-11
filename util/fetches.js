@@ -20,6 +20,6 @@ XXX - translateBookTitle() ... I18N for book titles in library listing via Googl
 - safeFetch() ... book read (could possibly be used instead of bookPipeFetch(), could be
                     done without env variable; needs no API KEY
 
-listeningSpeed.js
+XXX listeningSpeed.js
 - three functions ... TTS via Google TTS
 
