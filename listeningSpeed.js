@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Audio } from 'expo-av';
 import { Platform } from 'react-native';
 import * as Core from './listeningSpeedCore';
+import { apiTextToSpeech } from './apiServices';
 
 // Export the language code variable
 export let detectedLanguageCode = null;
@@ -330,137 +331,49 @@ export const speakSentenceWithPauses = async (sentence, listeningSpeed, onFinish
   }
 
   try {
-    // Check if we have a Google API key before attempting the API call
-    if (!Core.GOOGLE_TTS_API_KEY) {
-      if (onFinish) onFinish();
-      return;
-    }
-
-    // Preparing TTS request body
-    const requestBody = {
-      input: { text: processedSentence },
-      voice: { 
-        languageCode: ttsLanguageCode,
-        ssmlGender: "FEMALE"
-      },
-      audioConfig: { 
-        audioEncoding: "MP3",
-        speakingRate: speakingRate
-      }
-    };
-    
-    // If we have a specific voice name, use it
-    if (voiceName) {
-      requestBody.voice.name = voiceName;
-    }
-    
-	if (__DEV__) console.log("FETCH 0011");
-    const response = await fetch(
-      `https://texttospeech.googleapis.com/v1/text:synthesize?key=${Core.GOOGLE_TTS_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requestBody),
-      }
+    // First attempt: with voice name and speaking rate
+    let audioContent = await apiTextToSpeech(
+      processedSentence,
+      ttsLanguageCode,
+      speakingRate,
+      voiceName,
+      "FEMALE"
     );
     
-	if (!response.ok) {      
-      // We'll try a simplified request if the first one fails      
-      // If the first request failed, try without speed control
-      const simplifiedBody = {
-        input: { text: processedSentence },
-        voice: { 
-          languageCode: ttsLanguageCode,
-          ssmlGender: "FEMALE"
-        },
-        audioConfig: { 
-          audioEncoding: "MP3"
-        }
-      };
-      
-      // Keep the voice name if we had one
-      if (voiceName) {
-        simplifiedBody.voice.name = voiceName;
-      }
-      
-	  if (__DEV__) console.log("FETCH 0012");
-      const retryResponse = await fetch(
-        `https://texttospeech.googleapis.com/v1/text:synthesize?key=${Core.GOOGLE_TTS_API_KEY}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(simplifiedBody),
-        }
+    // Second attempt: with speaking rate but no voice name
+    if (!audioContent && voiceName) {
+      if (__DEV__) console.log("First TTS attempt failed, trying without voice name");
+      audioContent = await apiTextToSpeech(
+        processedSentence,
+        ttsLanguageCode,
+        speakingRate,
+        null,
+        "FEMALE"
       );
-      
-      if (!retryResponse.ok) {        
-        // If that fails too, try one last approach without specific voice name
-        if (voiceName) {          
-          const lastAttemptBody = {
-            input: { text: processedSentence },
-            voice: { 
-              languageCode: ttsLanguageCode,
-              ssmlGender: "FEMALE"
-            },
-            audioConfig: { 
-              audioEncoding: "MP3"
-            }
-          };
-          
-		  if (__DEV__) console.log("FETCH 0013");
-          const lastResponse = await fetch(
-            `https://texttospeech.googleapis.com/v1/text:synthesize?key=${Core.GOOGLE_TTS_API_KEY}`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(lastAttemptBody),
-            }
-          );
-                    
-          if (!lastResponse.ok) {
-            if (onFinish) onFinish();
-            return;
-          }
-          
-          const lastData = await lastResponse.json();
-          
-          if (!lastData.audioContent) {
-            if (onFinish) onFinish();
-            return;
-          }
-          
-          // Play the audio from final attempt
-          await Core.playAudioFromBase64(lastData.audioContent, onFinish);
-          return;
-        }
-        
-        // If we've tried everything and still failed
-        if (onFinish) onFinish();
-        return;
-      }
-      
-      const retryData = await retryResponse.json();
-      
-      if (!retryData.audioContent) {        
-        if (onFinish) onFinish();
-        return;
-      }
-      
-      // Play the audio from simplified response
-      await Core.playAudioFromBase64(retryData.audioContent, onFinish);
-      return;
     }
-
-    const data = await response.json();
     
-    if (!data.audioContent) {
+    // Third attempt: with default rate (1.0) and no voice name
+    if (!audioContent && (speakingRate !== 1.0 || voiceName)) {
+      if (__DEV__) console.log("Second TTS attempt failed, trying with default settings");
+      audioContent = await apiTextToSpeech(
+        processedSentence,
+        ttsLanguageCode,
+        1.0,
+        null,
+        "FEMALE"
+      );
+    }
+    
+    if (!audioContent) {
+      if (__DEV__) console.log("All TTS attempts failed");
       if (onFinish) onFinish();
       return;
     }
-
-    // Play the audio 
-    await Core.playAudioFromBase64(data.audioContent, onFinish);
+    
+    // Play the audio content
+    await Core.playAudioFromBase64(audioContent, onFinish);
   } catch (error) {
+    if (__DEV__) console.log(`Error in speakSentenceWithPauses: ${error.message}`);
     if (onFinish) onFinish();
   }
 };

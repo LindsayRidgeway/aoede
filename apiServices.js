@@ -225,7 +225,7 @@ export const apiGetSupportedLanguages = async (targetLanguage = 'en') => {
 };
 
 // Text-to-speech using Google TTS API
-export const apiTextToSpeech = async (text, languageCode, speakingRate = 1.0, voiceName = null) => {
+export const apiTextToSpeech = async (text, languageCode, speakingRate = 1.0, voiceName = null, ssmlGender = "FEMALE") => {
   const GOOGLE_API_KEY = getConstantValue('GOOGLE_API_KEY');
   
   if (!GOOGLE_API_KEY || !text) {
@@ -238,7 +238,7 @@ export const apiTextToSpeech = async (text, languageCode, speakingRate = 1.0, vo
       input: { text: text },
       voice: { 
         languageCode: languageCode,
-        ssmlGender: "FEMALE"
+        ssmlGender: ssmlGender
       },
       audioConfig: { 
         audioEncoding: "MP3",
@@ -251,6 +251,7 @@ export const apiTextToSpeech = async (text, languageCode, speakingRate = 1.0, vo
       requestBody.voice.name = voiceName;
     }
     
+    if (__DEV__) console.log("FETCH: apiTextToSpeech");
     const response = await fetch(
       `https://texttospeech.googleapis.com/v1/text:synthesize?key=${GOOGLE_API_KEY}`,
       {
@@ -261,17 +262,14 @@ export const apiTextToSpeech = async (text, languageCode, speakingRate = 1.0, vo
     );
     
     if (!response.ok) {
+      if (__DEV__) console.log(`TTS API error: ${response.status} ${response.statusText}`);
       return null;
     }
     
     const data = await response.json();
-    
-    if (!data.audioContent) {
-      return null;
-    }
-    
-    return data.audioContent; // Return Base64 encoded audio
+    return data.audioContent || null; // Return Base64 encoded audio
   } catch (error) {
+    if (__DEV__) console.log(`Error in apiTextToSpeech: ${error.message}`);
     return null;
   }
 };
