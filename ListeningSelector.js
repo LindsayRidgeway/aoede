@@ -3,7 +3,7 @@ import {
   View, Text, TouchableOpacity, TextInput, FlatList, 
   Modal, ActivityIndicator, StyleSheet, Platform
 } from 'react-native';
-import LanguageVerifier from './languageVerifier';
+import { apiGetSupportedLanguages } from './apiServices';
 
 const LanguageSelector = ({ 
   value, 
@@ -41,13 +41,13 @@ const LanguageSelector = ({
     }
   }, [searchText, languages]);
   
-  // Fetch languages from Google Translation API
+  // Fetch languages from the centralized API function
   const fetchLanguages = async () => {
     setLoading(true);
     setError(null);
     
     try {
-      const languageList = await LanguageVerifier.fetchSupportedLanguages();
+      const languageList = await apiGetSupportedLanguages();
       
       if (languageList && Array.isArray(languageList)) {
         // Sort languages alphabetically by name

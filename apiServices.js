@@ -14,6 +14,9 @@ const googleKey = getConstantValue('GOOGLE_API_KEY');
 const openaiKey = getConstantValue('OPENAI_API_KEY');
 export const CORS_PROXY = getConstantValue('CORS_PROXY') || '';
 
+// Global cache for supported languages
+let supportedLanguagesCache = null;
+
 // Function to get the appropriate simplification prompt based on reading level
 export const getPromptForLevel = (readingLevel) => {
   if (__DEV__) console.log("MODULE 0028: apiServices.getPromptForLevel");
@@ -180,8 +183,13 @@ export const apiTranslateAndSimplifySentence = async (sourceText, bookLang, stud
   }
 };
 
-// Get supported languages from Google Translate API
+// Get supported languages from Google Translate API with caching
 export const apiGetSupportedLanguages = async (targetLanguage = 'en') => {
+  // Return cached result if available
+  if (supportedLanguagesCache) {
+    return supportedLanguagesCache;
+  }
+
   const GOOGLE_API_KEY = getConstantValue('GOOGLE_API_KEY');
   if (!GOOGLE_API_KEY) {
     return null;
@@ -205,6 +213,8 @@ export const apiGetSupportedLanguages = async (targetLanguage = 'en') => {
     const result = await response.json();
     
     if (result.data && result.data.languages) {
+      // Store in cache
+      supportedLanguagesCache = result.data.languages;
       return result.data.languages;
     }
     

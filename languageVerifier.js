@@ -1,6 +1,7 @@
 // languageVerifier.js - Handles language validation and supported language fetching
 import Constants from 'expo-constants';
 import { detectLanguageCode } from './textProcessing';
+import { apiGetSupportedLanguages } from './apiServices';
 
 // Get API key using helper function for consistency
 const getConstantValue = (key) => {
@@ -27,142 +28,56 @@ const getConstantValue = (key) => {
   return null;
 };
 
-// Get Google API key for translations
-const GOOGLE_API_KEY = getConstantValue('GOOGLE_API_KEY');
-
-// Cache of supported languages to avoid multiple API calls
-let cachedLanguages = null;
-
-// Flag to track if a fetch is in progress
-let isFetchingLanguages = false;
-
-// Common language codes for faster access
+// Common language codes for faster access (fallback if API fails)
 const commonLanguages = [
-	/*
+  // Note: This array is kept but commented out to preserve the structure
+  /*
   { language: 'af', name: 'Afrikaans' },
   { language: 'ar', name: 'Arabic' },
-  { language: 'bg', name: 'Bulgarian' },
-  { language: 'bn', name: 'Bengali' },
-  { language: 'ca', name: 'Catalan' },
-  { language: 'cs', name: 'Czech' },
-  { language: 'cy', name: 'Welsh' },
-  { language: 'da', name: 'Danish' },
-  { language: 'de', name: 'German' },
-  { language: 'el', name: 'Greek' },
-  { language: 'en', name: 'English' },
-  { language: 'es', name: 'Spanish' },
-  { language: 'et', name: 'Estonian' },
-  { language: 'fa', name: 'Persian' },
-  { language: 'fi', name: 'Finnish' },
-  { language: 'fr', name: 'French' },
-  { language: 'gu', name: 'Gujarati' },
-  { language: 'he', name: 'Hebrew' },
-  { language: 'hi', name: 'Hindi' },
-  { language: 'hr', name: 'Croatian' },
-  { language: 'hu', name: 'Hungarian' },
-  { language: 'id', name: 'Indonesian' },
-  { language: 'it', name: 'Italian' },
-  { language: 'ja', name: 'Japanese' },
-  { language: 'ko', name: 'Korean' },
-  { language: 'lt', name: 'Lithuanian' },
-  { language: 'lv', name: 'Latvian' },
-  { language: 'ms', name: 'Malay' },
-  { language: 'nl', name: 'Dutch' },
-  { language: 'no', name: 'Norwegian' },
-  { language: 'pl', name: 'Polish' },
-  { language: 'pt', name: 'Portuguese' },
-  { language: 'ro', name: 'Romanian' },
-  { language: 'ru', name: 'Russian' },
-  { language: 'sk', name: 'Slovak' },
-  { language: 'sl', name: 'Slovenian' },
-  { language: 'sr', name: 'Serbian' },
-  { language: 'sv', name: 'Swedish' },
-  { language: 'sw', name: 'Swahili' },
-  { language: 'ta', name: 'Tamil' },
-  { language: 'te', name: 'Telugu' },
-  { language: 'th', name: 'Thai' },
-  { language: 'tr', name: 'Turkish' },
-  { language: 'uk', name: 'Ukrainian' },
-  { language: 'ur', name: 'Urdu' },
-  { language: 'vi', name: 'Vietnamese' },
-  { language: 'zh', name: 'Chinese' }
-	*/
+  // ... other languages
+  */
 ];
 
 const LanguageVerifier = {
   /**
    * Fetch supported languages from Google Translate API
-   * Returns Promise but designed for callback-style use
+   * Using the centralized apiGetSupportedLanguages function
    */
-  fetchSupportedLanguages: () => {
-  if (__DEV__) console.log("MODULE 0085: languageVerifier.fetchSupportedLanguages");
-    // Return cached languages if available
-    if (cachedLanguages) {
-      return Promise.resolve(cachedLanguages);
-    }
+  fetchSupportedLanguages: async (targetLanguage = 'en') => {
+    if (__DEV__) console.log("MODULE 0085: languageVerifier.fetchSupportedLanguages");
     
-    // If already fetching, return the common languages
-    if (isFetchingLanguages) {
-      return Promise.resolve(commonLanguages);
-    }
-    
-    // Start a fetch in the background but return immediately with common languages
-    isFetchingLanguages = true;
-    
-    // Start the fetch, but don't wait for it
-	if (__DEV__) console.log("FETCH 0009");
-    fetch(
-      `https://translation.googleapis.com/language/translate/v2/languages?key=${GOOGLE_API_KEY}&target=en`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+    try {
+      // Use the centralized API function 
+      const languages = await apiGetSupportedLanguages(targetLanguage);
+      
+      if (languages && languages.length > 0) {
+        return languages;
       }
-    )
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(`API error: ${response.status}`);
-      }
-      return response.json();
-    })
-    .then(data => {
-      if (data.data && data.data.languages) {
-        // Format the languages into a more usable structure
-        const languages = data.data.languages.map(lang => ({
-          language: lang.language, // ISO code (e.g., 'en', 'es')
-          name: lang.name       // Display name (e.g., 'English', 'Spanish')
-        }));
-        
-        // Cache the languages for future use
-        cachedLanguages = languages;
-      }
-    })
-    .catch(error => {
+      
+      // Fallback to common languages if API call fails
+      return commonLanguages;
+    } catch (error) {
       if (__DEV__) console.log(`Error fetching languages: ${error.message}`);
-    })
-    .finally(() => {
-      isFetchingLanguages = false;
-    });
-    
-    // Return common languages immediately
-    return Promise.resolve(commonLanguages);
+      return commonLanguages;
+    }
   },
   
   /**
    * Verify if a language code is supported
    * Synchronous version that uses only cached data or common languages
    */
-  verifyLanguageCode: (languageCode) => {
-  if (__DEV__) console.log("MODULE 0086: languageVerifier.verifyLanguageCode");
+  verifyLanguageCode: async (languageCode) => {
+    if (__DEV__) console.log("MODULE 0086: languageVerifier.verifyLanguageCode");
     if (!languageCode) return false;
     
     // Normalize language code
     const normalizedCode = languageCode.toLowerCase().trim();
     
-    // Check if the language code is in the cached supported languages
-    if (cachedLanguages) {
-      return cachedLanguages.some(lang => lang.language.toLowerCase() === normalizedCode);
+    // Get languages using the centralized function
+    const languages = await apiGetSupportedLanguages();
+    
+    if (languages && languages.length > 0) {
+      return languages.some(lang => lang.language.toLowerCase() === normalizedCode);
     }
     
     // Fall back to common languages
@@ -171,18 +86,19 @@ const LanguageVerifier = {
   
   /**
    * Get the language name for a language code
-   * Synchronous version that uses only cached data or common languages
    */
-  getLanguageName: (languageCode) => {
-  if (__DEV__) console.log("MODULE 0087: languageVerifier.getLanguageName");
+  getLanguageName: async (languageCode) => {
+    if (__DEV__) console.log("MODULE 0087: languageVerifier.getLanguageName");
     if (!languageCode) return '';
     
     // Normalize language code
     const normalizedCode = languageCode.toLowerCase().trim();
     
-    // Check cached languages
-    if (cachedLanguages) {
-      const language = cachedLanguages.find(lang => lang.language.toLowerCase() === normalizedCode);
+    // Get languages using the centralized function
+    const languages = await apiGetSupportedLanguages();
+    
+    if (languages && languages.length > 0) {
+      const language = languages.find(lang => lang.language.toLowerCase() === normalizedCode);
       if (language) {
         return language.name;
       }
@@ -195,25 +111,26 @@ const LanguageVerifier = {
   
   /**
    * Get the language code for a language name
-   * Synchronous version that uses only cached data or common languages
    */
-  getLanguageCode: (languageName) => {
-  if (__DEV__) console.log("MODULE 0088: languageVerifier.getLanguageCode");
+  getLanguageCode: async (languageName) => {
+    if (__DEV__) console.log("MODULE 0088: languageVerifier.getLanguageCode");
     if (!languageName) return '';
     
     // Normalize language name
     const normalizedName = languageName.toLowerCase().trim();
     
-    // Check cached languages
-    if (cachedLanguages) {
+    // Get languages using the centralized function
+    const languages = await apiGetSupportedLanguages();
+    
+    if (languages && languages.length > 0) {
       // First, try exact match
-      let language = cachedLanguages.find(lang => 
+      let language = languages.find(lang => 
         lang.name.toLowerCase() === normalizedName
       );
       
       // If not found, try partial match
       if (!language) {
-        language = cachedLanguages.find(lang => 
+        language = languages.find(lang => 
           lang.name.toLowerCase().includes(normalizedName) || 
           normalizedName.includes(lang.name.toLowerCase())
         );
@@ -243,7 +160,7 @@ const LanguageVerifier = {
   }
 };
 
-// Start fetching languages in the background
-LanguageVerifier.fetchSupportedLanguages();
+// Initialize by fetching languages in the background
+apiGetSupportedLanguages().catch(() => {});
 
 export default LanguageVerifier;

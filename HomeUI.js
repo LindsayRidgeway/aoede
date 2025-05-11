@@ -1,4 +1,4 @@
-// HomeUI.js - Component for the home screen (header and load panel)
+// HomeUI.js - Component for the home/load panel
 import React, { useState, useEffect } from 'react';
 import { 
   Text, View, TouchableOpacity, Image, 
@@ -10,6 +10,7 @@ import ListeningSpeed from './listeningSpeed';
 import Constants from 'expo-constants';
 import { getUserLibrary } from './userLibrary';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { apiTranslateSentenceFast, apiGetSupportedLanguages } from './apiServices';
 
 // Import iOS-specific components conditionally
 let IosPickers = null;
@@ -38,9 +39,6 @@ const getConstantValue = (key) => {
   }
   return null;
 };
-
-// Get Google API key from Expo Constants
-const GOOGLE_API_KEY = getConstantValue('GOOGLE_API_KEY');
 
 export function HomeUI({
   fontsLoaded,
@@ -257,7 +255,7 @@ export function HomeUI({
     loadUserLibrary();
   }, [libraryRefreshKey, uiText]);
   
-  // Load languages from the Google Translate API
+  // Load languages from the API service using the centralized function
   useEffect(() => {
     const loadLanguages = async () => {
       try {
@@ -266,28 +264,16 @@ export function HomeUI({
           ? navigator.language.split('-')[0]
           : 'en';
         
-        // Fetch available languages from Google Translate API
-        const response = await fetch(
-          `https://translation.googleapis.com/language/translate/v2/languages?key=${GOOGLE_API_KEY}&target=${userLang}`,
-          {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json'
-            }
-          }
-        );
+        // Use the centralized apiGetSupportedLanguages function
+        const languagesList = await apiGetSupportedLanguages(userLang);
         
-        if (response.ok) {
-          const result = await response.json();
-          
-          if (result.data && result.data.languages) {
-            // Sort languages alphabetically
-            const sortedLanguages = [...result.data.languages].sort((a, b) => 
-              a.name.localeCompare(b.name)
-            );
-            setLanguages(sortedLanguages);
-            setFilteredLanguages(sortedLanguages);
-          }
+        if (languagesList && languagesList.length > 0) {
+          // Sort languages alphabetically
+          const sortedLanguages = [...languagesList].sort((a, b) => 
+            a.name.localeCompare(b.name)
+          );
+          setLanguages(sortedLanguages);
+          setFilteredLanguages(sortedLanguages);
         }
       } catch (error) {
         console.error("Failed to load languages:", error);
