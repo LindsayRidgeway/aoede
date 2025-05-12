@@ -9,6 +9,7 @@ import { styles } from './styles';
 import { getUserLibrary, removeBookFromLibrary, addBookToLibrary } from './userLibrary';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiTranslateSentenceFast } from './apiServices';
+import { fetchUrl } from './fetchUtils';
 import Constants from 'expo-constants';
 
 // Storage key for translated titles
@@ -386,57 +387,6 @@ export function LibraryUI({
   
   // ---- Search Functionality ----
   
-  // Simple fetch with robust error handling and platform awareness
-  const safeFetch = async (url, options = {}) => {
-    try {
-      addDebugMessage(`Fetching: ${url.substring(0, 50)}...`);
-      
-      // Set a reasonable timeout
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => {
-        controller.abort();
-      }, 30000); // 30 second timeout
-      
-      let finalOptions = {
-        ...options,
-        signal: controller.signal
-      };
-      
-      let response;
-      
-      // Only apply proxy in web environment
-      if (Platform.OS === 'web') {
-        // Use a reliable CORS proxy specifically for the search functionality
-        const corsProxy = 'https://api.codetabs.com/v1/proxy?quest=';
-        const encodedUrl = encodeURIComponent(url);
-        const proxyUrl = `${corsProxy}${encodedUrl}`;
-        
-        addDebugMessage(`Using proxy: ${corsProxy}`);
-        response = await fetch(proxyUrl, finalOptions);
-      } else {
-        // Native platforms don't need proxy
-        response = await fetch(url, finalOptions);
-      }
-      
-      clearTimeout(timeoutId);
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
-      }
-      
-      const text = await response.text();
-      addDebugMessage(`Fetch successful: ${text.length} bytes`);
-      return text;
-    } catch (error) {
-      if (error.name === 'AbortError') {
-        addDebugMessage('Fetch timed out after 30 seconds');
-        throw new Error('Fetch timed out');
-      }
-      addDebugMessage(`Fetch error: ${error.message}`);
-      throw error;
-    }
-  };
-  
   // Function to find the best anchor in HTML content
   const findBestAnchor = (htmlContent) => {
     // Skip if no content
@@ -598,7 +548,7 @@ export function LibraryUI({
       // Use simple fetch for the hub page
       let hubText;
       try {
-        hubText = await safeFetch(bookUrl);
+        hubText = await fetchUrl(bookUrl);
       } catch (hubError) {
         addDebugMessage(`Failed to fetch book hub page: ${hubError.message}`);
         return { success: false };
@@ -677,7 +627,7 @@ export function LibraryUI({
             'Accept-Language': 'en-US,en;q=0.9'
           }
         };
-        htmlContent = await safeFetch(htmlUrl, options);
+        htmlContent = await fetchUrl(htmlUrl, options);
       } catch (htmlErr) {
         addDebugMessage(`Failed to fetch HTML file: ${htmlErr.message}`);
         return { success: false };
@@ -722,7 +672,7 @@ export function LibraryUI({
       addDebugMessage('Starting search...');
       
       // Fetch search results
-      const html = await safeFetch(searchUrl);
+      const html = await fetchUrl(searchUrl);
       
       // Extract book links
       const bookLinks = extractBookLinksFromHtml(html);

@@ -1,7 +1,7 @@
 // bookPipeFetch.js - Handles fetching book content from URLs
 import { Platform } from 'react-native';
 import { getBookById } from './userLibrary';
-import { fetchWithRetry } from './fetchUtils';
+import { fetchUrl } from './fetchUtils';
 
 // Book content fetching operations
 export const bookPipeFetch = {
@@ -29,7 +29,7 @@ export const bookPipeFetch = {
 
       // Use robust fetch utility to retrieve HTML content
       if (__DEV__) console.log("MODULE 0055: bookPipeFetch.fetch");
-      pipe.htmlContent = await fetchWithRetry(pipe.bookUrl);
+      pipe.htmlContent = await fetchUrl(pipe.bookUrl);
       
       if (__DEV__) console.log("BOOK_PIPE_FETCH.1 htmlContent.length=", pipe.htmlContent.length);
       

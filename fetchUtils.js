@@ -1,8 +1,56 @@
 // fetchUtils.js - Unified fetch utilities for Aoede
 import { Platform } from 'react-native';
 
+// Simple fetch with robust error handling and platform awareness
+export const fetchUrl = async (url, options = {}) => {
+  try {
+    // Set a reasonable timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      controller.abort();
+    }, 30000); // 30 second timeout
+    
+    let finalOptions = {
+      ...options,
+      signal: controller.signal
+    };
+    
+    let response;
+    
+    // Only apply proxy in web environment
+    if (Platform.OS === 'web') {
+      // Use a reliable CORS proxy specifically for the search functionality
+      const corsProxy = 'https://api.codetabs.com/v1/proxy?quest=';
+      const encodedUrl = encodeURIComponent(url);
+      const proxyUrl = `${corsProxy}${encodedUrl}`;
+      
+      response = await fetch(proxyUrl, finalOptions);
+    } else {
+      // Native platforms don't need proxy
+      response = await fetch(url, finalOptions);
+    }
+    
+    clearTimeout(timeoutId);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
+    }
+    
+    const text = await response.text();
+    return text;
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      throw new Error('Fetch timed out');
+    }
+    throw error;
+  }
+};
+
 // Robust fetch function with CORS proxy support and retry logic
 // Use this for reading full books, where reliability is critical
+
+// NOIE: This function is not used anywhere, but is retained for
+// possible future reference
 export const fetchWithRetry = async (url, options = {}) => {
   if (__DEV__) console.log("MODULE: fetchUtils.fetchWithRetry");
   
