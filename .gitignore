@@ -48,3 +48,4 @@ library_builder.html
 
 # Local Netlify folder
 .netlify
+docs/app/

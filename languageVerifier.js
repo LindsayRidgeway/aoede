@@ -3,31 +3,6 @@ import Constants from 'expo-constants';
 import { detectLanguageCode } from './textProcessing';
 import { apiGetSupportedLanguages } from './apiServices';
 
-// Get API key using helper function for consistency
-const getConstantValue = (key) => {
-  // Try the new path (expoConfig.extra) first - Expo SDK 46+
-  if (Constants?.expoConfig?.extra && Constants.expoConfig.extra[key] !== undefined) {
-    return Constants.expoConfig.extra[key];
-  }
-  
-  // Fallback to old path (manifest.extra) - before Expo SDK 46
-  if (Constants?.manifest?.extra && Constants.manifest.extra[key] !== undefined) {
-    return Constants.manifest.extra[key];
-  }
-  
-  // For Expo Go and other environments - check extra at top level
-  if (Constants?.extra && Constants.extra[key] !== undefined) {
-    return Constants.extra[key];
-  }
-  
-  // Check the direct path in Constants as last resort
-  if (Constants && Constants[key] !== undefined) {
-    return Constants[key];
-  }
-  
-  return null;
-};
-
 // Common language codes for faster access (fallback if API fails)
 const commonLanguages = [
   // Note: This array is kept but commented out to preserve the structure

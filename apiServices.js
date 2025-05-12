@@ -1,5 +1,4 @@
 // apiServices.js - API service functions for Aoede
-import { getConstantValue } from './apiUtilsXXX';
 
 // Import all simplification prompts statically
 import getSimplificationPrompt6 from './simplifiers/simplify6';
@@ -86,6 +85,12 @@ export async function apiGetSupportedLanguages(targetLang = "en") {
   return await callAoedeAPI({
     mode: "getLanguages",
     targetLang,
+  });
+}
+
+export async function apiGetGoogleVoices() {
+  return await callAoedeAPI({
+    mode: "getGoogleVoices",
   });
 }
 

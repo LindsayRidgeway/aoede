@@ -4,6 +4,7 @@ import { Audio } from 'expo-av';
 import { Platform } from 'react-native';
 import * as Core from './listeningSpeedCore';
 import { apiTextToSpeech } from './apiServices';
+import { apiGetGoogleVoices } from "./apiServices";
 
 // Export the language code variable
 export let detectedLanguageCode = null;
@@ -17,35 +18,11 @@ let cachedVoicesByLanguage = {};
 // Set of all supported language codes (with regions)
 let supportedVoiceLanguageCodes = new Set();
 
-// Function to fetch available voices from Google TTS API
-function fetchAvailableVoices() {
-  if (!Core.GOOGLE_TTS_API_KEY) {
-    return null;
-  }
 
-  try {
-    // We're using a synchronous approach, so we'll return a promise that will be resolved later
-	  if (__DEV__) console.log("FETCH 0010");
-    const promise = fetch(
-      `https://texttospeech.googleapis.com/v1/voices?key=${Core.GOOGLE_TTS_API_KEY}`
-    )
-    .then(response => {
-      if (!response.ok) {
-        return null;
-      }
-      return response.json();
-    })
-    .then(data => {
-      return data.voices || null;
-    })
-    .catch(error => {
-      return null;
-    });
-    
-    return promise;
-  } catch (error) {
-    return Promise.resolve(null);
-  }
+function fetchAvailableVoices() {
+  return apiGetGoogleVoices()
+    .then(data => data.voices || null)
+    .catch(() => null);
 }
 
 // Initialize and cache voice list

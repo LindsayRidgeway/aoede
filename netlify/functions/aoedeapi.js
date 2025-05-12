@@ -106,6 +106,22 @@ exports.handler = async (event, context) => {
         };
       }
 
+      case 'getGoogleVoices': {
+        const res = await fetch(`https://texttospeech.googleapis.com/v1/voices?key=${googleKey}`, {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        const data = await res.json();
+        return {
+          statusCode: 200,
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "Content-Type",
+          },
+          body: JSON.stringify({ voices: data.voices || [] }),
+        };
+      }
+
       case 'tts': {
         const ttsBody = {
           input: { text },

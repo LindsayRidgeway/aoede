@@ -1,3 +1,5 @@
+// app.config.js
+
 export default {
   expo: {
     name: "aoede",
@@ -33,8 +35,6 @@ export default {
       favicon: "./assets/favicon.png"
     },
     extra: {
-      OPENAI_API_KEY: process.env.OPENAI_API_KEY,
-      GOOGLE_API_KEY: process.env.GOOGLE_API_KEY,
       NO_IMMEDIATE: true,
       eas: {
         projectId: "0e70cf3b-940d-4f03-b264-4ea7953da859"

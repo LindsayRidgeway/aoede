@@ -23,23 +23,6 @@ if (Platform.OS === 'ios') {
 // Storage key for translated titles - must match the key in LibraryUI.js
 const TRANSLATED_TITLES_KEY = 'aoede_translated_titles';
 
-// Get API key using both old and new Expo Constants paths for compatibility
-const getConstantValue = (key) => {
-  if (Constants?.expoConfig?.extra && Constants.expoConfig.extra[key] !== undefined) {
-    return Constants.expoConfig.extra[key];
-  }
-  if (Constants?.manifest?.extra && Constants.manifest.extra[key] !== undefined) {
-    return Constants.manifest.extra[key];
-  }
-  if (Constants?.extra && Constants.extra[key] !== undefined) {
-    return Constants.extra[key];
-  }
-  if (Constants && Constants[key] !== undefined) {
-    return Constants[key];
-  }
-  return null;
-};
-
 export function HomeUI({
   fontsLoaded,
   studyLanguage,
