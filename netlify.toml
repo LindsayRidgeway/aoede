@@ -1,0 +1,4 @@
+[build]
+  command = "expo export -p web --output-dir docs/app"
+  publish = "docs/app"
+  functions = "netlify/functions"

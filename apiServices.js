@@ -8,9 +8,7 @@ import getSimplificationPrompt12 from './simplifiers/simplify12';
 import getSimplificationPrompt15 from './simplifiers/simplify15';
 import getSimplificationPrompt18 from './simplifiers/simplify18';
 
-// Get API keys using updated function
-const googleKey = getConstantValue('GOOGLE_API_KEY');
-const openaiKey = getConstantValue('OPENAI_API_KEY');
+const NETLIFY_ENDPOINT = "https://aoede-site.netlify.app/.netlify/functions/aoedeapi";
 
 // Global cache for supported languages
 let supportedLanguagesCache = null;
@@ -40,234 +38,63 @@ export const processSourceText = async (sourceText, bookLang, studyLang, userLan
   return await apiTranslateAndSimplifySentence(sourceText, bookLang, studyLang, userLang, readingLevel);
 };
 
-// NEW FUNCTIONS FOR AOEDE 4.0
-
-// Translate a sentence using OpenAI (cheaper but slower)
-export const apiTranslateSentenceCheap = async (text, sourceLang, targetLang) => {
-  if (!text || sourceLang === targetLang) return text;
-
-  const OPENAI_API_KEY = getConstantValue('OPENAI_API_KEY');
-  const API_URL = 'https://api.openai.com/v1/chat/completions';
-  const TRANSLATION_PROMPT = `Translate the input sentence from ${sourceLang} to ${targetLang}. Return only the translated sentence, with no comments or other output. Input: ${text}`;
-
+async function callAoedeAPI(payload) {
   try {
-    const response = await fetch(API_URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${OPENAI_API_KEY}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [
-          {
-            role: 'user',
-            content: TRANSLATION_PROMPT
-          }
-        ],
-        max_tokens: 400,
-        temperature: 0.3
-      })
+    const response = await fetch(NETLIFY_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
     });
-
-    if (!response.ok) {
-      return text;
-    }
-
     const data = await response.json();
-
-    if (!data.choices || data.choices.length === 0) {
-      return text;
-    }
-
-    return data.choices[0].message.content;
+    return data.result;
   } catch (error) {
-    return text;
-  }
-};
-
-// Translate a sentence using Google Translate (faster but more expensive)
-export const apiTranslateSentenceFast = async (text, sourceLang, targetLang) => {
-  if (!text || sourceLang === targetLang) return text;
-  
-  // Don't translate if already in target language
-  if (sourceLang === targetLang) {
-    return text;
-  }
-
-  const GOOGLE_API_KEY = getConstantValue('GOOGLE_API_KEY');
-  if (!GOOGLE_API_KEY) {
-    return text; // Can't translate without API key
-  }
-
-  try {
-    const response = await fetch(
-      `https://translation.googleapis.com/language/translate/v2?key=${GOOGLE_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          q: text,
-          source: sourceLang,
-          target: targetLang,
-          format: "text"
-        })
-      }
-    );
-    
-    if (!response.ok) {
-      return text; // Return original text if translation fails
-    }
-    
-    const data = await response.json();
-    
-    if (data.data?.translations?.length > 0) {
-      const translatedText = data.data.translations[0].translatedText;
-      return translatedText;
-    }
-    
-    return text; // Return original text if no translation
-  } catch (error) {
-    return text; // Return original text on error
-  }
-};
-
-// Translate and simplify a sentence
-export const apiTranslateAndSimplifySentence = async (sourceText, bookLang, studyLang, userLang, readingLevel = 6) => {
-  if (__DEV__) console.log("MODULE: apiServices.apiTranslateAndSimplifySentence");
-
-  const openaiKey = getConstantValue('OPENAI_API_KEY');
-  const apiUrl = 'https://api.openai.com/v1/chat/completions';
-
-  const getPrompt = getPromptForLevel(readingLevel);
-  const prompt = getPrompt(sourceText, bookLang, studyLang, userLang);
-
-  if (__DEV__) console.log("FETCH 0003");
-  if (__DEV__) console.log("MODULE 0030: apiServices.apiTranslateAndSimplifySentence.fetch");
-
-  try {
-    const response = await fetch(apiUrl, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openaiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o',
-        messages: [
-          {
-            role: 'user',
-            content: prompt
-          }
-        ],
-        max_tokens: 400,
-        temperature: 0.3
-      })
-    });
-
-    if (!response.ok) {
-      return null;
-    }
-
-    const data = await response.json();
-
-    if (!data.choices || data.choices.length === 0) {
-      return null;
-    }
-
-    return data.choices[0].message.content;
-  } catch (error) {
+    console.error("API call failed:", error);
     return null;
   }
-};
+}
 
-// Get supported languages from Google Translate API with caching
-export const apiGetSupportedLanguages = async (targetLanguage = 'en') => {
-  // Return cached result if available
-  if (supportedLanguagesCache) {
-    return supportedLanguagesCache;
-  }
+export async function apiTranslateSentenceCheap(text, sourceLang, targetLang) {
+  return await callAoedeAPI({
+    mode: "translateOpenAI",
+    text,
+    sourceLang,
+    targetLang,
+  });
+}
 
-  const GOOGLE_API_KEY = getConstantValue('GOOGLE_API_KEY');
-  if (!GOOGLE_API_KEY) {
-    return null;
-  }
+export async function apiTranslateSentenceFast(text, sourceLang, targetLang) {
+  return await callAoedeAPI({
+    mode: "translateGoogle",
+    text,
+    sourceLang,
+    targetLang,
+  });
+}
 
-  try {
-    const response = await fetch(
-      `https://translation.googleapis.com/language/translate/v2/languages?key=${GOOGLE_API_KEY}&target=${targetLanguage}`,
-      {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      }
-    );
-    
-    if (!response.ok) {
-      return null;
-    }
-    
-    const result = await response.json();
-    
-    if (result.data && result.data.languages) {
-      // Store in cache
-      supportedLanguagesCache = result.data.languages;
-      return result.data.languages;
-    }
-    
-    return null;
-  } catch (error) {
-    return null;
-  }
-};
+export async function apiTranslateAndSimplifySentence(text, bookLang, studyLang, userLang, readingLevel) {
+  return await callAoedeAPI({
+    mode: "simplify",
+    text,
+    bookLang,
+    studyLang,
+    userLang,
+    readingLevel,
+  });
+}
 
-// Text-to-speech using Google TTS API
-export const apiTextToSpeech = async (text, languageCode, speakingRate = 1.0, voiceName = null, ssmlGender = "FEMALE") => {
-  const GOOGLE_API_KEY = getConstantValue('GOOGLE_API_KEY');
-  
-  if (!GOOGLE_API_KEY || !text) {
-    return null;
-  }
-  
-  try {
-    // Preparing TTS request body
-    const requestBody = {
-      input: { text: text },
-      voice: { 
-        languageCode: languageCode,
-        ssmlGender: ssmlGender
-      },
-      audioConfig: { 
-        audioEncoding: "MP3",
-        speakingRate: speakingRate
-      }
-    };
-    
-    // If a specific voice name is provided, use it
-    if (voiceName) {
-      requestBody.voice.name = voiceName;
-    }
-    
-    if (__DEV__) console.log("FETCH: apiTextToSpeech");
-    const response = await fetch(
-      `https://texttospeech.googleapis.com/v1/text:synthesize?key=${GOOGLE_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(requestBody),
-      }
-    );
-    
-    if (!response.ok) {
-      if (__DEV__) console.log(`TTS API error: ${response.status} ${response.statusText}`);
-      return null;
-    }
-    
-    const data = await response.json();
-    return data.audioContent || null; // Return Base64 encoded audio
-  } catch (error) {
-    if (__DEV__) console.log(`Error in apiTextToSpeech: ${error.message}`);
-    return null;
-  }
-};
+export async function apiGetSupportedLanguages(targetLang = "en") {
+  return await callAoedeAPI({
+    mode: "getLanguages",
+    targetLang,
+  });
+}
+
+export async function apiTextToSpeech(text, languageCode, speakingRate = 1.0, voiceName = null) {
+  return await callAoedeAPI({
+    mode: "tts",
+    text,
+    languageCode,
+    speakingRate,
+    voiceName,
+  });
+}
