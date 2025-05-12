@@ -6,7 +6,6 @@ import BookPipe from './bookPipeCore';
 import { bookPipeProcess } from './bookPipeProcess';
 import { Platform, Alert } from 'react-native';
 import { getUserLibrary, getBookById } from './userLibrary';
-import { debugLog } from './DebugPanel';
 
 class BookReader {
   constructor() {
@@ -439,16 +438,7 @@ class BookReader {
       
       // Extract sentences using our improved method
       this.bookSentences = this.extractSentencesFromText(textFromAnchor);
-      
-	  /*
-      // Only log a sample of sentences to avoid flooding the debug log
-      const sampleSize = Math.min(3, this.bookSentences.length);
-      for (let i = 0; i < sampleSize; i++) {
-        const sentence = this.bookSentences[i];
-        debugLog(`Sentence ${i + 1}: "${sentence}"`);
-      }
-	  */
-      
+            
       return true;
     } catch (error) {
       this.bookSentences = [];

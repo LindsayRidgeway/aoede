@@ -406,7 +406,7 @@ export function LibraryUI({
       
       // Only apply proxy in web environment
       if (Platform.OS === 'web') {
-        // Use a proxy for web requests to avoid cross-origin issues
+        // Use a reliable CORS proxy specifically for the search functionality
         const corsProxy = 'https://api.codetabs.com/v1/proxy?quest=';
         const encodedUrl = encodeURIComponent(url);
         const proxyUrl = `${corsProxy}${encodedUrl}`;
