@@ -1,4 +1,4 @@
-const getSimplificationPrompt = (sourceText, bookLanguage, studyLanguage) => {
+const getSimplificationPrompt = ({sourceText, bookLanguage, studyLanguage}) => {
   return `Your input (see below) is a sentence in ${bookLanguage}.
 
 Please generate your output as follows:

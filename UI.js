@@ -209,12 +209,7 @@ export function MainUI(props) {
   // Go to end of book - new function
   const handleGoToEndOfBook = async () => {
     try {
-      if (props.handleGoToEndOfBook) {
         await props.handleGoToEndOfBook();
-      } else {
-        // Fallback implementation - will need to be implemented in BookReader
-        console.log("Go to end of book - functionality not yet implemented");
-      }
     } catch (error) {
       console.error("Error going to end of book:", error);
     }

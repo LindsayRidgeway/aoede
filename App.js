@@ -6,7 +6,7 @@ import MainUI from './UI';
 // import { MainUI } from './UI';
 import ListeningSpeed from './listeningSpeed';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { processSourceText, translateBatch, apiTranslateSentenceCheap, apiTranslateSentenceFast } from './apiServices';
+import { translateBatch, apiTranslateSentenceCheap, apiTranslateSentenceFast } from './apiServices';
 import { translateSentences, detectLanguageCode } from './textProcessing';
 import BookReader from './bookReader';
 import { bookSources } from './bookSources';

@@ -1,6 +1,23 @@
 // functions/aoedeApi.js — CORS-enabled version
 
+const getSimplificationPrompt6 = require('./simplifiers/simplify6.js').default;
+const getSimplificationPrompt9 = require('./simplifiers/simplify9.js').default;
+const getSimplificationPrompt12 = require('./simplifiers/simplify12.js').default;
+const getSimplificationPrompt15 = require('./simplifiers/simplify15.js').default;
+const getSimplificationPrompt18 = require('./simplifiers/simplify18.js').default;
+
 const fetch = require('node-fetch');
+
+const getPromptForLevel = (readingLevel) => {
+  const map = {
+    6: getSimplificationPrompt6,
+    9: getSimplificationPrompt9,
+    12: getSimplificationPrompt12,
+    15: getSimplificationPrompt15,
+    18: getSimplificationPrompt18,
+  };
+  return map[readingLevel] || getSimplificationPrompt6;
+};
 
 exports.handler = async (event, context) => {
   const { mode, text, sourceLang, targetLang, bookLang, studyLang, userLang, readingLevel, speakingRate, voiceName, languageCode } = JSON.parse(event.body || '{}');
@@ -65,7 +82,12 @@ exports.handler = async (event, context) => {
       }
 
       case 'simplify': {
-        const prompt = `Translate the sentence below from ${bookLang} to ${studyLang}, simplify it according to reading level ${readingLevel}, and then translate it to ${userLang}. Return both study language and user language results. Sentence: ${text}`;
+        const promptFn = getPromptForLevel(readingLevel);
+		const prompt = promptFn({
+		  sourceText: text,
+		  bookLanguage: bookLang,
+		  studyLanguage: studyLang,
+		});
         const res = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {

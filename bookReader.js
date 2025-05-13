@@ -1,6 +1,6 @@
 // bookReader.js - Manages reading state for books according to the specified pseudocode
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { processSourceText, apiTranslateSentenceCheap } from './apiServices';
+import { apiTranslateAndSimplifySentence, apiTranslateSentenceCheap } from './apiServices';
 import { parseIntoSentences, detectLanguageCode } from './textProcessing';
 import BookPipe from './bookPipeCore';
 import { bookPipeProcess } from './bookPipeProcess';
@@ -651,17 +651,7 @@ class BookReader {
   // Process a single sentence with OpenAI API
   async processSentenceWithOpenAI(sentence) {
     try {
-      // Import the simplification prompt using dynamic import
-      let simplificationPrompt;
-      try {
-        const simplifierModule = await import('./simplifiers/simplify6.js');
-        simplificationPrompt = simplifierModule.default;
-      } catch (importError) {
-        throw new Error("Could not load simplification prompt");
-      }
-      
-      // Call the API using processSourceText from apiServices
-      const processedText = await processSourceText(
+     const processedText = await apiTranslateAndSimplifySentence(
         sentence, 
         this.bookLanguage, 
         this.studyLanguage, 

@@ -2,3 +2,9 @@
   command = "expo export -p web --output-dir docs/app"
   publish = "docs/app"
   functions = "netlify/functions"
+  
+[functions]
+  node_bundler = "esbuild"
+
+[functions.aoedeapi]
+  included_files = ["netlify/functions/simplifiers/*.js"]

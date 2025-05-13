@@ -29,10 +29,7 @@ export const bookPipeFetch = {
 
       // Use robust fetch utility to retrieve HTML content
       if (__DEV__) console.log("MODULE 0055: bookPipeFetch.fetch");
-      pipe.htmlContent = await fetchUrl(pipe.bookUrl);
-      
-      if (__DEV__) console.log("BOOK_PIPE_FETCH.1 htmlContent.length=", pipe.htmlContent.length);
-      
+      pipe.htmlContent = await fetchUrl(pipe.bookUrl);            
     } catch (error) {
       if (__DEV__) console.log(`Fatal fetch error: ${error.message}`);
       throw error;
