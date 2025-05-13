@@ -24,7 +24,7 @@
         .container {
             max-width: 900px;
             margin: auto;
-            padding: 80px 20px 20px 20px;
+            padding: 30px 20px 20px 20px;
             background: white;
             box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
             border-radius: 10px;
@@ -46,7 +46,7 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-top: 20px;
+            margin-top: 10px; /* Reduced from 20px to 10px */
             width: 100%;
         }
         .features {
@@ -66,8 +66,8 @@
         .header-content {
             position: relative;
             width: 100%;
-            margin-bottom: 60px;
-            padding-top: 20px;
+            margin-bottom: 20px; /* Reduced from 30px to 20px */
+            padding-top: 10px;
             height: 100px;
             display: flex;
             align-items: center;
@@ -94,11 +94,21 @@
             height: 100%;
         }
         
+        /* Key Features adjustments */
+        .key-features-heading {
+            color: #aaaaaa;
+            font-style: italic;
+            margin-top: 20px; /* Reduced space above Key Features */
+            margin-bottom: 10px;
+            text-align: left;
+            width: 100%;
+        }
+        
         /* Progressive responsive adjustments */
         @media (max-width: 700px) {
             .logo-wrapper {
                 justify-content: flex-start;
-                padding-left: 5%;
+                padding-left: 20%;
             }
             .logo-container {
                 margin: 0;
@@ -107,7 +117,7 @@
         
         @media (max-width: 600px) {
             .logo-wrapper {
-                padding-left: 0;
+                padding-left: 15%;
             }
             .header-text {
                 right: 5%;
@@ -117,7 +127,7 @@
         @media (max-width: 480px) {
             /* Even on smallest screens, maintain horizontal layout */
             .logo-wrapper {
-                padding-left: 0;
+                padding-left: 10%;
             }
             .logo-container {
                 width: 80px;
@@ -164,7 +174,7 @@
         </p>
         <div class="content">
             <div class="features">
-                <h2>Key Features:</h2>
+                <h2 class="key-features-heading">Key Features:</h2>
                 <ul>
                     <li>Study any language by reading and listening to classic works of literature.</li>
                     <li>Practice listening sentence-by-sentence with adjustable reading speed.</li>
