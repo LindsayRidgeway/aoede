@@ -81,23 +81,66 @@
             font-style: italic;
         }
         .header-content {
-            display: flex;
-            align-items: center;
-            width: 100%;
             position: relative;
+            width: 100%;
             margin-bottom: 60px;
             padding-top: 20px;
+            min-height: 100px;
+            display: flex;
+            align-items: center;
         }
         .logo-container {
             position: absolute;
             left: 50%;
             transform: translateX(-50%);
+            max-width: 100px;
+            z-index: 1;
         }
         .header-text {
-            text-align: left;
             position: absolute;
             right: 10%;
             font-size: 85%;
+            text-align: right;
+            font-style: italic;
+            width: 180px; /* Fixed width for the text */
+        }
+        
+        /* This is the key part - calculate logo position based on content width */
+        @media (max-width: 700px) {
+            .logo-container {
+                left: calc(50% - ((700px - 100%) / 4));
+            }
+        }
+        
+        @media (max-width: 600px) {
+            .logo-container {
+                left: calc(50% - ((600px - 100%) / 3));
+            }
+        }
+        
+        @media (max-width: 500px) {
+            .logo-container {
+                left: calc(50% - ((500px - 100%) / 2.5));
+            }
+        }
+        
+        /* Mobile fallback when logo must jump to a new position */
+        @media (max-width: 450px) {
+            .header-content {
+                flex-direction: column;
+                align-items: center;
+            }
+            .logo-container {
+                position: relative;
+                left: auto;
+                transform: none;
+                margin: 0 auto 20px auto;
+            }
+            .header-text {
+                position: static;
+                text-align: center;
+                width: 100%;
+            }
         }
     </style>
 </head>
@@ -108,10 +151,10 @@
                 <img class="logo" src="aoede_logo.png" alt="Aoede Logo">
             </div>
             <div class="header-text">
-                <p><i>
+                <p>
                 No download required.<br/>
                 Just click <a href="https://aoede-site.netlify.app">here</a>.
-                </i></p>
+                </p>
             </div>
         </div>
         <h1>AOEDE (ay-EE-dee) - A Language Study App</h1>
