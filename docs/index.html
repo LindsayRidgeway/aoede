@@ -46,7 +46,7 @@
             display: flex;
             justify-content: space-between;
             align-items: flex-start;
-            margin-top: 10px;
+            margin-top: 10px; /* Reduced from 20px to 10px */
             width: 100%;
         }
         .features {
@@ -63,25 +63,26 @@
             border-radius: 5px;
             box-shadow: 5px 5px 15px rgba(0,0,0,0.3);
         }
-
-        /* Header section with revised logo positioning */
         .header-content {
             position: relative;
             width: 100%;
-            margin-bottom: 20px;
+            margin-bottom: 20px; /* Reduced from 30px to 20px */
             padding-top: 10px;
             height: 100px;
             display: flex;
             align-items: center;
         }
-        
+        .logo-wrapper {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+        }
         .logo-container {
             width: 100px;
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
+            margin: 0 auto;
         }
-        
         .header-text {
             position: absolute;
             right: 10%;
@@ -91,20 +92,32 @@
             display: flex;
             align-items: center;
             height: 100%;
-            width: 180px;
+        }
+        
+        /* Key Features adjustments */
+        .key-features-heading {
+            color: #aaaaaa;
+            font-style: italic;
+            margin-top: 20px; /* Reduced space above Key Features */
+            margin-bottom: 10px;
+            text-align: left;
+            width: 100%;
         }
         
         /* Progressive responsive adjustments */
         @media (max-width: 700px) {
+            .logo-wrapper {
+                justify-content: flex-start;
+                padding-left: 20%;
+            }
             .logo-container {
-                left: 20%;
-                transform: none;
+                margin: 0;
             }
         }
         
         @media (max-width: 600px) {
-            .logo-container {
-                left: 15%;
+            .logo-wrapper {
+                padding-left: 15%;
             }
             .header-text {
                 right: 5%;
@@ -112,37 +125,20 @@
         }
         
         @media (max-width: 480px) {
-            .header-content {
-                flex-direction: column;
-                height: auto;
-                padding-bottom: 10px;
+            /* Even on smallest screens, maintain horizontal layout */
+            .logo-wrapper {
+                padding-left: 10%;
             }
             .logo-container {
-                position: static;
                 width: 80px;
-                margin: 0 auto 15px auto;
-                transform: none;
             }
             .logo-container img {
                 max-width: 80px;
             }
             .header-text {
-                position: static;
-                text-align: center;
-                justify-content: center;
-                width: 100%;
-                height: auto;
+                right: 2%;
+                font-size: 75%;
             }
-        }
-        
-        /* Key Features adjustments */
-        .key-features-heading {
-            color: #aaaaaa;
-            font-style: italic;
-            margin-top: 20px;
-            margin-bottom: 10px;
-            text-align: left;
-            width: 100%;
         }
         
         /* Content adjustments for small screens */
@@ -160,8 +156,10 @@
 <body>
     <div class="container">
         <div class="header-content">
-            <div class="logo-container">
-                <img class="logo" src="aoede_logo.png" alt="Aoede Logo">
+            <div class="logo-wrapper">
+                <div class="logo-container">
+                    <img class="logo" src="aoede_logo.png" alt="Aoede Logo">
+                </div>
             </div>
             <div class="header-text">
                 <p>
