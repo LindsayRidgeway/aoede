@@ -223,7 +223,7 @@ export const bookSources = [
   },
   {
     id: "gulliverstravels",
-    title: "*Gulliver's Travels by Jonathan Swift",
+    title: "Gulliver's Travels by Jonathan Swift",
     author: "Jonathan Swift",
     url: "https://www.gutenberg.org/files/829/829-h/829-h.htm#intro01",
     language: "en",
