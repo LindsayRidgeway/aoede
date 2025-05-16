@@ -55,17 +55,6 @@ export const bookSources = [
     language: "en",
     format: "text"
   },
-    /*
-  {
-    id: "brotherskaramazov",
-    title: "The Brothers Karamazov by Fyodor Dostoyevsky",
-    author: "Fyodor Dostoyevsky",
-    url: "https://www.gutenberg.org/files/28054/28054-h/28054-h.htm#PART_I",
-    language: "en",
-    format: "text"
-    },
-    */
-    /*
   {
     id: "annakarenina", 
     title: "Anna Karenina by Leo Tolstoy",
@@ -74,7 +63,7 @@ export const bookSources = [
     language: "en",
     format: "text"
     },
-    */
+  /*
   {
     id: "anthem",
     title: "Anthem by Ayn Rand",
@@ -83,6 +72,7 @@ export const bookSources = [
     language: "en",
     format: "text"
   },
+  */
   {
     id: "eightydays",
     title: "Around the World in Eighty Days by Jules Verne",
@@ -91,6 +81,14 @@ export const bookSources = [
     language: "en",
     format: "text"
   },
+  {
+    id: "brotherskaramazov",
+    title: "The Brothers Karamazov by Fyodor Dostoyevsky",
+    author: "Fyodor Dostoyevsky",
+    url: "https://www.gutenberg.org/files/28054/28054-h/28054-h.htm#part01",
+    language: "en",
+    format: "text"
+    },
   {
     id: "callofthewild", 
     title: "The Call of the Wild by Jack London",
@@ -117,16 +115,15 @@ export const bookSources = [
     format: "text"
     },
     */
-    /*
   {
     id: "montecristo", 
-    title: "*The Count of Monte Cristo by Alexandre Dumas",
+    title: "The Count of Monte Cristo by Alexandre Dumas",
     author: "Alexandre Dumas",
     url: "https://www.gutenberg.org/files/1184/1184-h/1184-h.htm#linkC2HCH0001",
     language: "en",
     format: "text"
     },
-    */
+  /*
   {
     id: "crimeandpunishment", 
     title: "Crime and Punishment by Fyodor Dostoyevsky",
@@ -143,6 +140,7 @@ export const bookSources = [
     language: "it",
     format: "text"
   },
+  */
     /*
   {
     id: "divinecomedy",
@@ -153,6 +151,7 @@ export const bookSources = [
     format: "text"
   },
     */
+  /*
   {
     id: "dollshouse", 
     title: "A Doll's House by Henrik Ibsen",
@@ -177,6 +176,7 @@ export const bookSources = [
     language: "en",
     format: "text"
     },
+  */
   {
     id: "dracula", 
     title: "Dracula by Bram Stoker",
@@ -185,6 +185,7 @@ export const bookSources = [
     language: "en",
     format: "text"
   },
+  /*
   {
     id: "emma",
     title: "Emma by Jane Austen",
@@ -193,6 +194,7 @@ export const bookSources = [
     language: "en",
     format: "text"
   },
+  */
   {
     id: "frankenstein", 
     title: "Frankenstein by Mary Shelley",
@@ -201,6 +203,7 @@ export const bookSources = [
     language: "en",
     format: "text"
   },
+  /*
   {
     id: "greatexpectations",
     title: "Great Expectations by Charles Dickens",
@@ -209,6 +212,7 @@ export const bookSources = [
     language: "en",
     format: "text"
   },
+  */
   {
     id: "greatgatsby", 
     title: "The Great Gatsby by F. Scott Fitzgerald",
@@ -217,36 +221,31 @@ export const bookSources = [
     language: "en",
     format: "text"
   },
-    /*
   {
     id: "gulliverstravels",
     title: "*Gulliver's Travels by Jonathan Swift",
     author: "Jonathan Swift",
-    url: "https://www.gutenberg.org/files/829/829-h/829-h.htm",
+    url: "https://www.gutenberg.org/files/829/829-h/829-h.htm#intro01",
     language: "en",
     format: "text"
   },
-    */
-    /*
   {
     id: "heartofdarkness",
-    title: "*Heart of Darkness by Joseph Conrad",
+    title: "Heart of Darkness by Joseph Conrad",
     author: "Joseph Conrad",
-    url: "https://www.gutenberg.org/files/219/219-h/219-h.htm",
+    url: "https://www.gutenberg.org/files/219/219-h/219-h.htm#link2H_4_0001",
     language: "en",
     format: "text"
   },
-    */
-    /*
   {
     id: "houndofbaskervilles",
-    title: "*The Hound of the Baskervilles by Arthur Conan Doyle",
+    title: "The Hound of the Baskervilles by Arthur Conan Doyle",
     author: "Arthur Conan Doyle",
-    url: "https://www.gutenberg.org/files/2852/2852-h/2852-h.htm",
+    url: "https://www.gutenberg.org/files/2852/2852-h/2852-h.htm#chap01",
     language: "en",
     format: "text"
   },
-    */
+  /*
   {
     id: "iliad", 
     title: "The Iliad by Homer",
@@ -255,6 +254,7 @@ export const bookSources = [
     language: "en",
     format: "text"
   },
+  */
     /*
   {
     id: "iliad2",
@@ -293,16 +293,15 @@ export const bookSources = [
     language: "en",
     format: "text"
   },
-    /*
   {
     id: "lesmiserables", 
-    title: "*Les Misérables by Victor Hugo",
+    title: "Les Misérables by Victor Hugo",
     author: "Victor Hugo",
-    url: "https://www.gutenberg.org/files/135/135-h/135-h.htm#link2H_PREF",
+    url: "https://www.gutenberg.org/files/135/135-h/135-h.htm#link2H_4_0002",
     language: "en",
     format: "text"
     },
-    */
+  /*
   {
     id: "leviathan",
     title: "Leviathan by Thomas Hobbes",
@@ -311,6 +310,7 @@ export const bookSources = [
     language: "en",
     format: "text"
   },
+  */
   {
     id: "littleprince",
     title: "Le Petit Prince by Antoine de Saint-Exupéry",
@@ -319,6 +319,7 @@ export const bookSources = [
     language: "fr",
     format: "text"
   },
+  /*
   {
     id: "littlewomen", 
     title: "Little Women by Louisa May Alcott",
@@ -327,16 +328,15 @@ export const bookSources = [
     language: "en",
     format: "text"
   },
-    /*
+  */
   {
     id: "metamorphosis",
-    title: "*Metamorphosis by Franz Kafka",
+    title: "Metamorphosis by Franz Kafka",
     author: "Franz Kafka",
-    url: "https://www.gutenberg.org/files/5200/5200-h/5200-h.htm",
-    language: "en",
+    url: "https://www.gutenberg.org/files/22367/22367-h/22367-h.htm#Page_5",
+    language: "de",
     format: "text"
   },
-    */
   {
     id: "mobydick", 
     title: "Moby Dick by Herman Melville",
@@ -367,10 +367,11 @@ export const bookSources = [
     id: "olivertwist",
     title: "Oliver Twist by Charles Dickens",
     author: "Charles Dickens",
-    url: "https://www.gutenberg.org/files/730/730-h/730-h.htm#chap1",
+    url: "https://www.gutenberg.org/files/730/730-h/730-h.htm#chap01",
     language: "en",
     format: "text"
   },
+  /*
   {
     id: "persuasion",
     title: "Persuasion by Jane Austen",
@@ -379,16 +380,15 @@ export const bookSources = [
     language: "en",
     format: "text"
   },
-    /*
+  */
   {
     id: "peterpan",
-    title: "*Peter Pan by J. M. Barrie",
+    title: "Peter Pan by J. M. Barrie",
     author: "J. M. Barrie",
-    url: "https://www.gutenberg.org/files/16/16-h/16-h.htm",
+    url: "https://www.gutenberg.org/files/16/16-h/16-h.htm#chap01",
     language: "en",
     format: "text"
   },
-    */
   {
     id: "pictureofdoriangray",
     title: "The Picture of Dorian Gray by Oscar Wilde",
@@ -397,6 +397,7 @@ export const bookSources = [
     language: "en",
     format: "text"
   },
+  /*
   {
     id: "prideandprejudice", 
     title: "Pride and Prejudice by Jane Austen",
@@ -405,6 +406,7 @@ export const bookSources = [
     language: "en",
     format: "text"
   },
+  */
     /*
   {
     id: "theprince",
@@ -415,6 +417,7 @@ export const bookSources = [
     format: "text"
   },
     */
+  /*
   {
     id: "republic", 
     title: "The Republic by Plato",
@@ -439,6 +442,7 @@ export const bookSources = [
     language: "en",
     format: "text"
   },
+  */
     /*
   {
     id: "soulsofblackfolk",
@@ -457,6 +461,7 @@ export const bookSources = [
     language: "en",
     format: "text"
   },
+  /*
   {
     id: "zarathustra", 
     title: "Thus Spake Zarathustra by Friedrich Nietzsche",
@@ -465,6 +470,7 @@ export const bookSources = [
     language: "en",
     format: "text"
   },
+  */
   {
     id: "treasureisland", 
     title: "Treasure Island by Robert Louis Stevenson",
@@ -476,7 +482,7 @@ export const bookSources = [
     /*
   {
     id: "ulysses",
-    title: "*Ulysses by James Joyce",
+    title: "Ulysses by James Joyce",
     author: "James Joyce",
     url: "https://www.gutenberg.org/files/4300/4300-h/4300-h.htm",
     language: "en",
