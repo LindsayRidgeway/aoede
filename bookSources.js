@@ -393,7 +393,7 @@ export const bookSources = [
     id: "pictureofdoriangray",
     title: "The Picture of Dorian Gray by Oscar Wilde",
     author: "Oscar Wilde",
-    url: "https://www.gutenberg.org/files/174/174-h/174-h.htm#chap1",
+    url: "https://www.gutenberg.org/files/174/174-h/174-h.htm#chap00",
     language: "en",
     format: "text"
   },
