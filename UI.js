@@ -1,7 +1,8 @@
-// UI.js - Main UI file that imports and renders module components
+// UI.js - Main UI file with gamepad support
 import React, { useState, useEffect } from 'react';
 import { SafeAreaView, ScrollView, View, Text, Image } from 'react-native';
 import { styles } from './styles';
+// Import from our gamepad-enabled components
 import { HomeUI } from './HomeUI';
 import { ReadingUI } from './ReadingUI';
 import { LibraryUI } from './LibraryUI';
@@ -10,6 +11,7 @@ import * as Font from 'expo-font';
 import { initializeUserLibrary } from './userLibrary';
 import { getBookById } from './userLibrary';
 import { Platform } from 'react-native';
+import gamepadManager from './gamepadSupport';
 
 // Explicitly export MainUI as a named export
 export function MainUI(props) {
@@ -38,6 +40,14 @@ export function MainUI(props) {
     };
     
     initLibrary();
+  }, []);
+  
+  // Initialize gamepad support for web platform
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      // Initialize gamepad support
+      gamepadManager.init();
+    }
   }, []);
   
   // Update showContent when sentence changes
@@ -180,6 +190,17 @@ export function MainUI(props) {
     const success = await props.loadBook();
     if (success) {
       setActiveView('reading');
+      
+      // Register gamepad callbacks for the book view if on web platform
+      if (Platform.OS === 'web') {
+        gamepadManager.registerCallbacks({
+          onNext: props.nextSentence,
+          onListen: props.speakSentence,
+          onPrevious: props.handlePreviousSentence,
+          onBeginningOfBook: props.rewindBook,
+          onEndOfBook: props.handleGoToEndOfBook
+        });
+      }
     }
     return success;
   };

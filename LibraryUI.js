@@ -1,4 +1,4 @@
-// LibraryUI.js - Component for the library screen with search and management
+// LibraryUI.js - Component for the library screen with search, management and gamepad support
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   View, Text, TouchableOpacity, Modal, TextInput,
@@ -11,6 +11,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiTranslateSentenceFast } from './apiServices';
 import { fetchUrl } from './fetchUtils';
 import Constants from 'expo-constants';
+import gamepadManager from './gamepadSupport';
+import GamepadIndicator from './gamepadIndicator';
 
 // Storage key for translated titles
 const TRANSLATED_TITLES_KEY = 'aoede_translated_titles';
@@ -35,6 +37,21 @@ export function LibraryUI({
   
   // Current mode: 'library' or 'search'
   const [activeMode, setActiveMode] = useState('library');
+
+  // Initialize gamepad support when library becomes visible
+  useEffect(() => {
+    if (visible && Platform.OS === 'web') {
+      // Initialize gamepad support
+      gamepadManager.init();
+      
+      // Register callbacks - we'll use primary button for activating elements
+      gamepadManager.registerCallbacks({
+        onPrimary: () => {
+          // The primary button is handled by the gamepadManager's clickCurrentFocusedElement
+        }
+      });
+    }
+  }, [visible]);
   
   // Enhanced Exit button with 3D metallic burgundy style
   const enhancedExitButtonStyle = Platform.OS === 'web'
@@ -804,13 +821,14 @@ export function LibraryUI({
   };
 
   // Render a library book item
-  const renderLibraryBookItem = ({ item }) => (
+  const renderLibraryBookItem = ({ item, index }) => (
     <View style={styles.bookListItem}>
       <View style={styles.bookInfoContainer}>
         <Text style={styles.bookTitle}>{getBookTitle(item)}</Text>
         <Text style={styles.bookLanguage}>{item.language}</Text>
       </View>
       <TouchableOpacity
+        id={`delete-button-${index}`}
         style={styles.deleteButton}
         onPress={() => handleDeleteBook(item)}
       >
@@ -820,7 +838,7 @@ export function LibraryUI({
   );
   
   // Render a search result item
-  const renderSearchResultItem = ({ item }) => (
+  const renderSearchResultItem = ({ item, index }) => (
     <View style={styles.bookListItem}>
       <View style={styles.bookInfoContainer}>
         <TouchableOpacity onPress={() => handleOpenURL(item.url)}>
@@ -829,6 +847,7 @@ export function LibraryUI({
         <Text style={styles.bookLanguage}>{item.language}</Text>
       </View>
       <TouchableOpacity
+        id={`add-button-${index}`}
         style={styles.addButton}
         onPress={() => handleAddBook(item)}
       >
@@ -852,6 +871,7 @@ export function LibraryUI({
               {uiText.library || "Library"}
             </Text>
             <TouchableOpacity 
+              id="library-close-button"
               style={enhancedExitButtonStyle} 
               onPress={handleClose}
             >
@@ -864,6 +884,7 @@ export function LibraryUI({
           {/* Tab buttons for Library/Search */}
           <View style={styles.tabsContainer}>
             <TouchableOpacity
+              id="tab-library"
               style={[
                 styles.tabButton,
                 activeMode === 'library' ? styles.activeTabButton : null
@@ -879,6 +900,7 @@ export function LibraryUI({
             </TouchableOpacity>
             
             <TouchableOpacity
+              id="tab-search"
               style={[
                 styles.tabButton,
                 activeMode === 'search' ? styles.activeTabButton : null
@@ -899,6 +921,7 @@ export function LibraryUI({
             <View style={styles.searchContainer}>
               <View style={styles.searchInputContainer}>
                 <TextInput
+                  id="search-input"
                   style={styles.searchInput}
                   placeholder={uiText.searchPlaceholder || "Search Project Gutenberg by title, author, or subject"}
                   placeholderTextColor="#bbbbbb"
@@ -909,6 +932,7 @@ export function LibraryUI({
                   editable={!isSearching}
                 />
                 <TouchableOpacity
+                  id="search-button"
                   style={isSearching ? enhancedStopButtonStyle : enhancedSearchButtonStyle}
                   onPress={handleSearch}
                 >
@@ -935,7 +959,15 @@ export function LibraryUI({
                     renderItem={renderSearchResultItem}
                     keyExtractor={(item, index) => `search_${index}`}
                     contentContainerStyle={styles.bookList}
-                    ListEmptyComponent={null} // No empty state prompt
+                    ListEmptyComponent={
+                      !isSearching && searchQuery.trim() ? (
+                        <View style={styles.emptyResultsContainer}>
+                          <Text style={styles.emptyResultsText}>
+                            No books found matching "{searchQuery}"
+                          </Text>
+                        </View>
+                      ) : null
+                    }
                   />
                 )}
               </View>
@@ -968,8 +1000,13 @@ export function LibraryUI({
               )}
             </View>
           )}
+
+          {/* Smart gamepad indicator - only shows when gamepad is connected */}
+          <GamepadIndicator />
         </View>
       </SafeAreaView>
     </Modal>
   );
 }
+
+export default LibraryUI;

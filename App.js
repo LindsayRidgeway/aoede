@@ -1,4 +1,4 @@
-// App.js - Main application component that manages global state and UI rendering for Aoede language learning app
+// App.js - Modified to include gamepad support
 import React, { useState, useEffect } from 'react';
 import { Alert, Platform, NativeModules } from 'react-native';
 // Fix import for MainUI - try importing both ways to be safe
@@ -13,6 +13,9 @@ import { bookSources } from './bookSources';
 import Constants from 'expo-constants';
 import { initializeUserLibrary, getUserLibrary, getBookById } from './userLibrary';
 import DebugPanel from './DebugPanel';
+
+// Import the gamepad manager for web platform
+import gamepadManager from './gamepadSupport';
 
 // Get the user's preferred locale/language using multiple methods for better reliability
 const getDeviceLanguage = async () => {
@@ -207,6 +210,11 @@ export default function App() {
         
         // Initialize BookReader
         BookReader.initialize(handleSentenceProcessed, deviceLang || 'en');
+        
+        // Initialize gamepad support if on web platform
+        if (Platform.OS === 'web') {
+          gamepadManager.init();
+        }
       } catch (error) {
         // Silent error handling
       }
@@ -652,6 +660,17 @@ export default function App() {
       // Update total sentences after book is loaded
       if (BookReader.bookSentences) {
         setTotalSentences(BookReader.bookSentences.length);
+      }
+      
+      // If on web platform, register gamepad callbacks for this book
+      if (Platform.OS === 'web') {
+        gamepadManager.registerCallbacks({
+          onNext: handleNextSentence,
+          onListen: handleToggleSpeak,
+          onPrevious: handlePreviousSentence,
+          onBeginningOfBook: handleRewindBook,
+          onEndOfBook: handleGoToEndOfBook
+        });
       }
       
       return true;

@@ -1,4 +1,4 @@
-// HomeUI.js - Component for the home/load panel
+// HomeUI.js - Home UI with added gamepad support
 import React, { useState, useEffect } from 'react';
 import { 
   Text, View, TouchableOpacity, Image, 
@@ -11,6 +11,8 @@ import Constants from 'expo-constants';
 import { getUserLibrary } from './userLibrary';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiTranslateSentenceFast, apiGetSupportedLanguages } from './apiServices';
+import gamepadManager from './gamepadSupport';
+import GamepadIndicator from './gamepadIndicator';
 
 // Import iOS-specific components conditionally
 let IosPickers = null;
@@ -59,7 +61,15 @@ export function HomeUI({
   const [tempSelectedBook, setTempSelectedBook] = useState(null);
   
   // State for the user's book library
-  const [bookLibrary, setBookLibrary] = useState([]);
+  const [books, setBooks] = useState([]);
+  
+  // Initialize gamepad support for web platform
+  useEffect(() => {
+    if (Platform.OS === 'web') {
+      // Initialize gamepad support
+      gamepadManager.init();
+    }
+  }, []);
   
   // Enhanced Library button with 3D metallic burgundy style
   const enhancedLibraryButtonStyle = Platform.OS === 'web'
@@ -216,7 +226,7 @@ export function HomeUI({
           return titleA.localeCompare(titleB);
         });
         
-        setBookLibrary(sortedBooks);
+        setBooks(sortedBooks);
         setFilteredBooks(sortedBooks);
         
         // If the currently selected book was deleted, clear the selection
@@ -269,15 +279,15 @@ export function HomeUI({
   // Update filtered books when search text changes
   useEffect(() => {
     if (searchText) {
-      const filtered = bookLibrary.filter(book => 
+      const filtered = books.filter(book => 
         getBookTitle(book).toLowerCase().includes(searchText.toLowerCase()) ||
         book.author.toLowerCase().includes(searchText.toLowerCase())
       );
       setFilteredBooks(filtered);
     } else {
-      setFilteredBooks(bookLibrary);
+      setFilteredBooks(books);
     }
-  }, [searchText, uiText, bookLibrary]);
+  }, [searchText, uiText, books]);
   
   // Update filtered languages when search text changes
   useEffect(() => {
@@ -323,14 +333,14 @@ export function HomeUI({
   // Update displayed book title when selection changes or when books are reloaded
   useEffect(() => {
     if (selectedBook) {
-      const book = bookLibrary.find(b => b.id === selectedBook);
+      const book = books.find(b => b.id === selectedBook);
       if (book) {
         setDisplayBookTitle(getBookTitle(book));
       }
     } else {
       setDisplayBookTitle(uiText.enterBook || "Select a book");
     }
-  }, [selectedBook, uiText, bookLibrary]);
+  }, [selectedBook, uiText, books]);
   
   // Get translated book titles from uiText for dropdown
   const getBookTitle = (book) => {
@@ -396,7 +406,7 @@ export function HomeUI({
     setSelectedBook(itemValue);
     handleClearContent(); // Clear content when book selection changes
     if (itemValue) {
-      const book = bookLibrary.find(b => b.id === itemValue);
+      const book = books.find(b => b.id === itemValue);
       if (book) {
         setDisplayBookTitle(getBookTitle(book));
       }
@@ -450,10 +460,11 @@ export function HomeUI({
       );
     }
     
-    // For Web, use the standard Picker styled like a text input
+    // For Web, use the standard Picker styled like a text input with ID for gamepad
     return (
       <View style={[styles.studyLangInput, { paddingHorizontal: 0, overflow: 'hidden' }]}>
         <Picker
+          id="study-language-picker"
           selectedValue={studyLanguage}
           style={{ width: '100%', height: 40, marginTop: Platform.OS === 'ios' ? -6 : 0 }}
           onValueChange={(itemValue, itemIndex) => {
@@ -492,11 +503,11 @@ export function HomeUI({
               setShowIosBookModal(true);
               setSearchText('');
               setTempSelectedBook(null);
-              setFilteredBooks(bookLibrary);
+              setFilteredBooks(books);
               
               // Find the current book to pre-select
               if (selectedBook) {
-                const currentBook = bookLibrary.find(b => b.id === selectedBook);
+                const currentBook = books.find(b => b.id === selectedBook);
                 if (currentBook) {
                   setTempSelectedBook(currentBook);
                 }
@@ -528,17 +539,18 @@ export function HomeUI({
       );
     }
     
-    // For Web, use the standard Picker
+    // For Web, use the standard Picker with ID for gamepad
     return (
       <View style={styles.pickerContainer}>
         <Picker
+          id="book-picker"
           selectedValue={selectedBook}
           style={styles.bookPicker}
           onValueChange={handleBookChange}
           enabled={!loadingBook}
         >
           <Picker.Item key="prompt" label={uiText.enterBook || "Select a book"} value="" />
-          {bookLibrary.map(book => (
+          {books.map(book => (
             <Picker.Item 
               key={book.id} 
               label={getBookTitle(book)} 
@@ -623,6 +635,7 @@ export function HomeUI({
                 {[6, 9, 12, 15, 18].map((level) => (
                   <TouchableOpacity
                     key={level}
+                    id={`reading-level-${level}`}
                     style={[
                       enhancedReadingLevelButtonStyle,
                       readingLevel === level ? enhancedReadingLevelButtonActiveStyle : null
@@ -656,6 +669,7 @@ export function HomeUI({
           <View style={styles.rightColumn}>
             {/* Library Button - Enhanced with 3D effect */}
             <TouchableOpacity 
+              id="library-button"
               style={[
                 enhancedLibraryButtonStyle, 
                 loadingBook ? styles.disabledButton : null
@@ -668,6 +682,7 @@ export function HomeUI({
             
             {/* Load Book Button - Enhanced with 3D effect */}
             <TouchableOpacity 
+              id="load-book-button"
               style={[
                 enhancedLoadButtonStyle, 
                 loadingBook ? styles.disabledButton : null, 
@@ -742,7 +757,7 @@ export function HomeUI({
                 <Text style={styles.modalHeader}>{uiText.bookSelection || "Book Selection"}</Text>
                 
                 <FlatList
-                  data={[{id: 'prompt', title: uiText.enterBook || "Select a book"}, ...bookLibrary]}
+                  data={[{id: 'prompt', title: uiText.enterBook || "Select a book"}, ...books]}
                   keyExtractor={item => item.id}
                   renderItem={({item}) => (
                     <TouchableOpacity
@@ -806,7 +821,12 @@ export function HomeUI({
             uiText={uiText}
           />
         )}
+        
+        {/* Smart gamepad indicator - only shows when gamepad is connected */}
+        <GamepadIndicator />
       </View>
     </>
   );
 }
+
+export default HomeUI;

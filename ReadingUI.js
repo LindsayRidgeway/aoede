@@ -1,4 +1,4 @@
-// ReadingUI.js - Component for the reading controls
+// ReadingUI.js - Enhanced ReadingUI with gamepad support
 import React, { useRef, useState, useEffect } from 'react';
 import { 
   Text, View, TouchableOpacity, Switch, 
@@ -6,6 +6,8 @@ import {
   Platform, Image
 } from 'react-native';
 import { styles } from './styles';
+import gamepadManager from './gamepadSupport';
+import GamepadIndicator from './gamepadIndicator';
 
 export function ReadingUI({
   sentence,
@@ -51,6 +53,39 @@ export function ReadingUI({
   // State for tracking which element has focus (for enhanced visual indication)
   const [focusedElementId, setFocusedElementId] = useState(null);
   
+  // Setup gamepad support when component mounts
+  useEffect(() => {
+    // Only setup gamepad on web platform
+    if (Platform.OS === 'web') {
+      // Initialize gamepad support
+      gamepadManager.init();
+      
+      // Create a handler for the Listen button that handles the current sentence
+      const handleListenButtonPress = () => {
+        if (!loadingBook) {
+          speakSentence();
+        }
+      };
+      
+      // Register callbacks for gamepad buttons
+      gamepadManager.registerCallbacks({
+        onNext: handleNextButtonPress,
+        onListen: handleListenButtonPress, // Use the wrapper function instead of direct speakSentence
+        onPrevious: handlePreviousButtonPress,
+        onBeginningOfBook: handleBeginningOfBookPress,
+        onEndOfBook: handleEndOfBookPress
+      });
+    }
+    
+    // Cleanup when component unmounts
+    return () => {
+      if (Platform.OS === 'web') {
+        // No need to disable gamepad support as it may be used elsewhere
+        // We just don't call registerCallbacks again
+      }
+    };
+  }, [loadingBook, isAtEndOfBook, isAtStartOfBook, speakSentence]); // Add speakSentence to dependencies
+  
   // Track focus changes
   useEffect(() => {
     // Listen for focus changes if on web
@@ -90,8 +125,10 @@ export function ReadingUI({
   
   // Handle next button with animation
   const handleNextButtonPress = () => {
-    animateNextButton();
-    nextSentence();
+    if (!loadingBook && !isAtEndOfBook) {
+      animateNextButton();
+      nextSentence();
+    }
   };
   
   // Handle previous sentence button press
@@ -582,7 +619,7 @@ export function ReadingUI({
             </View>
           </View>
           
-          {/* Enhanced Home Link with 3D metallic style */}
+          {/* Home Link with GamepadIndicator */}
           <TouchableOpacity 
             id="home-button"
             style={[
@@ -597,6 +634,9 @@ export function ReadingUI({
           >
             <Text style={enhancedHomeLinkTextStyle}>{uiText.homeLink || "Home"}</Text>
           </TouchableOpacity>
+          
+          {/* Smart gamepad indicator - only shows when gamepad is connected */}
+          <GamepadIndicator />
         </ScrollView>
       </View>
     </>
