@@ -63,10 +63,10 @@ class GamepadManager {
     this.buttonMappings = {
       // Playstation controller mapping example
       // Right shoulder button (R1) for Listen/Stop
-      5: 'beginningOfBook',
+      5: 'listen',
       
       // Left shoulder button (L1) for Next Sentence
-      4: 'previous',
+      4: 'next',
       
       // Left trigger (L2) for Previous Sentence
       6: 'next',
@@ -664,43 +664,36 @@ class GamepadManager {
     // Get the focused element
     const focusedElement = focusableElements[this.currentFocusIndex];
     
-    // Special handling for Switch elements
+    // Handle toggle switch elements specifically
     if (focusedElement.id && (
         focusedElement.id === 'articulation-toggle' ||
         focusedElement.id === 'autoplay-toggle' ||
         focusedElement.id === 'showtext-toggle' ||
         focusedElement.id === 'showtranslation-toggle'
     )) {
-      // Find the actual switch input (which should be a child or within the element)
-      const switchInput = focusedElement.querySelector('input[type="checkbox"]') || 
-                         document.getElementById(focusedElement.id + '-input');
+      // React Native Web sometimes renders switches differently on different platforms
+      // Try multiple approaches to find and toggle the switch
       
+      // 1. Look for a native checkbox input first
+      const switchInput = focusedElement.querySelector('input[type="checkbox"]');
       if (switchInput) {
-        // Toggle the checkbox state
-        const newValue = !switchInput.checked;
-        
-        // Simulate a change event - React Native Web uses synthetic events
-        const event = new Event('change', { bubbles: true });
-        
-        // Set the new checked value in the event target
-        Object.defineProperty(event, 'target', { 
-          writable: false,
-          value: { checked: newValue }
-        });
-        
-        // Dispatch the event
-        switchInput.dispatchEvent(event);
-        
-        console.log(`Toggled switch ${focusedElement.id} to ${newValue}`);
-        return;
-      } else {
-        // If we couldn't find the actual input, try clicking the parent element
-        focusedElement.click();
+        switchInput.click();
         return;
       }
+      
+      // 2. Look for React Native Web switch component
+      const rnSwitch = focusedElement.querySelector('[role="switch"]');
+      if (rnSwitch) {
+        rnSwitch.click();
+        return;
+      }
+      
+      // 3. As a last resort, click the parent element
+      focusedElement.click();
+      return;
     }
     
-    // Click the element for regular buttons
+    // For regular elements, just click them
     focusedElement.click();
   }
   
