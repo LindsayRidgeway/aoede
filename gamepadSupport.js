@@ -63,16 +63,16 @@ class GamepadManager {
     this.buttonMappings = {
       // Playstation controller mapping example
       // Right shoulder button (R1) for Listen/Stop
-      5: 'listen',
+      5: 'next',
       
       // Left shoulder button (L1) for Next Sentence
-      4: 'next',
+      4: 'listen',
       
       // Left trigger (L2) for Previous Sentence
-      6: 'next',
+      6: 'listen',
       
       // Right trigger (R2) for Beginning of Book
-      7: 'listen',
+      7: 'next',
       
       // Share button for End of Book
       8: 'endOfBook',

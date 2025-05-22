@@ -5,7 +5,7 @@ Please generate your output as follows:
 1. Translate the input sentence from ${bookLanguage} to ${studyLanguage}.
 2. Do NOT write the translated sentence to the output.
 3. Simplify the translated sentence so that a typical native 15-year-old ${studyLanguage}-speaking person can understand it, following the guidelines below. Simplifying the translated sentence will produce one or more simplified sentences.
-4. Write each simplified ${studyLanguage} sentence to the output as a separate sentence.
+4. Write each simplified ${studyLanguage} sentence to the output AS A SEPARATE SENTENCE.
 5. IMPORTANT: Please be sure to end each simplified sentence with a NEWLINE.
 
 Simplification guidelines:
@@ -16,7 +16,7 @@ Simplification guidelines:
 - Sentence structure: Use varied sentence beginnings and structure for the simplified sentences to avoid the monotony of continuous SVO sentences.
 
 Note:
-- Please do not add comments, do not number the sentences, and do not produce any other output other than as described above.
+- Please do not add comments, do not number the sentences, and do not produce any output other than as described above.
 
 Input:
 ${sourceText}`;
