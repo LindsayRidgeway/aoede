@@ -153,6 +153,50 @@ export const readingStyles = StyleSheet.create({
     opacity: 0.6,
   },
 
+  // Position row container
+  positionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 0,
+    marginBottom: 10,
+    gap: 8,
+  },
+  
+  // Position input field
+  positionInput: {
+    width: 70,
+    height: 26,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 4,
+    paddingHorizontal: 8,
+    fontSize: 12,
+    textAlign: 'center',
+    marginLeft: 8,
+  },
+  
+  // Go button
+  goButton: {
+    backgroundColor: themeBlue,
+    paddingHorizontal: 14,
+    paddingVertical: 4,
+    borderRadius: 4,
+    minWidth: 40,
+    height: 26,
+    justifyContent: 'center',
+    alignItems: 'center',
+    boxShadow: '0px 2px 3px rgba(0, 0, 0, 0.2)',
+    elevation: 2,
+  },
+  
+  // Go button text
+  goButtonText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+
   // Speed control
   speedControlRow: {
     width: '95%',

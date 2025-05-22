@@ -1,4 +1,4 @@
-// App.js - Modified to be web-only
+// App.js - Modified to be web-only with Go To Position feature
 import React, { useState, useEffect } from 'react';
 import MainUI from './UI';
 import ListeningSpeed from './listeningSpeed';
@@ -44,6 +44,7 @@ export default function App() {
     cancel: "Cancel",
     cannotOpenURL: "Cannot open URL",
     confirmDelete: "Are you sure you want to delete",
+    confirmPositionJump: "Are you sure you want to jump from position [current] to [target]?",
     continue: "Continue",
     deleteBook: "Delete",
     editBook: "Edit Book",
@@ -59,7 +60,9 @@ export default function App() {
     fromLibrary: "from your library",
     goToEndConfirmMessage: "Go to the end of the book?",
     goToEndConfirmTitle: "End of Book",
+    goToPosition: "Go",
     homeLink: "Home",
+    invalidPositionError: "Please enter a valid position number",
     library: "Library",
     libraryComingSoon: "Library management features are coming soon.",
     listen: "Listen",
@@ -68,6 +71,7 @@ export default function App() {
     myLibrary: "My Library",
     next: "Next Sentence",
     position: "Position",
+    positionOutOfRangeError: "Position must be between 1 and",
     readingLevel: "Reading Level",
     readingSpeed: "Reading Speed",
     rewindConfirmMessage: "Rewind the book to the beginning?",
@@ -380,6 +384,73 @@ export default function App() {
     }
   };
   
+  // Handle go to specific position
+  const handleGoToPosition = async (targetPosition) => {
+    console.log("handleGoToPosition called with:", targetPosition);
+    console.log("Current totalSentences:", totalSentences);
+    console.log("Current currentSentenceIndex:", currentSentenceIndex);
+    
+    try {
+      // Validate input
+      const position = parseInt(targetPosition, 10);
+      console.log("Parsed position:", position);
+      
+      if (isNaN(position)) {
+        console.log("Position is NaN, showing invalid error");
+        alert(uiText.invalidPositionError || "Please enter a valid position number");
+        return false;
+      }
+      
+      if (position < 1 || position > totalSentences) {
+        console.log("Position out of range. Position:", position, "Range: 1 to", totalSentences);
+        alert(`${uiText.positionOutOfRangeError || "Position must be between 1 and"} ${totalSentences}`);
+        return false;
+      }
+      
+      // Show confirmation dialog
+      const currentDisplay = currentSentenceIndex + 1;
+      const confirmMessage = (uiText.confirmPositionJump || "Are you sure you want to jump from position [current] to [target]?")
+        .replace('[current]', currentDisplay)
+        .replace('[target]', position);
+      
+      console.log("Showing confirmation dialog:", confirmMessage);
+      const confirmed = window.confirm(confirmMessage);
+      if (!confirmed) {
+        console.log("User cancelled the jump");
+        return false;
+      }
+      
+      console.log("User confirmed, proceeding with jump");
+      
+      // Stop speaking if in progress
+      if (isSpeaking) {
+        ListeningSpeed.stopSpeaking();
+        setIsSpeaking(false);
+      }
+      
+      // Set loading state
+      setLoadingBook(true);
+      
+      try {
+        // Call the new goToPosition method
+        console.log("Calling readingManager.goToPosition with:", position);
+        await readingManager.goToPosition(position);
+        console.log("goToPosition completed successfully");
+        return true;
+      } catch (error) {
+        console.error("Error in goToPosition:", error);
+        setStudyLangSentence("Error: " + error.message);
+        return false;
+      } finally {
+        setLoadingBook(false);
+      }
+    } catch (error) {
+      console.error("Caught error in handleGoToPosition:", error);
+      alert(uiText.invalidPositionError || "Please enter a valid position number");
+      return false;
+    }
+  };
+  
   // Handle book selection change
   const handleBookChange = async (bookId) => {
     setSelectedBook(bookId);
@@ -591,6 +662,7 @@ export default function App() {
       onCloseLibrary={handleCloseLibrary}
       handlePreviousSentence={handlePreviousSentence}
       handleGoToEndOfBook={handleGoToEndOfBook}
+      handleGoToPosition={handleGoToPosition}
     />
   );
 }

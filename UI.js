@@ -316,6 +316,7 @@ export function MainUI(props) {
               previousSentence={handlePreviousSentence}
               goToEndOfBook={handleGoToEndOfBook}
               isAtStartOfBook={isAtStartOfBook}
+			  goToPosition={props.handleGoToPosition}
               // Pass totalSentences from props
               totalSentences={props.totalSentences}
               currentSentenceIndex={props.currentSentenceIndex}

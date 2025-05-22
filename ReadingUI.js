@@ -1,11 +1,11 @@
-// ReadingUI.js - Web Only version
+// ReadingUI.js - Web Only version with Go To Position feature
 import React, { useRef, useState, useEffect } from 'react';
 import { 
   Text, View, TouchableOpacity, Switch, 
   ActivityIndicator, Animated, ScrollView,
-  Image
+  Image, TextInput
 } from 'react-native';
-import { styles } from './styles';
+import { readingStyles as styles } from './readingStyles';
 import gamepadManager from './gamepadSupport';
 import GamepadIndicator from './gamepadIndicator';
 
@@ -45,13 +45,18 @@ export function ReadingUI({
   isAtStartOfBook,
   // Access to the total sentences information
   totalSentences = 0,
-  currentSentenceIndex = 0
+  currentSentenceIndex = 0,
+  // Add the new goToPosition handler
+  goToPosition
 }) {
   // Animation ref for Next button
   const nextButtonAnimation = useRef(new Animated.Value(1)).current;
   
   // State for tracking which element has focus (for enhanced visual indication)
   const [focusedElementId, setFocusedElementId] = useState(null);
+  
+  // State for position input
+  const [positionInput, setPositionInput] = useState('');
   
   // Setup gamepad support when component mounts
   useEffect(() => {
@@ -143,6 +148,35 @@ export function ReadingUI({
   const handleBeginningOfBookPress = () => {
     if (!loadingBook && !isAtStartOfBook) {
       rewindBook();
+    }
+  };
+  
+  // Handle position input change
+  const handlePositionInputChange = (text) => {
+    // Only allow digits and limit to 6 characters
+    const cleaned = text.replace(/[^0-9]/g, '').slice(0, 6);
+    setPositionInput(cleaned);
+  };
+  
+  // Handle Go button press
+  const handleGoButtonPress = () => {
+    console.log("Go button pressed");
+    console.log("goToPosition function exists:", !!goToPosition);
+    console.log("positionInput value:", positionInput);
+    console.log("positionInput trimmed:", positionInput.trim());
+    
+    if (goToPosition && positionInput.trim() !== '') {
+      console.log("Calling goToPosition with:", positionInput);
+      goToPosition(positionInput).then((success) => {
+        console.log("goToPosition returned:", success);
+        if (success) {
+          // Clear the input on successful jump
+          console.log("Clearing position input");
+          setPositionInput('');
+        }
+      });
+    } else {
+      console.log("Not calling goToPosition - missing function or empty input");
     }
   };
   
@@ -375,8 +409,8 @@ export function ReadingUI({
             </TouchableOpacity>
           </View>
           
-          {/* Progress label with meter in rectangle */}
-          <View style={{flexDirection: 'row', alignItems: 'center', marginTop: 0, marginBottom: 10}}>
+          {/* Progress label with meter in rectangle, now with input and Go button */}
+          <View style={styles.positionRow}>
             <Text style={[styles.toggleLabel, { fontStyle: 'italic' }]}>
               {uiText.position || "Position"}:
             </Text>
@@ -385,6 +419,38 @@ export function ReadingUI({
                 {(currentSentenceIndex + 1)}/{totalSentences}
               </Text>
             </View>
+            <TextInput
+              id="position-input"
+              style={[
+                styles.positionInput,
+                getFocusedStyle("position-input")
+              ]}
+              value={positionInput}
+              onChangeText={handlePositionInputChange}
+              keyboardType="numeric"
+              maxLength={6}
+              accessible={true}
+              accessibilityLabel="Go to position input"
+              tabIndex={6}
+            />
+            <TouchableOpacity
+              id="go-button"
+              style={[
+                styles.goButton,
+                (!positionInput || loadingBook) ? styles.disabledButton : null,
+                getFocusedStyle("go-button")
+              ]}
+              onPress={handleGoButtonPress}
+              disabled={!positionInput || loadingBook}
+              accessible={true}
+              accessibilityRole="button"
+              accessibilityLabel={uiText.goToPosition || "Go"}
+              tabIndex={7}
+            >
+              <Text style={styles.goButtonText}>
+                {uiText.goToPosition || "Go"}
+              </Text>
+            </TouchableOpacity>
           </View>
 
           {/* Content Container - Enhanced with shadow */}
@@ -421,7 +487,7 @@ export function ReadingUI({
                   accessibilityRole="button"
                   accessibilityLabel={`Speed ${speed}`}
                   accessibilityState={{ selected: listeningSpeed === speed }}
-                  tabIndex={5 + speed}
+                  tabIndex={7 + speed}
                 />
               ))}
             </View>
@@ -447,7 +513,7 @@ export function ReadingUI({
                 accessibilityRole="switch"
                 accessibilityState={{ checked: articulation }}
                 accessibilityLabel={`${uiText.articulation || "Articulation"} ${articulation ? "on" : "off"}`}
-                tabIndex={11}
+                tabIndex={13}
               />
             </View>
             
@@ -469,7 +535,7 @@ export function ReadingUI({
                 accessibilityRole="switch"
                 accessibilityState={{ checked: autoplay }}
                 accessibilityLabel={`${uiText.autoplay || "Sentence Auto-play"} ${autoplay ? "on" : "off"}`}
-                tabIndex={12}
+                tabIndex={14}
               />
             </View>
             
@@ -491,7 +557,7 @@ export function ReadingUI({
                 accessibilityRole="switch"
                 accessibilityState={{ checked: showText }}
                 accessibilityLabel={`${uiText.showText || "Show Sentence"} ${showText ? "on" : "off"}`}
-                tabIndex={13}
+                tabIndex={15}
               />
             </View>
             
@@ -513,7 +579,7 @@ export function ReadingUI({
                 accessibilityRole="switch"
                 accessibilityState={{ checked: showTranslation }}
                 accessibilityLabel={`${uiText.showTranslation || "Show Translation"} ${showTranslation ? "on" : "off"}`}
-                tabIndex={14}
+                tabIndex={16}
               />
             </View>
           </View>
@@ -529,7 +595,7 @@ export function ReadingUI({
             accessible={true}
             accessibilityRole="button"
             accessibilityLabel={uiText.homeLink || "Home"}
-            tabIndex={15}
+            tabIndex={17}
           >
             <Text style={enhancedHomeLinkTextStyle}>{uiText.homeLink || "Home"}</Text>
           </TouchableOpacity>
