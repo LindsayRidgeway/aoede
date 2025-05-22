@@ -1,9 +1,6 @@
-// App.js - Modified to include gamepad support
+// App.js - Modified to be web-only
 import React, { useState, useEffect } from 'react';
-import { Alert, Platform, NativeModules } from 'react-native';
-// Fix import for MainUI - try importing both ways to be safe
 import MainUI from './UI';
-// import { MainUI } from './UI';
 import ListeningSpeed from './listeningSpeed';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { translateBatch, apiTranslateSentenceCheap, apiTranslateSentenceFast } from './apiServices';
@@ -13,34 +10,11 @@ import { bookSources } from './bookSources';
 import Constants from 'expo-constants';
 import { initializeUserLibrary, getUserLibrary, getBookById } from './userLibrary';
 import DebugPanel from './DebugPanel';
-
-// Import the gamepad manager for web platform
 import gamepadManager from './gamepadSupport';
 
-// Get the user's preferred locale/language using multiple methods for better reliability
+// Get the user's preferred locale/language for web
 const getDeviceLanguage = async () => {
   try {
-    // Try to get device language from React Native's NativeModules
-    if (Platform.OS !== 'web') {
-      // iOS
-      if (Platform.OS === 'ios' && NativeModules.SettingsManager?.settings?.AppleLocale) {
-        const deviceLocale = NativeModules.SettingsManager.settings.AppleLocale;
-        const langCode = deviceLocale.split('_')[0];
-        return langCode;
-      }
-      
-      // Android
-      if (Platform.OS === 'android' && NativeModules.I18nManager) {
-        const isRTL = NativeModules.I18nManager.isRTL;
-        const localeIdentifier = NativeModules.I18nManager.localeIdentifier;
-        
-        if (localeIdentifier) {
-          const langCode = localeIdentifier.split('_')[0];
-          return langCode;
-        }
-      }
-    }
-    
     // For Web, use navigator.language
     if (typeof navigator !== 'undefined' && navigator.language) {
       const navLang = navigator.language.split('-')[0];
@@ -121,11 +95,11 @@ export default function App() {
   const [nativeLangSentence, setNativeLangSentence] = useState(""); 
   const [showText, setShowText] = useState(true);
   const [showTranslation, setShowTranslation] = useState(true);
-  const [articulation, setArticulation] = useState(false); // Articulation feature
-  const [autoplay, setAutoplay] = useState(false); // Auto-play feature
+  const [articulation, setArticulation] = useState(false);
+  const [autoplay, setAutoplay] = useState(false);
   const [speechRate, setSpeechRate] = useState(1.0);
   const [studyLanguage, setStudyLanguage] = useState("");
-  const [listeningSpeed, setListeningSpeed] = useState(3); // Default to middle speed (3)
+  const [listeningSpeed, setListeningSpeed] = useState(3);
   const [loadingBook, setLoadingBook] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
@@ -133,8 +107,8 @@ export default function App() {
   const [sourceLanguage, setSourceLanguage] = useState("en");
   const [readingLevel, setReadingLevel] = useState(6);
   const [isAtEndOfBook, setIsAtEndOfBook] = useState(false);
-  const [libraryRefreshKey, setLibraryRefreshKey] = useState(0); // For library refresh
-  const [showLibrary, setShowLibrary] = useState(false); // For library modal
+  const [libraryRefreshKey, setLibraryRefreshKey] = useState(0);
+  const [showLibrary, setShowLibrary] = useState(false);
   
   // Initialize the app
   useEffect(() => {
@@ -190,15 +164,11 @@ export default function App() {
           
           if (storedListeningSpeed !== null) {
             const speed = parseInt(storedListeningSpeed, 10);
-            // Ensure it's a valid value (1-5)
             if (speed >= 1 && speed <= 5) {
               setListeningSpeed(speed);
-              
-              // Also update ListeningSpeed module's internal state
               await ListeningSpeed.saveListeningSpeed(speed);
             }
           } else {
-            // Initialize with default value of 3 (medium speed)
             await ListeningSpeed.saveListeningSpeed(3);
           }
         } catch (error) {
@@ -211,10 +181,8 @@ export default function App() {
         // Initialize BookReader
         BookReader.initialize(handleSentenceProcessed, deviceLang || 'en');
         
-        // Initialize gamepad support if on web platform
-        if (Platform.OS === 'web') {
-          gamepadManager.init();
-        }
+        // Initialize gamepad support
+        gamepadManager.init();
       } catch (error) {
         // Silent error handling
       }
@@ -241,8 +209,6 @@ export default function App() {
       
       // Translate book titles
       const translatedBooks = {};
-      
-      // Get books from user library instead of bookSources
       const userLibrary = await getUserLibrary();
       
       for (const book of userLibrary) {
@@ -274,17 +240,12 @@ export default function App() {
       return;
     }
     
-    // Set the study language sentence (simplified in the study language)
     setStudyLangSentence(sentence);
-    
-    // Set the translated sentence (translation to user's language)
     setNativeLangSentence(translation || sentence);
     
-    // Update progress indicators
     const progress = readingManager.getProgress();
     setCurrentSentenceIndex(progress.currentSentenceIndex);
     
-    // Update totalSentences from bookSentences.length
     if (BookReader.bookSentences && BookReader.bookSentences.length > 0) {
       setTotalSentences(BookReader.bookSentences.length);
     } else {
@@ -327,22 +288,15 @@ export default function App() {
   // Handle next sentence button click
   const handleNextSentence = async () => {
     try {
-      // Use the encapsulated function to advance to the next sentence
       await readingManager.advanceToNextSentence();
-      
-      // Wait a short moment for the sentence to be processed
-      // This ensures the simplified sentences array in BookReader has been updated
       await new Promise(resolve => setTimeout(resolve, 50));
       
-      // Check if autoplay should be triggered
       if (autoplay && !isSpeaking) {
-        // Get the current sentence directly from BookReader's simplified sentences
         const currentSentence = BookReader.simpleArray && BookReader.simpleArray.length > 0 
           ? BookReader.simpleArray[0] 
           : studyLangSentence;
         
         if (currentSentence) {
-          // Speak the current sentence
           ListeningSpeed.speakSentenceWithPauses(
             currentSentence,
             listeningSpeed, 
@@ -359,22 +313,17 @@ export default function App() {
     }
   };
   
-  // Handle previous sentence button click - NEW
+  // Handle previous sentence button click
   const handlePreviousSentence = async () => {
     try {
-      // Stop any speech that might be in progress
       if (isSpeaking) {
         ListeningSpeed.stopSpeaking();
         setIsSpeaking(false);
       }
       
-      // Use the new function to go to the previous sentence
       await readingManager.goToPreviousSentence();
-      
-      // Wait a short moment for the sentence to be processed
       await new Promise(resolve => setTimeout(resolve, 50));
       
-      // Check if autoplay should be triggered
       if (autoplay && !isSpeaking) {
         const currentSentence = BookReader.simpleArray && BookReader.simpleArray.length > 0 
           ? BookReader.simpleArray[0] 
@@ -397,47 +346,19 @@ export default function App() {
     }
   };
   
-  // Handle go to end of book button click - UPDATED
+  // Handle go to end of book button click
   const handleGoToEndOfBook = async () => {
     try {
-      // Prevent operation during loading
       if (loadingBook) {
         return false;
       }
       
-      // Stop any speech that might be in progress
       if (isSpeaking) {
         ListeningSpeed.stopSpeaking();
         setIsSpeaking(false);
       }
       
-      // Present a confirmation dialog
-      const confirm = () => {
-        return new Promise((resolve) => {
-          if (Platform.OS === 'web') {
-            const confirmed = window.confirm(uiText.goToEndConfirmMessage || "Go to the end of the book?");
-            resolve(confirmed);
-          } else {
-            Alert.alert(
-              uiText.goToEndConfirmTitle || "End of Book",
-              uiText.goToEndConfirmMessage || "Go to the end of the book?",
-              [
-                {
-                  text: uiText.cancel || "Cancel",
-                  onPress: () => resolve(false),
-                  style: "cancel"
-                },
-                {
-                  text: uiText.yes || "Yes",
-                  onPress: () => resolve(true)
-                }
-              ]
-            );
-          }
-        });
-      };
-      
-      const confirmed = await confirm();
+      const confirmed = window.confirm(uiText.goToEndConfirmMessage || "Go to the end of the book?");
       if (!confirmed) {
         return false;
       }
@@ -445,7 +366,6 @@ export default function App() {
       setLoadingBook(true);
       
       try {
-        // Use the BookReader implementation
         await readingManager.goToEndOfBook();
         return true;
       } catch (error) {
@@ -534,63 +454,23 @@ export default function App() {
   
   // Handle rewind book functionality
   const handleRewindBook = async () => {
-    // Prevent rewind during loading operations
     if (loadingBook) {
       return false;
     }
     
-    // Present a confirmation dialog
-    const confirm = () => {
-      return new Promise((resolve) => {
-        if (Platform.OS === 'web') {
-          const confirmed = window.confirm(uiText.rewindConfirmMessage || "Rewind the book to the beginning?");
-          resolve(confirmed);
-        } else {
-          Alert.alert(
-            uiText.rewindConfirmTitle || "Rewind Book",
-            uiText.rewindConfirmMessage || "Rewind the book to the beginning?",
-            [
-              {
-                text: uiText.cancel || "Cancel",
-                onPress: () => resolve(false),
-                style: "cancel"
-              },
-              {
-                text: uiText.yes || "Yes",
-                onPress: () => resolve(true)
-              }
-            ]
-          );
-        }
-      });
-    };
-    
-    const confirmed = await confirm();
+    const confirmed = window.confirm(uiText.rewindConfirmMessage || "Rewind the book to the beginning?");
     if (!confirmed) {
       return false;
     }
     
     try {
-      // Show loading state
       setLoadingBook(true);
-      
-      // Use the new encapsulated function to handle rewinding
       const success = await readingManager.rewindBook();
-      
       return success;
     } catch (error) {
-      // Show error message appropriate for the platform
-      if (Platform.OS === 'web') {
-        alert(uiText.rewindFailed || "Failed to rewind the book.");
-      } else {
-        Alert.alert(
-          uiText.error || "Error",
-          uiText.rewindFailed || "Failed to rewind the book."
-        );
-      }
+      alert(uiText.rewindFailed || "Failed to rewind the book.");
       return false;
     } finally {
-      // Ensure loading state is cleared
       setLoadingBook(false);
     }
   };
@@ -611,67 +491,50 @@ export default function App() {
   
   // Handle load book button click
   const handleLoadBook = async () => {
-    // Reset previous state
     clearContent();
     setIsAtEndOfBook(false);
     
-    // Get the selected book
     const bookId = selectedBook;
     
     if (!bookId) {
-      let message = "Please select a book from the dropdown.";
-      if (Platform.OS === 'web') {
-        alert("Selection Required: " + message);
-      } else {
-        Alert.alert("Selection Required", message);
-      }
+      alert("Selection Required: Please select a book from the dropdown.");
       return false;
     }
     
     if (!studyLanguage) {
-      if (Platform.OS === 'web') {
-        alert("Language Required: Please select a study language.");
-      } else {
-        Alert.alert("Language Required", "Please select a study language.");
-      }
+      alert("Language Required: Please select a study language.");
       return false;
     }
     
     setLoadingBook(true);
     
     try {
-      // Get book details from user library
       const book = await getBookById(bookId);
       
       if (!book) {
         throw new Error(`Book with ID ${bookId} not found`);
       }
       
-      // Set source language from book language
       setSourceLanguage(book.language);
       
-      // Load the book using the new encapsulated function
       const success = await readingManager.loadBook(studyLanguage, bookId);
       
       if (!success) {
         throw new Error("Failed to load book");
       }
       
-      // Update total sentences after book is loaded
       if (BookReader.bookSentences) {
         setTotalSentences(BookReader.bookSentences.length);
       }
       
-      // If on web platform, register gamepad callbacks for this book
-      if (Platform.OS === 'web') {
-        gamepadManager.registerCallbacks({
-          onNext: handleNextSentence,
-          onListen: handleToggleSpeak,
-          onPrevious: handlePreviousSentence,
-          onBeginningOfBook: handleRewindBook,
-          onEndOfBook: handleGoToEndOfBook
-        });
-      }
+      // Register gamepad callbacks for this book
+      gamepadManager.registerCallbacks({
+        onNext: handleNextSentence,
+        onListen: handleToggleSpeak,
+        onPrevious: handlePreviousSentence,
+        onBeginningOfBook: handleRewindBook,
+        onEndOfBook: handleGoToEndOfBook
+      });
       
       return true;
     } catch (error) {

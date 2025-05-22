@@ -1,5 +1,4 @@
-// bookPipeFetch.js - Handles fetching book content from URLs
-import { Platform } from 'react-native';
+// bookPipeFetch.js - Handles fetching book content from URLs (Web Only)
 import { getBookById } from './userLibrary';
 import { fetchUrl } from './fetchUtils';
 

@@ -1,16 +1,15 @@
-// listeningSpeedCore.js - Core functionality for audio playback and TTS
+// listeningSpeedCore.js - Core functionality for audio playback and TTS (Web Only)
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Constants from 'expo-constants';
 import { Audio } from 'expo-av';
-import { Alert, Platform } from 'react-native';
 
 // Flag to track if audio session is configured
 let isAudioSessionConfigured = false;
 
 // Keep track of current playback
-let currentSound = null; // Track the current sound object
+let currentSound = null;
 
-// Configure audio session
+// Configure audio session for web
 export const configureAudioSession = async () => {  
   if (isAudioSessionConfigured) {
     return;
@@ -19,7 +18,7 @@ export const configureAudioSession = async () => {
   try {
     const audioConfig = {
       allowsRecordingIOS: false,
-      playsInSilentModeIOS: true, // This enables playback when silent switch is on
+      playsInSilentModeIOS: true,
       shouldDuckAndroid: true,
       interruptionModeIOS: Audio.INTERRUPTION_MODE_IOS_DO_NOT_MIX,
       interruptionModeAndroid: Audio.INTERRUPTION_MODE_ANDROID_DO_NOT_MIX,
@@ -31,40 +30,8 @@ export const configureAudioSession = async () => {
     
     isAudioSessionConfigured = true;
     
-    // For iOS, let's verify the audio session was set correctly
-    if (Platform.OS === 'ios') {
-      try {
-        // Try to get the current audio mode to verify settings took effect
-        const currentAudioMode = await Audio.getAudioModeAsync();
-        
-        // For iOS 14+ compatibility check
-        if (currentAudioMode && Platform.OS === 'ios') {
-          // Additional initialization specifically for iOS
-          try {
-            await Audio.setIsEnabledAsync(true);
-          } catch (enableError) {
-            if (__DEV__) console.log(`Error in Audio.setIsEnabledAsync: ${enableError.message}`);
-            // Continue despite this error
-          }
-        }
-      } catch (verifyError) {
-        if (__DEV__) console.log(`Error verifying audio mode: ${verifyError.message}`);
-      }
-    }
   } catch (error) {
     if (__DEV__) console.log(`Error configuring audio session: ${error.message}`);
-    
-    // On iOS, try a more basic configuration as fallback
-    if (Platform.OS === 'ios') {
-      try {
-        await Audio.setAudioModeAsync({
-          playsInSilentModeIOS: true
-        });
-        isAudioSessionConfigured = true;
-      } catch (fallbackError) {
-        if (__DEV__) console.log(`Fallback audio configuration also failed: ${fallbackError.message}`);
-      }
-    }
   }
 };
 
@@ -86,14 +53,7 @@ export const playAudioFromBase64 = async (base64Audio, onFinish) => {
   currentSound = sound;
   
   try {
-    // On iOS, make extra effort to ensure proper format
-    let audioUri;
-    if (Platform.OS === 'ios') {
-      // iOS might be more strict about the data URI format
-      audioUri = `data:audio/mp3;base64,${base64Audio}`;
-    } else {
-      audioUri = `data:audio/mp3;base64,${base64Audio}`;
-    }
+    const audioUri = `data:audio/mp3;base64,${base64Audio}`;
     
     try {
       await sound.loadAsync({ uri: audioUri });
@@ -119,28 +79,8 @@ export const playAudioFromBase64 = async (base64Audio, onFinish) => {
         }
       });
       
-      const playbackStatus = await sound.playAsync();
+      await sound.playAsync();
       
-      // For iOS, make extra effort to check volume
-      if (Platform.OS === 'ios') {
-        try {
-          const soundStatus = await sound.getStatusAsync();
-         
-          // Check if volume is 0
-          if (soundStatus.volume === 0) {
-            if (__DEV__) console.log('WARNING: iOS sound volume is 0!');
-            
-            // Try to set volume
-            try {
-              await sound.setVolumeAsync(1.0);
-            } catch (volumeError) {
-              if (__DEV__) console.log(`Error setting volume: ${volumeError.message}`);
-            }
-          }
-        } catch (statusError) {
-          if (__DEV__) console.log(`Error getting iOS sound status: ${statusError.message}`);
-        }
-      }
     } catch (loadError) {
       if (__DEV__) console.log(`Error loading audio: ${loadError.message}`);
       

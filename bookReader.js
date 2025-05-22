@@ -1,10 +1,9 @@
-// bookReader.js - Manages reading state for books according to the specified pseudocode
+// bookReader.js - Manages reading state for books (Web Only)
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiTranslateAndSimplifySentence, apiTranslateSentenceCheap } from './apiServices';
 import { parseIntoSentences, detectLanguageCode } from './textProcessing';
 import BookPipe from './bookPipeCore';
 import { bookPipeProcess } from './bookPipeProcess';
-import { Platform, Alert } from 'react-native';
 import { getUserLibrary, getBookById } from './userLibrary';
 
 class BookReader {

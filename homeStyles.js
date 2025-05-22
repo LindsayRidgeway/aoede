@@ -1,12 +1,9 @@
-// homeStyles.js - Styles for the home/load panel
-import { StyleSheet, Platform } from 'react-native';
+// homeStyles.js - Styles for the home/load panel (Web Only)
+import { StyleSheet } from 'react-native';
 
 // Theme colors
 const themeBlue = '#3a7ca5';
-const themeBurgundy = '#800020'; // Burgundy color for Library features
-
-// Different top padding based on platform
-const topPadding = Platform.OS === 'android' ? 50 : 0;
+const themeBurgundy = '#800020';
 
 export const homeStyles = StyleSheet.create({
   // Full-page scrolling and container styles
@@ -20,8 +17,8 @@ export const homeStyles = StyleSheet.create({
   },
   scrollViewContent: {
     flexGrow: 1,
-    paddingBottom: 30, // Extra padding at the bottom for scrolling
-    paddingTop: topPadding, // Platform-specific top padding
+    paddingBottom: 30,
+    paddingTop: 0,
   },
   innerContainer: {
     alignItems: 'center',
@@ -46,22 +43,9 @@ export const homeStyles = StyleSheet.create({
     marginRight: 15,
     backgroundColor: '#fff',
     padding: 4,
-    // Simple thin border for all platforms
     borderWidth: 1,
     borderColor: themeBlue,
     borderRadius: 4,
-    // Remove shadow/elevation for clean look
-    ...(Platform.OS === 'android' || Platform.OS === 'ios' ? {
-      elevation: 0,
-      shadowColor: 'transparent',
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0,
-      shadowRadius: 0,
-    } : {}),
-    // For Web - use boxShadow none to ensure no shadow
-    ...(Platform.OS === 'web' ? {
-      boxShadow: 'none'
-    } : {})
   },
   titleContainer: {
     flexDirection: 'column',
@@ -79,7 +63,6 @@ export const homeStyles = StyleSheet.create({
 
   // Input container styles
   inputContainer: {
-    // Make container wider for all platforms (95% instead of 80%/90%)
     width: '95%',
     backgroundColor: '#fff',
     borderRadius: 10,
@@ -87,15 +70,7 @@ export const homeStyles = StyleSheet.create({
     borderColor: themeBlue,
     padding: 15,
     marginBottom: 10,
-    ...(Platform.OS !== 'web' ? {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.1,
-      shadowRadius: 4,
-    } : {}),
-    ...(Platform.OS === 'web' ? {
-      boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)'
-    } : {}),
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
     elevation: 3
   },
 
@@ -135,9 +110,9 @@ export const homeStyles = StyleSheet.create({
   },
   readingLevelControls: {
     flexDirection: 'row',
-    marginLeft: 0, // Align with left edge
-    width: '100%', // Use full width
-    justifyContent: 'flex-start' // Left justify
+    marginLeft: 0,
+    width: '100%',
+    justifyContent: 'flex-start'
   },
   readingLevelButton: {
     width: 36,
@@ -146,7 +121,7 @@ export const homeStyles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#f0f0f0',
-    marginRight: 10, // More space between buttons
+    marginRight: 10,
     borderWidth: 1,
     borderColor: '#ddd'
   },
@@ -168,16 +143,14 @@ export const homeStyles = StyleSheet.create({
     flexDirection: 'row',
     width: '100%',
     justifyContent: 'space-between',
-    alignItems: 'flex-end' // Align items at the bottom
+    alignItems: 'flex-end'
   },
   leftColumn: {
-    // Adjust width based on platform
-    width: Platform.OS === 'web' ? '70%' : '65%', // Narrower on mobile
+    width: '70%',
     marginRight: 10,
   },
   rightColumn: {
-    // Adjust width based on platform
-    width: Platform.OS === 'web' ? '25%' : '30%', // Wider on mobile
+    width: '25%',
   },
 
   // Source Material section
@@ -199,32 +172,6 @@ export const homeStyles = StyleSheet.create({
   bookPicker: {
     width: '100%',
     height: 40
-  },
-
-  // Android picker styles
-  androidPickerButton: {
-    height: 40,
-    borderColor: '#ddd',
-    borderWidth: 1,
-    borderRadius: 5,
-    backgroundColor: '#fff',
-    paddingHorizontal: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between'
-  },
-  androidPickerButtonText: {
-    color: '#999',
-    fontSize: 15
-  },
-  androidPickerButtonTextSelected: {
-    color: '#333',
-    fontSize: 15
-  },
-  androidPickerIcon: {
-    fontSize: 12,
-    color: '#777',
-    marginLeft: 8
   },
 
   // Modal styles for pickers
@@ -279,21 +226,8 @@ export const homeStyles = StyleSheet.create({
     justifyContent: 'center',
     width: '100%',
     marginBottom: 10,
-    // Platform-specific adjustments
-    ...(Platform.OS === 'android' || Platform.OS === 'ios'
-      ? {
-          // Mobile specific adjustments
-          height: 'auto',
-          minHeight: 40,
-          paddingVertical: 5,
-          paddingHorizontal: 8,
-        } 
-      : {
-          // Keep existing style for Web
-          padding: 10,
-          height: 40
-        }
-    )
+    padding: 10,
+    height: 40
   },
   loadButton: {
     backgroundColor: themeBlue,
@@ -301,36 +235,14 @@ export const homeStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
-    // Platform-specific adjustments
-    ...(Platform.OS === 'android' || Platform.OS === 'ios'
-      ? {
-          // Mobile specific adjustments
-          height: 'auto',
-          minHeight: 40,
-          paddingVertical: 5,
-          paddingHorizontal: 8,
-        } 
-      : {
-          // Keep existing style for Web
-          padding: 10,
-          height: 40
-        }
-    )
+    padding: 10,
+    height: 40
   },
   buttonText: {
     color: '#fff',
-    // Smaller font size for mobile
-    fontSize: Platform.OS === 'web' ? 16 : Platform.OS === 'ios' ? 12 : 10,
+    fontSize: 16,
     fontWeight: 'bold',
-    // Fix text alignment on mobile and allow wrapping
     textAlign: 'center',
-    ...(Platform.OS === 'android' || Platform.OS === 'ios'
-      ? {
-          includeFontPadding: false,
-          textAlignVertical: 'center',
-        } 
-      : {}
-    )
   },
   disabledButton: {
     backgroundColor: '#A9A9A9',

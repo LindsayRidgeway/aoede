@@ -1,9 +1,9 @@
-// libraryStyles.js - Styles for the library panel
-import { StyleSheet, Platform } from 'react-native';
+// libraryStyles.js - Styles for the library panel (Web Only)
+import { StyleSheet } from 'react-native';
 
 // Theme colors
-const themeBurgundy = '#800020'; // Burgundy color for Library features
-const themeBlue = '#3a7ca5';     // Blue color for secondary features
+const themeBurgundy = '#800020';
+const themeBlue = '#3a7ca5';
 
 export const libraryStyles = StyleSheet.create({
   // Library modal container
@@ -18,17 +18,7 @@ export const libraryStyles = StyleSheet.create({
     margin: 20,
     borderRadius: 10,
     overflow: 'hidden',
-    // Platform-specific shadow
-    ...(Platform.OS !== 'web' ? {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.25,
-      shadowRadius: 4,
-      elevation: 5,
-    } : {}),
-    ...(Platform.OS === 'web' ? {
-      boxShadow: '0px 2px 10px rgba(0, 0, 0, 0.25)'
-    } : {})
+    boxShadow: '0px 2px 10px rgba(0, 0, 0, 0.25)'
   },
   // Library content scrollview
   libraryScrollView: {
@@ -108,7 +98,7 @@ export const libraryStyles = StyleSheet.create({
     paddingHorizontal: 10,
     backgroundColor: '#fff',
     marginRight: 10,
-	fontStyle: 'italic',  
+    fontStyle: 'italic',  
   },
   searchButton: {
     backgroundColor: themeBlue,
@@ -148,17 +138,7 @@ export const libraryStyles = StyleSheet.create({
     backgroundColor: '#fff',
     borderRadius: 5,
     marginBottom: 10,
-    // Subtle shadow
-    ...(Platform.OS !== 'web' ? {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.1,
-      shadowRadius: 2,
-      elevation: 1,
-    } : {}),
-    ...(Platform.OS === 'web' ? {
-      boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.1)'
-    } : {})
+    boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.1)'
   },
   bookInfoContainer: {
     flex: 1,

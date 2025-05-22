@@ -1,9 +1,9 @@
-// ReadingUI.js - Enhanced ReadingUI with gamepad support
+// ReadingUI.js - Web Only version
 import React, { useRef, useState, useEffect } from 'react';
 import { 
   Text, View, TouchableOpacity, Switch, 
   ActivityIndicator, Animated, ScrollView,
-  Platform, Image
+  Image
 } from 'react-native';
 import { styles } from './styles';
 import gamepadManager from './gamepadSupport';
@@ -55,41 +55,35 @@ export function ReadingUI({
   
   // Setup gamepad support when component mounts
   useEffect(() => {
-    // Only setup gamepad on web platform
-    if (Platform.OS === 'web') {
-      // Initialize gamepad support
-      gamepadManager.init();
-      
-      // Create a handler for the Listen button that handles the current sentence
-      const handleListenButtonPress = () => {
-        if (!loadingBook) {
-          speakSentence();
-        }
-      };
-      
-      // Register callbacks for gamepad buttons
-      gamepadManager.registerCallbacks({
-        onNext: handleNextButtonPress,
-        onListen: handleListenButtonPress, // Use the wrapper function instead of direct speakSentence
-        onPrevious: handlePreviousButtonPress,
-        onBeginningOfBook: handleBeginningOfBookPress,
-        onEndOfBook: handleEndOfBookPress
-      });
-    }
+    // Initialize gamepad support
+    gamepadManager.init();
+    
+    // Create a handler for the Listen button that handles the current sentence
+    const handleListenButtonPress = () => {
+      if (!loadingBook) {
+        speakSentence();
+      }
+    };
+    
+    // Register callbacks for gamepad buttons
+    gamepadManager.registerCallbacks({
+      onNext: handleNextButtonPress,
+      onListen: handleListenButtonPress,
+      onPrevious: handlePreviousButtonPress,
+      onBeginningOfBook: handleBeginningOfBookPress,
+      onEndOfBook: handleEndOfBookPress
+    });
     
     // Cleanup when component unmounts
     return () => {
-      if (Platform.OS === 'web') {
-        // No need to disable gamepad support as it may be used elsewhere
-        // We just don't call registerCallbacks again
-      }
+      // No need to disable gamepad support as it may be used elsewhere
     };
-  }, [loadingBook, isAtEndOfBook, isAtStartOfBook, speakSentence]); // Add speakSentence to dependencies
+  }, [loadingBook, isAtEndOfBook, isAtStartOfBook, speakSentence]);
   
   // Track focus changes
   useEffect(() => {
-    // Listen for focus changes if on web
-    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+    // Listen for focus changes on web
+    if (typeof document !== 'undefined') {
       const handleFocusChange = () => {
         const activeElement = document.activeElement;
         if (activeElement && activeElement.id) {
@@ -164,183 +158,88 @@ export function ReadingUI({
     }
   };
   
-  // Define the header style based on platform and font loading
+  // Define the header style based on font loading
   const getHeaderTextStyle = () => {
-    if (Platform.OS === 'android') {
-      // Android needs explicit style parameters
-      if (fontsLoaded) {
-        return {
-          fontSize: 36,
-          fontWeight: 'bold',
-          color: '#3a7ca5',
-          fontFamily: 'Cinzel-ExtraBold', // Try the ExtraBold version for Android
-        };
-      } else {
-        return {
-          fontSize: 36,
-          fontWeight: 'bold',
-          color: '#3a7ca5',
-        };
-      }
-    } else if (Platform.OS === 'ios') {
-      // iOS may need different font handling
-      return fontsLoaded ? 
-        {
-          fontSize: 36,
-          fontWeight: 'bold',
-          color: '#3a7ca5',
-          fontFamily: 'Cinzel',
-        } : 
-        styles.header;
-    } else {
-      // Web should work fine with the standard approach
-      return fontsLoaded ? 
-        [styles.header, {fontFamily: 'Cinzel'}] : 
-        styles.header;
-    }
+    // Web should work fine with the standard approach
+    return fontsLoaded ? 
+      [styles.header, {fontFamily: 'Cinzel'}] : 
+      styles.header;
   };
 
   // Custom style for navigation buttons container - metallic appearance
-  const navigationFrameStyle = Platform.OS === 'web' 
-    ? {
-        // Web-specific metallic style with CSS
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#a0a0a0', // Base metallic color
-        paddingVertical: 10,
-        paddingHorizontal: 15,
-        borderRadius: 10,
-        marginBottom: 5, // REDUCED gap between navigation panel and progress meter
-        boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.4), inset 0px 1px 3px rgba(255, 255, 255, 0.7), inset 0px -2px 3px rgba(0, 0, 0, 0.2)',
-        backgroundImage: 'linear-gradient(180deg, #dcdcdc 0%, #9e9e9e 50%, #757575 100%)',
-        border: '1px solid #606060'
-      }
-    : {
-        // React Native style for iOS/Android
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#a0a0a0', // Base metallic color
-        paddingVertical: 10,
-        paddingHorizontal: 20, // INCREASED horizontal padding for mobile
-        borderRadius: 10,
-        marginHorizontal: 8, // ADDED horizontal margin to prevent edge cutoff
-        marginBottom: 5, 
-        borderWidth: 1,
-        borderColor: '#606060',
-        // More pronounced shadow
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.4,
-        shadowRadius: 8,
-        elevation: 6,
-      };
+  const navigationFrameStyle = {
+    // Web-specific metallic style with CSS
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#a0a0a0',
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderRadius: 10,
+    marginBottom: 5,
+    boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.4), inset 0px 1px 3px rgba(255, 255, 255, 0.7), inset 0px -2px 3px rgba(0, 0, 0, 0.2)',
+    backgroundImage: 'linear-gradient(180deg, #dcdcdc 0%, #9e9e9e 50%, #757575 100%)',
+    border: '1px solid #606060'
+  };
 
   // Style for the sentence count display
-  const sentenceCountStyle = Platform.OS === 'web'
-    ? {
-        backgroundColor: '#f0f0f0',
-        paddingVertical: 2, // REDUCED vertical padding
-        paddingHorizontal: 8,
-        borderRadius: 10,
-        alignSelf: 'center',
-        boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.15)',
-        border: '1px solid #ddd',
-      }
-    : {
-        backgroundColor: '#f0f0f0',
-        paddingVertical: 2, // REDUCED vertical padding
-        paddingHorizontal: 8,
-        borderRadius: 10,
-        alignSelf: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.15,
-        shadowRadius: 4,
-        elevation: 2,
-        borderWidth: 1,
-        borderColor: '#ddd',
-      };
+  const sentenceCountStyle = {
+    backgroundColor: '#f0f0f0',
+    paddingVertical: 2,
+    paddingHorizontal: 8,
+    borderRadius: 10,
+    alignSelf: 'center',
+    boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.15)',
+    border: '1px solid #ddd',
+  };
 
   // Enhanced content container style with shadows
-  const enhancedContentContainerStyle = Platform.OS === 'web'
-    ? {
-        ...styles.contentContainer,
-        boxShadow: '0px 6px 12px rgba(0, 0, 0, 0.3)',
-        border: '1px solid #e0e0e0',
-      }
-    : {
-        ...styles.contentContainer,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.3,
-        shadowRadius: 12,
-        elevation: 8,
-        borderWidth: 1,
-        borderColor: '#e0e0e0',
-      };
+  const enhancedContentContainerStyle = {
+    ...styles.contentContainer,
+    boxShadow: '0px 6px 12px rgba(0, 0, 0, 0.3)',
+    border: '1px solid #e0e0e0',
+  };
 
   // Enhanced home button with 3D/gradient effect - same blue color scheme
-  const enhancedHomeButtonStyle = Platform.OS === 'web'
-    ? {
-        ...styles.homeLink,
-        backgroundImage: 'linear-gradient(180deg, #4a8ab5 0%, #3a7ca5 50%, #2a6c95 100%)',
-        boxShadow: '0px 3px 6px rgba(0, 0, 0, 0.3), inset 0px 1px 3px rgba(255, 255, 255, 0.4)',
-        border: '1px solid #2a6c95',
-        paddingVertical: 8, // REDUCED vertical padding
-        paddingHorizontal: 15,
-        marginTop: 8, // REDUCED margin above home button
-      }
-    : {
-        ...styles.homeLink,
-        backgroundColor: '#3a7ca5',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.3,
-        shadowRadius: 6,
-        elevation: 4,
-        borderWidth: 1,
-        borderColor: '#2a6c95',
-        paddingVertical: 8, // REDUCED vertical padding
-        paddingHorizontal: 15,
-        marginTop: 8, // REDUCED margin above home button
-      };
+  const enhancedHomeButtonStyle = {
+    ...styles.homeLink,
+    backgroundImage: 'linear-gradient(180deg, #4a8ab5 0%, #3a7ca5 50%, #2a6c95 100%)',
+    boxShadow: '0px 3px 6px rgba(0, 0, 0, 0.3), inset 0px 1px 3px rgba(255, 255, 255, 0.4)',
+    border: '1px solid #2a6c95',
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    marginTop: 8,
+  };
 
   // Enhanced home button text style
   const enhancedHomeLinkTextStyle = {
     ...styles.homeLinkText,
     color: '#ffffff',
     fontWeight: 'bold',
-    fontSize: 12, // REDUCED font size (from 14)
+    fontSize: 12,
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2
   };
   
-  // Media button styles with spacing adjustments for mobile
+  // Media button styles
   const mediaButtonStyle = [
     styles.mediaButton,
-    // Adjust horizontal margin to prevent edge cutoff
-    Platform.OS !== 'web' ? { marginHorizontal: 2 } : { marginHorizontal: 5 }
+    { marginHorizontal: 5 }
   ];
   
-  // Style for focused toggle item - VERY prominent visual indication
+  // Style for focused toggle item - prominent visual indication
   const getFocusedStyle = (id) => {
     const isFocused = id === focusedElementId;
     
-    if (Platform.OS === 'web') {
-      return isFocused ? {
-        backgroundColor: 'rgba(58, 124, 165, 0.2)',
-        borderWidth: 2,
-        borderColor: '#3a7ca5',
-        borderRadius: 8,
-        margin: -2, // Compensate for border width
-        boxShadow: '0 0 8px rgba(58, 124, 165, 0.8)'
-      } : {};
-    } else {
-      return {};
-    }
+    return isFocused ? {
+      backgroundColor: 'rgba(58, 124, 165, 0.2)',
+      borderWidth: 2,
+      borderColor: '#3a7ca5',
+      borderRadius: 8,
+      margin: -2, // Compensate for border width
+      boxShadow: '0 0 8px rgba(58, 124, 165, 0.8)'
+    } : {};
   };
 
   return (
@@ -415,7 +314,7 @@ export function ReadingUI({
                 styles.mediaButtonCenter, 
                 isSpeaking ? styles.activeButton : null,
                 loadingBook ? styles.disabledButton : null,
-                Platform.OS !== 'web' ? { marginHorizontal: 4 } : { marginHorizontal: 5 },
+                { marginHorizontal: 5 },
                 getFocusedStyle("listen-button")
               ]} 
               onPress={speakSentence} 
@@ -425,7 +324,7 @@ export function ReadingUI({
               accessibilityLabel={isSpeaking ? (uiText.stop || "Stop") : (uiText.listen || "Listen")}
               tabIndex={3}
             >
-              <Text style={[styles.buttonText, { fontSize: 14 }]}> {/* REDUCED font size (from 16) */}
+              <Text style={[styles.buttonText, { fontSize: 14 }]}>
                 {isSpeaking ? (uiText.stop || "Stop") : (uiText.listen || "Listen")}
               </Text>
             </TouchableOpacity>

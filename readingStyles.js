@@ -1,20 +1,20 @@
-// readingStyles.js - Styles for the reading controls
-import { StyleSheet, Platform } from 'react-native';
+// readingStyles.js - Styles for the reading controls (Web Only)
+import { StyleSheet } from 'react-native';
 
 // Theme colors
 const themeBlue = '#3a7ca5';
 
 export const readingStyles = StyleSheet.create({
-  // New: ScrollView content container
+  // ScrollView content container
   readingScrollContainer: {
     alignItems: 'center',
-    paddingBottom: 20, // REDUCED extra space at bottom for scrolling (from 30)
+    paddingBottom: 20,
   },
   
-  // New: Book title styles
+  // Book title styles
   bookTitleContainer: {
-    width: '90%', // INCREASED from 80% to match contentContainer's new width
-    marginVertical: 8, // REDUCED vertical margin (from 10)
+    width: '90%',
+    marginVertical: 8,
     alignItems: 'center',
   },
   bookTitle: {
@@ -24,13 +24,13 @@ export const readingStyles = StyleSheet.create({
     textAlign: 'center',
   },
   
-  // Media Player Style Controls - NEW
+  // Media Player Style Controls
   mediaControlsContainer: {
-    width: '95%', // INCREASED from 90% to make control panel wider
+    width: '95%',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10, // REDUCED bottom margin (from 15)
+    marginBottom: 10,
   },
   mediaButton: {
     backgroundColor: themeBlue,
@@ -40,16 +40,7 @@ export const readingStyles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     margin: 4,
-    // Add subtle shadow
-    ...(Platform.OS !== 'web' ? {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.2,
-      shadowRadius: 2,
-    } : {}),
-    ...(Platform.OS === 'web' ? {
-      boxShadow: '0px 2px 3px rgba(0, 0, 0, 0.2)'
-    } : {}),
+    boxShadow: '0px 2px 3px rgba(0, 0, 0, 0.2)',
     elevation: 2
   },
   mediaButtonCenter: {
@@ -60,16 +51,7 @@ export const readingStyles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     minWidth: 90,
-    // Add subtle shadow
-    ...(Platform.OS !== 'web' ? {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.2,
-      shadowRadius: 2,
-    } : {}),
-    ...(Platform.OS === 'web' ? {
-      boxShadow: '0px 2px 3px rgba(0, 0, 0, 0.2)'
-    } : {}),
+    boxShadow: '0px 2px 3px rgba(0, 0, 0, 0.2)',
     elevation: 2
   },
   mediaButtonText: {
@@ -80,30 +62,21 @@ export const readingStyles = StyleSheet.create({
   
   // Content container styles
   contentContainer: {
-    width: '95%', // INCREASED from 80% to make content container wider
-    marginTop: 5, // REDUCED top margin (from 10)
+    width: '95%',
+    marginTop: 5,
     padding: 15,
     backgroundColor: '#f9f9f9',
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#ddd',
-    // No fixed height - allows content to determine size
-    minHeight: 100, // Minimum height for empty content
-    marginBottom: 8, // REDUCED bottom margin (from 10)
-    ...(Platform.OS !== 'web' ? {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.1,
-      shadowRadius: 2,
-    } : {}),
-    ...(Platform.OS === 'web' ? {
-      boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.1)'
-    } : {}),
+    minHeight: 100,
+    marginBottom: 8,
+    boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.1)',
     elevation: 2
   },
   navigationContainer: {
-    marginBottom: 8, // REDUCED bottom margin (from 10)
-    width: '95%', // INCREASED width to match other containers
+    marginBottom: 8,
+    width: '95%',
   },
   sentenceWrapper: {
     marginBottom: 12
@@ -131,11 +104,11 @@ export const readingStyles = StyleSheet.create({
 
   // Control buttons (legacy style)
   controlsContainer: {
-    width: '95%', // INCREASED from 80% to match other containers
+    width: '95%',
     alignItems: 'flex-start',
-    marginTop: 5, // REDUCED top margin (kept at 5)
-    marginBottom: 8, // REDUCED bottom margin (from 10)
-    position: 'relative'  // For positioning the rewind button
+    marginTop: 5,
+    marginBottom: 8,
+    position: 'relative'
   },
   controls: {
     flexDirection: 'row',
@@ -152,7 +125,7 @@ export const readingStyles = StyleSheet.create({
     width: '45%'
   },
   rewindButton: {
-    marginTop: 8, // REDUCED top margin (from 10)
+    marginTop: 8,
     alignSelf: 'flex-end',
     backgroundColor: '#f0f0f0',
     paddingVertical: 5,
@@ -162,7 +135,7 @@ export const readingStyles = StyleSheet.create({
     borderColor: '#ccc'
   },
   rewindButtonText: {
-    fontSize: 12, // REDUCED font size (from 14)
+    fontSize: 12,
     color: '#333'
   },
   
@@ -170,23 +143,23 @@ export const readingStyles = StyleSheet.create({
   buttonText: {
     color: 'white',
     fontWeight: 'bold',
-    fontSize: 14, // REDUCED font size (from 16)
+    fontSize: 14,
   },
   activeButton: {
-    backgroundColor: '#d16666', // Reddish color for active state
+    backgroundColor: '#d16666',
   },
   disabledButton: {
-    backgroundColor: '#a9a9a9', // Gray for disabled state
+    backgroundColor: '#a9a9a9',
     opacity: 0.6,
   },
 
   // Speed control
   speedControlRow: {
-    width: '95%', // INCREASED from 80% to match other containers
+    width: '95%',
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8, // REDUCED top margin (from 10)
-    marginBottom: 10  // REDUCED space after speed control (from 12)
+    marginTop: 8,
+    marginBottom: 10
   },
   speedLabel: {
     fontSize: 14,
@@ -206,88 +179,46 @@ export const readingStyles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#aaa',
     marginLeft: 5,
-    // 3D effect for popped out appearance
-    ...(Platform.OS !== 'web' ? {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 1 },
-      shadowOpacity: 0.2,
-      shadowRadius: 1,
-    } : {}),
-    ...(Platform.OS === 'web' ? {
-      boxShadow: '0px 1px 1px rgba(0, 0, 0, 0.2)'
-    } : {}),
+    boxShadow: '0px 1px 1px rgba(0, 0, 0, 0.2)',
     elevation: 2
   },
   speedCircleActive: {
     backgroundColor: themeBlue,
     borderColor: '#2a6c95',
-    // 3D effect for pressed in appearance
-    ...(Platform.OS !== 'web' ? {
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.1,
-      shadowRadius: 1,
-    } : {}),
-    ...(Platform.OS === 'web' ? {
-      boxShadow: '0px 0px 1px rgba(0, 0, 0, 0.1)'
-    } : {}),
+    boxShadow: '0px 0px 1px rgba(0, 0, 0, 0.1)',
     elevation: 1,
-    // Slight inset effect
     transform: [{ scale: 0.9 }]
   },
 
   // Toggle controls
   toggleContainer: {
-    width: '95%', // INCREASED from 80% to match other containers
+    width: '95%',
     marginTop: 0,
-    marginBottom: 5 // Keep at 5
+    marginBottom: 5
   },
   toggleItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'flex-start',
-    paddingHorizontal: 8, // Added padding to make focus effect look better
-    paddingVertical: 6,   // Added padding to make focus effect look better
-    marginVertical: 4,    // Increased for better separation
-    borderRadius: 8,      // Added for nicer focus effect
-    borderWidth: 1,       // Added for focus state
-    borderColor: 'transparent', // Invisible by default
-    // Platform-specific adjustments
-    ...(Platform.OS === 'web' ? {
-      // Web-specific adjustments
-      height: 38, // Increased height for better visibility and touch target
-      transition: 'all 0.2s ease', // Smooth transition for focus effects
-      // Web focus styles - these apply when the item has keyboard focus
-      ':focus-within': {
-        backgroundColor: 'rgba(58, 124, 165, 0.2)',
-        borderColor: '#3a7ca5',
-        boxShadow: '0 0 8px rgba(58, 124, 165, 0.8)',
-      }
-    } : {
-      height: Platform.OS === 'android' ? 46 : 46, // Increased height
-      // Native platforms get focus indication through other means
-    })
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    marginVertical: 4,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'transparent',
+    height: 38,
+    transition: 'all 0.2s ease',
   },
-  // Style for focused toggle items - this is applied through React state 
-  // for native platforms and works with the gamepad navigation
   focusedToggleItem: {
     backgroundColor: 'rgba(58, 124, 165, 0.15)',
     borderColor: '#3a7ca5',
-    ...(Platform.OS !== 'web' ? {
-      shadowColor: '#3a7ca5',
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.5,
-      shadowRadius: 5,
-      elevation: 3,
-    } : {
-      boxShadow: '0 0 8px rgba(58, 124, 165, 0.8)'
-    })
+    boxShadow: '0 0 8px rgba(58, 124, 165, 0.8)'
   },
   toggleLabel: {
     fontSize: 14,
     marginRight: 10,
     color: '#555',
-    flex: 1, // Let the label take available space
+    flex: 1,
   },
 
   // Next button with spinner
@@ -322,10 +253,10 @@ export const readingStyles = StyleSheet.create({
     fontStyle: 'italic'
   },
   
-  // New: Home link styles
+  // Home link styles
   homeLink: {
-    marginTop: 8, // REDUCED top margin (from 15)
-    paddingVertical: 6, // REDUCED vertical padding (from 8)
+    marginTop: 8,
+    paddingVertical: 6,
     paddingHorizontal: 15,
     backgroundColor: '#f0f0f0',
     borderRadius: 5,
@@ -335,27 +266,16 @@ export const readingStyles = StyleSheet.create({
   homeLinkText: {
     color: themeBlue,
     fontWeight: '500',
-    fontSize: 12, // REDUCED font size (from 14)
+    fontSize: 12,
   },
 
-  // Focused element styles - significantly more prominent
+  // Focused element styles
   focusedElement: {
-    ...(Platform.OS !== 'web' ? {
-      borderWidth: 2,
-      borderColor: themeBlue,
-      backgroundColor: 'rgba(58, 124, 165, 0.15)',
-      shadowColor: themeBlue,
-      shadowOffset: { width: 0, height: 0 },
-      shadowOpacity: 0.8,
-      shadowRadius: 4,
-      elevation: 4,
-    } : {
-      outlineWidth: '3px',
-      outlineStyle: 'solid',
-      outlineColor: themeBlue,
-      borderColor: themeBlue,
-      backgroundColor: 'rgba(58, 124, 165, 0.15)',
-      boxShadow: '0 0 10px rgba(58, 124, 165, 0.8)',
-    })
+    outlineWidth: '3px',
+    outlineStyle: 'solid',
+    outlineColor: themeBlue,
+    borderColor: themeBlue,
+    backgroundColor: 'rgba(58, 124, 165, 0.15)',
+    boxShadow: '0 0 10px rgba(58, 124, 165, 0.8)',
   }
 });

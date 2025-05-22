@@ -1,4 +1,4 @@
-// ContentDisplay.js - Updated with auto-play and consistent toggle colors
+// ContentDisplay.js - Web Only version
 import React from 'react';
 import {
   Text, View, TouchableOpacity, Switch, ActivityIndicator,

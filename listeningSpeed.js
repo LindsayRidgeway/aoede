@@ -1,7 +1,6 @@
-// listeningSpeed.js - Updated with enhanced debugging for iOS
+// listeningSpeed.js - Web Only version
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Audio } from 'expo-av';
-import { Platform } from 'react-native';
 import * as Core from './listeningSpeedCore';
 import { apiTextToSpeech } from './apiServices';
 import { apiGetGoogleVoices } from "./apiServices";
@@ -11,7 +10,7 @@ export let detectedLanguageCode = null;
 
 // Keep track of available voices
 let availableVoices = null;
-let languageInitialized = false; // Track if we've initialized voice data
+let languageInitialized = false;
 
 // Cache for TTS voices by language
 let cachedVoicesByLanguage = {}; 
@@ -249,7 +248,6 @@ const processTextForArticulation = (text, articulationEnabled) => {
   }
 
   // Replace spaces between words with commas followed by space
-  // const processedText = text.replace(/(\w)(\s)(\w)/g, '$1, $3');
   return text.split(/\s+/).join(', ');
 };
 
