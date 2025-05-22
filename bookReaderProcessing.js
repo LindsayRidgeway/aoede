@@ -154,47 +154,42 @@ export function extractSentencesFromText(text) {
   const paragraphs = normalizedText.split(/\n\n+/);
   const sentences = [];
   
-  // Regular expression to find sentences - end punctuation followed by space and capital letter
-  // This is a simple pattern that will work for most cases
-  const sentenceRegex = /[.!?][ \n]+[A-Z]/g;
-  
   for (const paragraph of paragraphs) {
     if (paragraph.trim().length === 0) continue;
     
-    // Find all potential sentence endings
-    let lastIndex = 0;
-    let match;
-    
-    // Copy of paragraph for manipulation
-    let remainingText = paragraph;
-    
-    // First check if paragraph is a standalone sentence (no ending punctuation)
-    if (!/[.!?]/.test(remainingText)) {
-      sentences.push(remainingText.trim());
-      continue;
-    }
-    
-    // Find sentence boundaries
-    while ((match = sentenceRegex.exec(remainingText)) !== null) {
-      // The match includes the punctuation and the first letter of the next sentence
-      // So we need to adjust to get just the sentence
-      const endIndex = match.index + 1; // Include the punctuation
+    // TEMPORARY DEBUG: Check if this is our problem paragraph
+    if (paragraph.includes("I didn't know what to do")) {
+      console.log("DEBUG: Found problem paragraph!");
+      console.log("Paragraph text:", JSON.stringify(paragraph));
+      console.log("Paragraph length:", paragraph.length);
       
-      if (endIndex > lastIndex) {
-        const sentence = remainingText.substring(lastIndex, endIndex).trim();
-        if (sentence.length > 0) {
-          sentences.push(sentence);
+      // Let's see the character codes around the periods
+      for (let i = 0; i < paragraph.length; i++) {
+        if (paragraph[i] === '.') {
+          console.log(`Character at position ${i}: '${paragraph[i]}' (code: ${paragraph.charCodeAt(i)})`);
+          if (i + 1 < paragraph.length) {
+            console.log(`Next character: '${paragraph[i+1]}' (code: ${paragraph.charCodeAt(i+1)})`);
+          }
         }
       }
-      
-      lastIndex = endIndex + 1; // Skip the space after punctuation
     }
     
-    // Add the last sentence if there's anything left
-    if (lastIndex < remainingText.length) {
-      const lastSentence = remainingText.substring(lastIndex).trim();
-      if (lastSentence.length > 0) {
-        sentences.push(lastSentence);
+    // Use a better approach: split on sentence endings but keep the delimiter
+    // This regex looks for period/exclamation/question followed by optional space(s)
+    // The key change: (\s*) instead of (\s+) to handle missing spaces
+    const sentenceEndings = /([.!?]+)(\s*)/g;
+    
+    // Replace the endings with a unique delimiter that we can split on
+    const delimiter = '\u0001'; // Use a control character that won't appear in text
+    const marked = paragraph.replace(sentenceEndings, '$1' + delimiter);
+    
+    // Split on our delimiter
+    const potentialSentences = marked.split(delimiter);
+    
+    for (const sentence of potentialSentences) {
+      const trimmed = sentence.trim();
+      if (trimmed.length > 0) {
+        sentences.push(trimmed);
       }
     }
   }

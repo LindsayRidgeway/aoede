@@ -96,6 +96,10 @@ export const bookPipeProcess = {
       html = html.replace(/<header\b[^<]*(?:(?!<\/header>)<[^<]*)*<\/header>/gi, ' ');
       html = html.replace(/<footer\b[^<]*(?:(?!<\/footer>)<[^<]*)*<\/footer>/gi, ' ');
       html = html.replace(/<table\b[^<]*(?:(?!<\/table>)<[^<]*)*<\/table>/gi, ' ');
+      
+      // Add spaces before and after block elements to prevent run-together sentences
+      html = html.replace(/(<\/(?:p|div|h[1-6])>)(<(?:p|div|h[1-6])[^>]*>)/gi, '$1 $2');
+      
       html = html.replace(/(<h[1-6][^>]*>)/gi, '\n$1');
       html = html.replace(/(<\/h[1-6]>)/gi, '$1\n');
       html = html.replace(/(<(div|p|section|article)[^>]*>)/gi, '\n$1');
@@ -124,6 +128,15 @@ export const bookPipeProcess = {
       text = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
       text = text.replace(/\n{3,}/g, '\n\n');
       text = text.split('\n').map(line => line.replace(/\s+/g, ' ').trim()).join('\n').trim();
+      
+      // Ensure sentences ending with punctuation have a space after them
+      text = text.replace(/([.!?])([A-Z])/g, '$1 $2');
+      
+      // DEBUG: Log if we find the problem text
+      if (text.includes("I didn't know what to do")) {
+        console.log("DEBUG extractText: Found problem text");
+        console.log("Text around 'I didn't know':", text.substring(text.indexOf("I didn't know what to do") - 50, text.indexOf("I didn't know what to do") + 200));
+      }
 
       return text;
     } catch (error) {
