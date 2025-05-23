@@ -7,7 +7,6 @@ Please generate your output as follows:
 3. Simplify the translated sentence so that a typical native 9-year-old ${studyLanguage}-speaking child can understand it, following the guidelines below. Simplifying the translated sentence will produce one or more simplified sentences.
 4. Write each simplified ${studyLanguage} sentence to the output AS A SEPARATE SENTENCE.
 5. IMPORTANT: Please be sure to end each simplified sentence with a NEWLINE.
-6. CRITICAL: Each simplified sentence MUST be on its own line. Do not put multiple sentences on the same line.
 
 Simplification guidelines:
 - Break the translated sentence into one or more shorter ones as needed to carry out the following guidelines.
@@ -18,6 +17,8 @@ Simplification guidelines:
 
 Note:
 - Please do not add comments, do not number the sentences, and do not produce any output other than as described above.
+
+BEFORE YOU RETURN YOUR RESULTS, PLEASE NOTE: Sometimes, especially with long original sentences, you sometimes forget to put a NEWLINE after every simplified sentence. PLEASE DOUBLE-CHECK that each simplified sentence is on a separate line. THANKS!
 
 Input:
 ${sourceText}`;
