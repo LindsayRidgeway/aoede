@@ -195,6 +195,20 @@ export default function App() {
     initialize();
   }, []);
   
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      const script = document.createElement('script');
+      script.src = 'https://gc.zgo.at/count.js';
+      script.setAttribute('data-goatcounter', 'https://aoede.goatcounter.com/count');
+      script.async = true;
+      document.body.appendChild(script);
+
+      return () => {
+        document.body.removeChild(script);
+      };
+    }
+  }, []);
+  
   // Translate UI to specified language
   const translateUiToLanguage = async (targetLang) => {
     if (!targetLang || targetLang === 'en') return;
