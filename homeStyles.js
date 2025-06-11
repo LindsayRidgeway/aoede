@@ -252,6 +252,24 @@ export const homeStyles = StyleSheet.create({
     backgroundColor: '#d16666'
   },
 
+  // Contact developer styles
+  contactContainer: {
+    alignItems: 'center',
+    marginTop: 15,
+    marginBottom: 0,
+  },
+  contactText: {
+    fontSize: 12,
+    color: '#666',
+    fontStyle: 'italic',
+    textAlign: 'center',
+  },
+  contactLink: {
+    color: '#666',
+    textDecorationLine: 'underline',
+    cursor: 'pointer',
+  },
+
   // Utility styles
   sourceInputWrapper: {
     flex: 1,

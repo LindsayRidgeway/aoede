@@ -96,6 +96,13 @@ _This checklist is used to test Aoede across all supported platforms before rele
 
 ---
 
+### Web Build
+
+npx expo export -p web --output-dir docs/app
+netlify deploy --prod
+
+---
+
 ### 🤳 Android Testing
 
 1. Run the Android build:
@@ -207,6 +214,18 @@ _This checklist is used to test Aoede across all supported platforms before rele
 | Commit | `git commit -m "Publish new webpage for Aoede"` |
 | Push to GitHub | `git push` |
 | Return to work | `git checkout aoede-2.1` + `git push -u origin aoede-2.1` |
+
+---
+
+## In Practice
+
+git status
+git checkout main
+git merge aoede-XXX
+git push
+git checkout aoede-XXX
+git push -u origin aoede-XXX
+
 
 ---
 

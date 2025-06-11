@@ -452,6 +452,23 @@ export function HomeUI({
           </View>
         </View>
         
+        {/* Contact Developer Section */}
+        <View style={styles.contactContainer}>
+          <Text style={styles.contactText}>
+            To contact developer:{' '}
+            <Text 
+              style={styles.contactLink}
+              onPress={() => {
+                if (typeof window !== 'undefined') {
+                  window.open('mailto:aoede.pro@gmail.com', '_self');
+                }
+              }}
+            >
+              aoede.pro@gmail.com
+            </Text>
+          </Text>
+        </View>
+        
         {/* Smart gamepad indicator - only shows when gamepad is connected */}
         <GamepadIndicator />
       </View>
