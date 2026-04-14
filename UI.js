@@ -11,7 +11,10 @@ import * as Font from 'expo-font';
 import { initializeUserLibrary } from './userLibrary';
 import { getBookById } from './userLibrary';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import gamepadManager from './gamepadSupport';
+
+const LAST_VIEW_KEY = 'aoede_last_view';
 
 // Explicitly export MainUI as a named export
 export function MainUI(props) {
@@ -26,6 +29,7 @@ export function MainUI(props) {
   
   // State to track which view is active: 'home' or 'reading'
   const [activeView, setActiveView] = useState('home');
+  const [viewRestored, setViewRestored] = useState(false);
   
   // State to store book title
   const [bookTitle, setBookTitle] = useState('');
@@ -40,6 +44,24 @@ export function MainUI(props) {
     };
     
     initLibrary();
+  }, []);
+
+  // Restore the last saved view on startup
+  useEffect(() => {
+    const restoreLastView = async () => {
+      try {
+        const savedView = await AsyncStorage.getItem(LAST_VIEW_KEY);
+        if (savedView === 'reading') {
+          setActiveView('reading');
+        }
+      } catch (error) {
+        // Silent error handling
+      } finally {
+        setViewRestored(true);
+      }
+    };
+
+    restoreLastView();
   }, []);
   
   // Initialize gamepad support for web platform
@@ -209,6 +231,27 @@ export function MainUI(props) {
   const handleGoHome = () => {
     setActiveView('home');
   };
+
+  // Persist the active view so Aoede can resume the reading page on startup
+  useEffect(() => {
+    if (!viewRestored) {
+      return;
+    }
+
+    const persistActiveView = async () => {
+      try {
+        if (activeView === 'reading') {
+          await AsyncStorage.setItem(LAST_VIEW_KEY, 'reading');
+        } else {
+          await AsyncStorage.removeItem(LAST_VIEW_KEY);
+        }
+      } catch (error) {
+        // Silent error handling
+      }
+    };
+
+    persistActiveView();
+  }, [activeView, viewRestored]);
   
   // Go to previous sentence - new function
   const handlePreviousSentence = async () => {

@@ -12,6 +12,8 @@ import { initializeUserLibrary, getUserLibrary, getBookById } from './userLibrar
 import DebugPanel from './DebugPanel';
 import gamepadManager from './gamepadSupport';
 
+const LAST_VIEW_KEY = 'aoede_last_view';
+
 // Get the user's preferred locale/language for web
 const getDeviceLanguage = async () => {
   try {
@@ -118,6 +120,9 @@ export default function App() {
   useEffect(() => {
     const initialize = async () => {
       try {
+        let storedSelectedBook = null;
+        let storedLastView = null;
+
         // Initialize the user's library first
         await initializeUserLibrary();
         
@@ -129,7 +134,7 @@ export default function App() {
         
         // Load stored settings
         try {
-          const storedSelectedBook = await AsyncStorage.getItem("selectedBook");
+          storedSelectedBook = await AsyncStorage.getItem("selectedBook");
           const storedSpeechRate = await AsyncStorage.getItem("speechRate");
           const storedReadingLevel = await AsyncStorage.getItem("readingLevel");
           const storedShowText = await AsyncStorage.getItem("showText");
@@ -137,6 +142,7 @@ export default function App() {
           const storedArticulation = await AsyncStorage.getItem("articulation");
           const storedAutoplay = await AsyncStorage.getItem("autoplay");
           const storedListeningSpeed = await AsyncStorage.getItem("listeningSpeed");
+          storedLastView = await AsyncStorage.getItem(LAST_VIEW_KEY);
           
           if (storedSelectedBook !== null) {
             setSelectedBook(storedSelectedBook);
@@ -184,6 +190,16 @@ export default function App() {
         
         // Initialize BookReader
         BookReader.initialize(handleSentenceProcessed, deviceLang || 'en');
+
+        if (storedLastView === 'reading' && storedSelectedBook && language) {
+          setStudyLangSentence("");
+          setNativeLangSentence("");
+          setCurrentSentenceIndex(0);
+          setTotalSentences(0);
+          setIsAtEndOfBook(false);
+          readingManager.reset();
+          await loadBookSession(storedSelectedBook, language);
+        }
         
         // Initialize gamepad support
         gamepadManager.init();
@@ -271,6 +287,46 @@ export default function App() {
     }
     
     setIsAtEndOfBook(!progress.hasMoreContent && progress.currentSentenceIndex === progress.totalSentencesInMemory - 1);
+  };
+
+  const loadBookSession = async (bookId, language) => {
+    setLoadingBook(true);
+    
+    try {
+      const book = await getBookById(bookId);
+      
+      if (!book) {
+        throw new Error(`Book with ID ${bookId} not found`);
+      }
+      
+      setSourceLanguage(book.language);
+      
+      const success = await readingManager.loadBook(language, bookId);
+      
+      if (!success) {
+        throw new Error("Failed to load book");
+      }
+      
+      if (BookReader.bookSentences) {
+        setTotalSentences(BookReader.bookSentences.length);
+      }
+      
+      gamepadManager.registerCallbacks({
+        onNext: handleNextSentence,
+        onListen: handleToggleSpeak,
+        onPrevious: handlePreviousSentence,
+        onBeginningOfBook: handleRewindBook,
+        onEndOfBook: handleGoToEndOfBook
+      });
+      
+      return true;
+    } catch (error) {
+      setStudyLangSentence(`Error: ${error.message || "Unknown error loading content."}`);
+      setNativeLangSentence(`Error: ${error.message || "Unknown error loading content."}`);
+      return false;
+    } finally {
+      setLoadingBook(false);
+    }
   };
   
   // Handle speak button click
@@ -590,45 +646,8 @@ export default function App() {
       alert("Language Required: Please select a study language.");
       return false;
     }
-    
-    setLoadingBook(true);
-    
-    try {
-      const book = await getBookById(bookId);
-      
-      if (!book) {
-        throw new Error(`Book with ID ${bookId} not found`);
-      }
-      
-      setSourceLanguage(book.language);
-      
-      const success = await readingManager.loadBook(studyLanguage, bookId);
-      
-      if (!success) {
-        throw new Error("Failed to load book");
-      }
-      
-      if (BookReader.bookSentences) {
-        setTotalSentences(BookReader.bookSentences.length);
-      }
-      
-      // Register gamepad callbacks for this book
-      gamepadManager.registerCallbacks({
-        onNext: handleNextSentence,
-        onListen: handleToggleSpeak,
-        onPrevious: handlePreviousSentence,
-        onBeginningOfBook: handleRewindBook,
-        onEndOfBook: handleGoToEndOfBook
-      });
-      
-      return true;
-    } catch (error) {
-      setStudyLangSentence(`Error: ${error.message || "Unknown error loading content."}`);
-      setNativeLangSentence(`Error: ${error.message || "Unknown error loading content."}`);
-      return false;
-    } finally {
-      setLoadingBook(false);
-    }
+
+    return await loadBookSession(bookId, studyLanguage);
   };
   
   if (typeof MainUI === 'undefined') {
