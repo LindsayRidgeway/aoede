@@ -177,7 +177,7 @@ export function extractSentencesFromText(text) {
     // Use a better approach: split on sentence endings but keep the delimiter
     // This regex looks for period/exclamation/question followed by optional space(s)
     // The key change: (\s*) instead of (\s+) to handle missing spaces
-    const sentenceEndings = /([.!?]+)(\s*)/g;
+    const sentenceEndings = /([.!?]+["'”’]*)(\s*)/g;
     
     // Replace the endings with a unique delimiter that we can split on
     const delimiter = '\u0001'; // Use a control character that won't appear in text
