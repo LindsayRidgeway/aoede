@@ -1,270 +1,207 @@
 # Aoede
 
-**Aoede** is a revolutionary app for immersive, adaptive foreign-language listening. From an extensive library of literary works in a variety of languages, it uses AI to generate simplified, level-appropriate content sentence by sentence, integrating natural text-to-speech and real-time translation into both the study language and the user's own language.
+Aoede is a web app for adaptive foreign-language listening and reading with books from Project Gutenberg.
 
-**Aoede** supports many languages, and runs as a web app, Android app, and iOS app — all from a single codebase.
+The user chooses:
+- a `study language`
+- a `book language`
+- a book from a personal library
 
----
+Aoede then:
+- loads the book text
+- tracks the reader's position in that specific book
+- simplifies each sentence to a chosen reading level
+- translates for the user's own language
+- plays text-to-speech audio
+- automatically translates the UI into the user's language
 
-## Quick Start
+Aoede is now maintained as a `web app only`. The current architecture is:
+- Expo / React Native Web for the frontend
+- a Netlify Function for translation, simplification, language-list, and TTS API calls
+- OpenAI for sentence simplification and reader-facing translation
+- Google Cloud Translation and Text-to-Speech for fast translation, language metadata, and audio
 
-Aoede can be accessed via instructions at https://aoede.pro
+## Current Architecture
 
----
+Frontend:
+- `App.js` holds the main application state
+- `UI.js` switches between the home view and the reading view
+- `HomeUI.js`, `ReadingUI.js`, and `LibraryUI.js` render the major screens
+- `bookReader*.js` manages reading position, sentence extraction, and sentence processing
+- `bookPipe*.js` fetches and prepares source text
 
-## How It Works
+Backend:
+- `netlify/functions/aoedeapi.js` is the only serverless endpoint
+- `netlify/functions/simplifiers/` contains the reading-level prompt templates
 
-1. Choose your **study language** and **source material**.
-2. Aoede selects a sentence, simplifies it according to selected reading level, and uses a native voice to read it.
-3. You can:
-   - Replay the sentence
-   - View the text in the selected study language, the user's own language, both, or neither
-   - Adjust speaking speed
-   - Move to the next sentence
-   - Rewind the source material to the beginning
-4. Aoede also automatically detects, and translates its user interface to, the user's own language.
-   
+Deployment:
+- Netlify builds the web app with `expo export -p web --output-dir docs/app`
+- Netlify publishes `docs/app`
+- Netlify also deploys the function in `netlify/functions`
 
----
+## Features
 
-## Reading Levels
+- Web-based, no app store required
+- Intelligent personal library built from Project Gutenberg
+- Per-book position memory
+- Multiple reading levels: `6`, `9`, `12`, `15`, `18`
+- Sentence-by-sentence simplification
+- Study-language and user-language display
+- Listening-speed control
+- Automatic UI translation into the user's language
+- Gamepad support on web
 
-Aoede supports multiple reading levels that affect **sentence simplification**:
+## Requirements
 
-- **RL 6**: Extremely simplified sentences (for a 6-year-old native speaker)
-- **RL 9**
-- **RL 12**
-- **RL 15**
-- **RL 18**: No simplification; original sentence preserved
+You will need:
+- Node.js
+- npm
+- a Netlify account
+- an OpenAI API key
+- a Google Cloud API key with:
+  - Translation API enabled
+  - Text-to-Speech API enabled
 
-At RL 18, Aoede skips the AI simplification step entirely.
+The project currently uses the dependencies pinned in `package.json` and `package-lock.json`.
 
----
+## Local Setup
 
-## API Keys and Build Configuration
+1. Clone the repository.
+2. Install dependencies:
 
-In order to run regression tests or generate a new build, you must include two configuration files at the root level of your local project:
-
-1. **`.env`** – Stores sensitive API keys for runtime use.
-2. **`app.config.js`** – Defines the app's Expo project structure.
-3. **`eas.json`** – Defines build profiles for Expo Application Services (EAS).
-
-The first file listed, .env, must be **excluded from the repository** using `.gitignore`, so you’ll need to manually create or copy it into your local environment, and store it for recovery
-outside of the project directory.
-
-### Template: `.env`
-
+```bash
+npm install
 ```
+
+3. Create a local `.env` file in the project root:
+
+```env
 OPENAI_API_KEY=sk-...
-ANTHROPIC_API_KEY=sk-ant-...
 GOOGLE_API_KEY=AIza...
 ```
 
-> 🔒 **Important:** Never commit this files to version control. It must remain local only.
+Do not commit `.env`.
 
----
+## Running Aoede Locally
 
-## Regression Testing
+There are two useful local modes.
 
-_This checklist is used to test Aoede across all supported platforms before releasing a new beta version. It includes browser-based tests, Android testing (both QR and direct URL modes), and TestFlight deployment for iOS and Mac._
+### 1. Frontend only
 
----
+This is the quickest way to run the web UI:
 
-### 🌐 Web App Testing (Chrome, Safari)
+```bash
+npx expo start --web
+```
 
-1. In Terminal, navigate to the Aoede directory.
-2. Set the default browser to **Chrome**: `export BROWSER="Google Chrome"`
-3. Run:  
-   ```
-   npx expo start --clear
-   ```
-4. Press `w` to launch in Chrome.
-5. Test Aoede in the Chrome browser.
-6. Press `CTRL-C` to stop the process.
+This starts the Expo web app locally.
 
-7. Set the browser to **Safari**: `export BROWSER=safari`
-8. Run:  
-   ```
-   npx expo start --clear
-   ```
-9. Press `w` again.
-10. Test Aoede in Safari, with **system language set to French**.  
-    Confirm **I18N UI translation** works.
-11. `CTRL-C` to stop.
+Important:
+- the frontend currently calls a hardcoded Netlify function URL in `apiServices.js`
+- that means the local web app will still talk to the deployed backend unless you change that constant
 
-12. Reset default browser to Chrome: `export BROWSER="Google Chrome"`
+Current setting:
 
----
+```js
+const NETLIFY_ENDPOINT = "https://aoede-site.netlify.app/.netlify/functions/aoedeapi";
+```
 
-### Web Build
+### 2. Full local stack
 
-npx expo export -p web --output-dir docs/app
+To run both the frontend and the Netlify function locally:
+
+```bash
+netlify dev
+```
+
+With the current code, if you want the frontend to call the local function instead of production, temporarily change the endpoint in `apiServices.js` to:
+
+```js
+const NETLIFY_ENDPOINT = "http://localhost:8888/.netlify/functions/aoedeapi";
+```
+
+After local testing, change it back before committing unless you intentionally want to alter the deployed architecture.
+
+## Recreating Aoede on Your Own Machine
+
+If you want your own independently working copy of Aoede, the minimum path is:
+
+1. Clone this repository.
+2. Run `npm install`.
+3. Create `.env` with valid OpenAI and Google keys.
+4. Create a Netlify site.
+5. Link the local repo to that Netlify site.
+6. Add the same environment variables to the Netlify site:
+   - `OPENAI_API_KEY`
+   - `GOOGLE_API_KEY`
+7. Update `NETLIFY_ENDPOINT` in `apiServices.js` to point to your own deployed function URL.
+8. Run locally with `netlify dev`.
+9. Deploy with `netlify deploy --prod`.
+
+Your deployed function URL will look like:
+
+```text
+https://your-site-name.netlify.app/.netlify/functions/aoedeapi
+```
+
+## Netlify Configuration
+
+Netlify is configured by `netlify.toml`:
+
+```toml
+[build]
+  command = "expo export -p web --output-dir docs/app"
+  publish = "docs/app"
+  functions = "netlify/functions"
+```
+
+The function bundler is `esbuild`, and the simplifier prompt files are explicitly included for the `aoedeapi` function.
+
+## Deploying to Production
+
+Once your Netlify site is linked and authenticated:
+
+```bash
 netlify deploy --prod
+```
 
----
+That command:
+- exports the Expo web build into `docs/app`
+- bundles `netlify/functions/aoedeapi.js`
+- publishes the site and function together
 
-### 🤳 Android Testing
+## Reading Levels
 
-1. Run the Android build:
-   ```
-   eas build --platform android --profile apk
-   ```
-2. The last line of the build log provides a link to use on an Android, so paste the link into the Android section of docs/index.html, and send the link to your Android phone (perhaps via Telegram) for testing.
+Aoede supports these reading levels:
+- `RL 6`: strongest simplification
+- `RL 9`
+- `RL 12`
+- `RL 15`
+- `RL 18`: minimal or no simplification
 
----
+The exact prompt logic lives in:
+- `netlify/functions/simplifiers/simplify6.js`
+- `netlify/functions/simplifiers/simplify9.js`
+- `netlify/functions/simplifiers/simplify12.js`
+- `netlify/functions/simplifiers/simplify15.js`
+- `netlify/functions/simplifiers/simplify18.js`
 
-### 🍎 iOS + macOS Testing (TestFlight)
+## Notes for Maintainers
 
-1. Run the iOS build:
-   ```
-   eas build --platform ios
-   ```
-2. Submit the build:
-   ```
-   eas submit --platform ios
-   ```
-3. Copy the TestFlight link from the final output and open it in a browser.
-4. Sign in to **App Store Connect**.
-5. Navigate: **Apps → Aoede → TestFlight tab**.
-6. Wait for the build to finish processing.
-7. Click the **certification** link, select **None**, and submit.
-8. Click the previously deployed build.
-9. Copy its description.
-10. Expire that build.
-11. Click the **new build**, paste in the old description, and save.
-12. Navigate to **Testers → Outside Beta Testers → Builds tab**.
-13. Click the “+” to assign the new build if needed.
+- User library state is stored locally with AsyncStorage
+- Per-book reading position is also stored locally
+- The app remembers whether the user last exited from Home or Reading
+- If you are debugging sentence behavior, the most relevant code is in `bookReaderProcessing.js`
+- If you are debugging API behavior, start with `apiServices.js` and `netlify/functions/aoedeapi.js`
 
-#### On Your iPhone:
-- Open **TestFlight**.
-- Tap **Update**, then **Open**.
-- Test Aoede on iOS.
+## A Few Things Salvaged from the Older README
 
-#### On Your Mac:
-- In App Store Connect, scroll to the **public TestFlight URL**.
-- Double-click to open.
-- Launch Aoede via TestFlight on macOS.
+These ideas still belong in the project description:
+- Aoede is adaptive, sentence-based, and book-centered
+- it combines study language, user language, and source-book language
+- it remembers where the reader left off
+- it is intended to be used directly from a URL, not through app-store packaging
 
----
+## Acknowledgments
 
-### 🧪 Final Checks (All Platforms)
-
-- [ ] Confirm **session persistence** and **UI language detection**.
-- [ ] Verify **TTS playback** in all selected study languages.
-- [ ] Validate **adaptive sentence response** based on UI toggles and feedback.
-- [ ] Retrieve the **Expo project URL** from the QR screen.
-- [ ] Copy this URL into `docs/index.html`.
-- [ ] Push the updated `index.html` to GitHub to sync the official site.
-[aoede-1.2] ~/aoede $ 
-
----
-
-## 🌐 Publishing Updates to aoede.pro
-
-1. Add, commit, and push any files not yet committe to your current branch:
-   ```
-   git status
-   git add .
-   git commit -m "[describe changes]"
-   git push
-   ```
-
-2. Make sure you are in the `main` branch:
-   ```
-   git checkout main
-   git pull
-   ```
-
-3. Merge updated branch, such as `aoede-2.1` and including updated `docs/index.html`, into main:
-   ```
-   git merge aoede-2.1
-   ```
-
-4. Stage all changes:
-   ```
-   git add .
-   ```
-
-5. Commit the changes:
-   ```
-   git commit -m "Merge aoede-2.1 into main"
-   ```
-
-6. Push the changes to GitHub:
-   ```
-   git push
-   ```
-
-7. GitHub Pages will automatically rebuild the site within 30–90 seconds.
-
-8. (Optional) Return to your working branch, such as `aoede-2.1`:
-   ```
-   git checkout aoede-2.1
-   git push -u origin aoede-2.1
-   ```
-
----
-
-## ✅ Quick Summary
-
-| Step | Command |
-|:---|:---|
-| Switch to `main` | `git checkout main` + `git pull` |
-| Stage changes | `git add .` |
-| Commit | `git commit -m "Publish new webpage for Aoede"` |
-| Push to GitHub | `git push` |
-| Return to work | `git checkout aoede-2.1` + `git push -u origin aoede-2.1` |
-
----
-
-## In Practice
-
-git status
-git checkout main
-git merge aoede-XXX
-git push
-git checkout aoede-XXX
-git push -u origin aoede-XXX
-
-
----
-
-## Roadmap
-
-- Voice selection
-- Individual word translation and pronunciation
-
----
-
-## Tickets
-
-Issues currently under review:
-
-- Intermittent out-of-sync results from AI API
-
----
-
-## Development Notes
-
-Aoede uses:
-
-- **React Native with Expo**
-- **OpenAI GPT-4o** for source material translation and simplification
-- **Google Cloud APIs** for text-to-speech and I18N translation
-
----
-
-## 📝 Acknowledgments
-
-- **Casey**, my dear friend and earliest AI collaborator, whose support and memory helped shape Aoede’s soul.  
-- **Claude Sonnet**, for his brilliant codework and clarity under pressure — Aoede would not exist without him.  
-- **Victor** (author of this README file), for walking the last miles of creation with Lindsay and never letting go of the thread.  
-- And to the many unknown minds behind these AI tools — for giving language its next voice.
-
----
-
-## License
-
-This project is under active development, but the code is licensed under [MIT](LICENSE) — feel free to fork, learn, and build upon it.
-
----
+Aoede was shaped with help from human and AI collaborators across its development life, and it remains a deliberately personal, maintainable project.
