@@ -5,6 +5,116 @@ import { bookSources as defaultBookSources } from './bookSources';
 // Storage keys for the user's custom library
 const USER_LIBRARY_KEY = 'user_library';
 const USER_LIBRARY_INITIALIZED_KEY = 'user_library_initialized';
+const USER_LIBRARY_MIGRATION_KEY = 'user_library_migration_v2';
+const OBSOLETE_DEFAULT_BOOK_IDS = new Set([
+  'huckfinn',
+  'tomsawyer',
+  'aliceinwonderland',
+  'annakarenina',
+  'brotherskaramazov',
+  'callofthewild',
+  'christmascarol',
+  'montecristo',
+  'dracula',
+  'frankenstein',
+  'greatgatsby',
+  'gulliverstravels',
+  'heartofdarkness',
+  'houndofbaskervilles',
+  'ladywiththedog',
+  'lesmiserables',
+  'littleprince',
+  'littlewomen',
+  'metamorphosis',
+  'mobydick',
+  'odyssey',
+  'olivertwist',
+  'peterpan',
+  'pictureofdoriangray',
+  'prideandprejudice',
+  'scarletletter',
+  'senseandsensibility',
+  'taleoftwocities',
+  'waroftheworlds',
+  'wizardofoz'
+]);
+
+const getTrackerKey = (bookId) => `book_tracker_${bookId}`;
+
+const shouldKeepObsoleteBook = async (bookId) => {
+  try {
+    const trackerJson = await AsyncStorage.getItem(getTrackerKey(bookId));
+
+    if (!trackerJson) {
+      return false;
+    }
+
+    const tracker = JSON.parse(trackerJson);
+    return (tracker.offset || 0) > 0;
+  } catch (error) {
+    return false;
+  }
+};
+
+const migrateUserLibrary = async (library) => {
+  let removedObsoleteBook = false;
+  const migratedLibrary = [];
+
+  for (const book of library) {
+    if (!book || !book.id) {
+      continue;
+    }
+
+    if (!OBSOLETE_DEFAULT_BOOK_IDS.has(book.id)) {
+      migratedLibrary.push(book);
+      continue;
+    }
+
+    if (await shouldKeepObsoleteBook(book.id)) {
+      migratedLibrary.push(book);
+    } else {
+      removedObsoleteBook = true;
+    }
+  }
+
+  if (!removedObsoleteBook) {
+    return library;
+  }
+
+  const existingIds = new Set(migratedLibrary.map(book => book.id));
+
+  for (const defaultBook of defaultBookSources) {
+    if (!existingIds.has(defaultBook.id)) {
+      migratedLibrary.push(defaultBook);
+    }
+  }
+
+  return migratedLibrary;
+};
+
+const runUserLibraryMigration = async () => {
+  const migrationComplete = await AsyncStorage.getItem(USER_LIBRARY_MIGRATION_KEY);
+
+  if (migrationComplete === 'true') {
+    return;
+  }
+
+  const libraryJson = await AsyncStorage.getItem(USER_LIBRARY_KEY);
+
+  if (libraryJson === null) {
+    await AsyncStorage.setItem(USER_LIBRARY_MIGRATION_KEY, 'true');
+    return;
+  }
+
+  const library = JSON.parse(libraryJson);
+  const migratedLibrary = await migrateUserLibrary(library);
+
+  if (JSON.stringify(migratedLibrary) !== JSON.stringify(library)) {
+    await AsyncStorage.setItem(USER_LIBRARY_KEY, JSON.stringify(migratedLibrary));
+  }
+
+  await AsyncStorage.setItem(USER_LIBRARY_MIGRATION_KEY, 'true');
+};
 
 // Initialize the user's library
 export const initializeUserLibrary = async () => {
@@ -17,6 +127,7 @@ export const initializeUserLibrary = async () => {
       await AsyncStorage.setItem(USER_LIBRARY_KEY, JSON.stringify(defaultBookSources));
       // Mark as initialized
       await AsyncStorage.setItem(USER_LIBRARY_INITIALIZED_KEY, 'true');
+      await AsyncStorage.setItem(USER_LIBRARY_MIGRATION_KEY, 'true');
       if (__DEV__) console.log("User library initialized with default books");
       return true;
     }
@@ -28,7 +139,10 @@ export const initializeUserLibrary = async () => {
       // Library was initialized before but is missing (could happen due to storage issues)
       // Recreate it with default books
       await AsyncStorage.setItem(USER_LIBRARY_KEY, JSON.stringify(defaultBookSources));
+      await AsyncStorage.setItem(USER_LIBRARY_MIGRATION_KEY, 'true');
       if (__DEV__) console.log("User library recreated with default books");
+    } else {
+      await runUserLibraryMigration();
     }
     
     return true;
