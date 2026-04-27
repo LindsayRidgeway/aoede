@@ -772,9 +772,6 @@ export function LibraryUI({
           processedCount++;
         }
         
-        // Add a small delay between processing books to prevent UI freezing
-        // and allow the user to start seeing results sooner
-        await new Promise(resolve => setTimeout(resolve, 100));
       }
       
       addDebugMessage(`Search completed: ${processedCount} books processed successfully`);
