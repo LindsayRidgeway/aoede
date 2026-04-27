@@ -752,7 +752,13 @@ export function LibraryUI({
   const renderLibraryBookItem = ({ item, index }) => (
     <View style={styles.bookListItem}>
       <View style={styles.bookInfoContainer}>
-        <Text style={styles.bookTitle}>{getBookTitle(item)}</Text>
+        {item.url ? (
+          <TouchableOpacity onPress={() => handleOpenURL(item.url)}>
+            <Text style={styles.bookTitleLink}>{getBookTitle(item)}</Text>
+          </TouchableOpacity>
+        ) : (
+          <Text style={styles.bookTitle}>{getBookTitle(item)}</Text>
+        )}
         <Text style={styles.bookLanguage}>{item.language}</Text>
       </View>
       <TouchableOpacity
