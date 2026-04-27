@@ -1,5 +1,43 @@
 // fetchUtils.js - Unified fetch utilities for Aoede (Web Only)
 
+const getCharsetFromText = (text) => {
+  if (!text) return null;
+
+  const match =
+    text.match(/<meta[^>]+charset=["']?\s*([a-zA-Z0-9._-]+)/i) ||
+    text.match(/<meta[^>]+content=["'][^"']*charset=([a-zA-Z0-9._-]+)/i);
+
+  return match ? match[1] : null;
+};
+
+const normalizeCharset = (charset) => {
+  if (!charset) return 'utf-8';
+
+  const normalized = charset.toLowerCase().trim();
+
+  if (normalized === 'iso-8859-1' || normalized === 'latin1') {
+    return 'windows-1252';
+  }
+
+  return normalized;
+};
+
+const decodeResponseText = async (response) => {
+  const buffer = await response.arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+
+  const headerCharset = response.headers.get('content-type')?.match(/charset=([^;]+)/i)?.[1] || null;
+  const previewText = new TextDecoder('ascii').decode(bytes.slice(0, 4096));
+  const metaCharset = getCharsetFromText(previewText);
+  const charset = normalizeCharset(metaCharset || headerCharset);
+
+  try {
+    return new TextDecoder(charset).decode(bytes);
+  } catch (error) {
+    return new TextDecoder('utf-8').decode(bytes);
+  }
+};
+
 // Simple fetch with robust error handling for web
 export const fetchUrl = async (url, options = {}) => {
   try {
@@ -26,8 +64,8 @@ export const fetchUrl = async (url, options = {}) => {
     if (!response.ok) {
       throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
     }
-    
-    const text = await response.text();
+
+    const text = await decodeResponseText(response);
     return text;
   } catch (error) {
     if (error.name === 'AbortError') {
