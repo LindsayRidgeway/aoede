@@ -7,6 +7,7 @@ const getSimplificationPrompt15 = require('./simplifiers/simplify15.js').default
 const getSimplificationPrompt18 = require('./simplifiers/simplify18.js').default;
 
 const fetch = require('node-fetch');
+const OPENAI_MODEL = 'gpt-5.5';
 
 const getPromptForLevel = (readingLevel) => {
   const map = {
@@ -47,7 +48,7 @@ exports.handler = async (event, context) => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'gpt-4o',
+            model: OPENAI_MODEL,
             messages: [{ role: 'user', content: prompt }],
             max_tokens: 400,
             temperature: 0.3,
@@ -95,7 +96,7 @@ exports.handler = async (event, context) => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            model: 'gpt-4o',
+            model: OPENAI_MODEL,
             messages: [{ role: 'user', content: prompt }],
             max_tokens: 400,
             temperature: 0.3,
