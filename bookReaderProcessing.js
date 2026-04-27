@@ -2,6 +2,7 @@
 import { apiTranslateAndSimplifySentence, apiTranslateSentenceCheap } from './apiServices';
 import BookPipe from './bookPipeCore';
 import { bookPipeProcess } from './bookPipeProcess';
+import { resolvePreferredAnchor } from './anchorUtils';
 import { getBookById } from './userLibrary';
 
 // Implementation of Step 1: Load the entire book into memory
@@ -71,6 +72,8 @@ export async function findAnchor(reader, bookId) {
       throw new Error('URL does not contain an anchor fragment');
     }
     
+    fragmentId = resolvePreferredAnchor(reader.bookText, fragmentId);
+
     // Define patterns to search for the anchor in HTML
     // Order is important - we're using the patterns from Aoede 2.0
     const anchorPatterns = [

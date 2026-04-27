@@ -10,6 +10,7 @@ import { getUserLibrary, removeBookFromLibrary, addBookToLibrary } from './userL
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { apiFetchRemoteText, apiTranslateSentenceFast } from './apiServices';
 import { fetchUrl } from './fetchUtils';
+import { findBestAnchor } from './anchorUtils';
 import Constants from 'expo-constants';
 import gamepadManager from './gamepadSupport';
 import GamepadIndicator from './gamepadIndicator';
@@ -403,76 +404,6 @@ export function LibraryUI({
   };
   
   // ---- Search Functionality ----
-  
-  // Function to find the best anchor in HTML content
-  const findBestAnchor = (htmlContent) => {
-    // Skip if no content
-    if (!htmlContent || htmlContent.length === 0) {
-      return null;
-    }
-    
-    // Priority tags to look for (in order of preference)
-    const priorityTags = [
-      'chapter01', 'chapter1', 'chapter-1', 'chap01', 'chap1', 'chap-1',
-      'book01', 'book1', 'book-1',
-      'part01', 'part1', 'part-1',
-      'preface', 'introduction', 'intro',
-      'toc', 'contents', 'table-of-contents',
-      'title', 'heading', 'header'
-    ];
-    
-    // First, try to find priority anchors (best for reading)
-    for (const tag of priorityTags) {
-      // Look for id attribute
-      const idPattern = `id="${tag}"`;
-      const idIndex = htmlContent.indexOf(idPattern);
-      if (idIndex !== -1) {
-        return tag;
-      }
-      
-      // Look for name attribute
-      const namePattern = `name="${tag}"`;
-      const nameIndex = htmlContent.indexOf(namePattern);
-      if (nameIndex !== -1) {
-        return tag;
-      }
-    }
-    
-    // Second, try to find any anchor that looks like a chapter or part
-    const chapterRegex = /<a[^>]*?(?:id|name)=["'](chapter|book|part).*?["'][^>]*>/i;
-    const chapterMatch = htmlContent.match(chapterRegex);
-    if (chapterMatch && chapterMatch[1]) {
-      // Extract the full id/name value
-      const fullAnchorRegex = /<a[^>]*?(?:id|name)=["']([^"']+)["'][^>]*>/i;
-      const fullMatch = htmlContent.substring(chapterMatch.index).match(fullAnchorRegex);
-      if (fullMatch && fullMatch[1]) {
-        return fullMatch[1];
-      }
-    }
-    
-    // Third, try to find any id or name attribute in an anchor tag
-    const anyAnchorRegex = /<a[^>]*?(?:id|name)=["']([^"']+)["'][^>]*>/i;
-    const anyMatch = htmlContent.match(anyAnchorRegex);
-    if (anyMatch && anyMatch[1]) {
-      return anyMatch[1];
-    }
-    
-    // Finally, try to find any link to an internal anchor
-    const linkPattern = 'href="#';
-    const linkIndex = htmlContent.indexOf(linkPattern);
-    if (linkIndex !== -1) {
-      // Extract the anchor part
-      const startIndex = linkIndex + linkPattern.length;
-      const endIndex = htmlContent.indexOf('"', startIndex);
-      
-      if (endIndex !== -1) {
-        return htmlContent.substring(startIndex, endIndex);
-      }
-    }
-    
-    // No suitable anchor found
-    return null;
-  };
   
   // Extract booklinks from search page using string methods
   const extractBookLinksFromHtml = (html) => {
