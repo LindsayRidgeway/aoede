@@ -249,6 +249,7 @@ export const removeBookFromLibrary = async (bookId) => {
     const updatedLibrary = library.filter(book => book.id !== bookId);
     
     await AsyncStorage.setItem(USER_LIBRARY_KEY, JSON.stringify(updatedLibrary));
+    await AsyncStorage.removeItem(getTrackerKey(bookId));
     return true;
   } catch (error) {
     console.error(`Error removing book from library: ${error.message}`);

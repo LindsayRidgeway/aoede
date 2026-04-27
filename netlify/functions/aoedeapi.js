@@ -7,7 +7,7 @@ const getSimplificationPrompt15 = require('./simplifiers/simplify15.js').default
 const getSimplificationPrompt18 = require('./simplifiers/simplify18.js').default;
 
 const fetch = require('node-fetch');
-const OPENAI_MODEL = 'gpt-5.5';
+const OPENAI_MODEL = 'gpt-4o';
 const ALLOWED_REMOTE_FETCH_HOSTS = new Set([
   'www.gutenberg.org',
   'gutenberg.org',
@@ -55,7 +55,8 @@ exports.handler = async (event, context) => {
           body: JSON.stringify({
             model: OPENAI_MODEL,
             messages: [{ role: 'user', content: prompt }],
-            max_completion_tokens: 400,
+            max_tokens: 400,
+            temperature: 0.3,
           }),
         });
         const data = await res.json();
@@ -102,7 +103,8 @@ exports.handler = async (event, context) => {
           body: JSON.stringify({
             model: OPENAI_MODEL,
             messages: [{ role: 'user', content: prompt }],
-            max_completion_tokens: 400,
+            max_tokens: 400,
+            temperature: 0.3,
           }),
         });
         const data = await res.json();

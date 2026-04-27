@@ -2,7 +2,6 @@
 import { apiTranslateAndSimplifySentence, apiTranslateSentenceCheap } from './apiServices';
 import BookPipe from './bookPipeCore';
 import { bookPipeProcess } from './bookPipeProcess';
-import { resolvePreferredAnchor } from './anchorUtils';
 import { getBookById } from './userLibrary';
 
 // Implementation of Step 1: Load the entire book into memory
@@ -72,8 +71,6 @@ export async function findAnchor(reader, bookId) {
       throw new Error('URL does not contain an anchor fragment');
     }
     
-    fragmentId = resolvePreferredAnchor(reader.bookText, fragmentId);
-
     // Define patterns to search for the anchor in HTML
     // Order is important - we're using the patterns from Aoede 2.0
     const anchorPatterns = [
@@ -114,14 +111,11 @@ export async function extractSentences(reader) {
       throw new Error("Book text not available");
     }
     
-    // Get text AFTER the anchor position in plain text
-    // First find where in the plain text the anchor corresponds to
-    const htmlBeforeAnchor = reader.bookText.substring(0, reader.anchorPosition);
-    const plainBeforeAnchor = bookPipeProcess.extractText(htmlBeforeAnchor);
-    const plainTextAnchorPosition = plainBeforeAnchor.length;
-    
-    // Now get text after the anchor in plain text
-    const textFromAnchor = reader.bookTextPlain.substring(plainTextAnchorPosition);
+    // Extract text directly from the HTML starting at the anchor.
+    // This avoids trying to map an HTML offset back into already-flattened plain text,
+    // which can leave heading/tag fragments at the start of the extracted content.
+    const htmlFromAnchor = reader.bookText.substring(reader.anchorPosition);
+    const textFromAnchor = bookPipeProcess.extractText(htmlFromAnchor);
     
     // Extract sentences using our improved method
     reader.bookSentences = extractSentencesFromText(textFromAnchor);
