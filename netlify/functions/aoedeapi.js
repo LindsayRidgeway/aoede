@@ -8,6 +8,11 @@ const getSimplificationPrompt18 = require('./simplifiers/simplify18.js').default
 
 const fetch = require('node-fetch');
 const OPENAI_MODEL = 'gpt-5.5';
+const ALLOWED_REMOTE_FETCH_HOSTS = new Set([
+  'www.gutenberg.org',
+  'gutenberg.org',
+  'gutenberg.net.au'
+]);
 
 const getPromptForLevel = (readingLevel) => {
   const map = {
@@ -140,6 +145,51 @@ exports.handler = async (event, context) => {
             "Access-Control-Allow-Headers": "Content-Type",
           },
           body: JSON.stringify({ voices: data.voices || [] }),
+        };
+      }
+
+      case 'fetchRemoteText': {
+        const { url } = JSON.parse(event.body || '{}');
+        const parsedUrl = new URL(url);
+
+        if (!ALLOWED_REMOTE_FETCH_HOSTS.has(parsedUrl.hostname)) {
+          return {
+            statusCode: 400,
+            headers: {
+              "Access-Control-Allow-Origin": "*",
+              "Access-Control-Allow-Headers": "Content-Type",
+            },
+            body: JSON.stringify({ error: 'Remote fetch host is not allowed' }),
+          };
+        }
+
+        const res = await fetch(url, {
+          method: 'GET',
+          headers: {
+            'Accept': 'text/html,application/xhtml+xml,application/xml',
+            'Accept-Language': 'en-US,en;q=0.9'
+          },
+        });
+
+        if (!res.ok) {
+          return {
+            statusCode: res.status,
+            headers: {
+              "Access-Control-Allow-Origin": "*",
+              "Access-Control-Allow-Headers": "Content-Type",
+            },
+            body: JSON.stringify({ error: `HTTP error ${res.status}: ${res.statusText}` }),
+          };
+        }
+
+        const remoteText = await res.text();
+        return {
+          statusCode: 200,
+          headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Headers": "Content-Type",
+          },
+          body: JSON.stringify({ result: remoteText }),
         };
       }
 

@@ -8,7 +8,7 @@ import {
 import { styles } from './styles';
 import { getUserLibrary, removeBookFromLibrary, addBookToLibrary } from './userLibrary';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { apiTranslateSentenceFast } from './apiServices';
+import { apiFetchRemoteText, apiTranslateSentenceFast } from './apiServices';
 import { fetchUrl } from './fetchUtils';
 import Constants from 'expo-constants';
 import gamepadManager from './gamepadSupport';
@@ -689,7 +689,7 @@ export function LibraryUI({
       addDebugMessage('Starting search...');
       
       // Fetch search results
-      const html = await fetchUrl(searchUrl);
+      const html = await apiFetchRemoteText(searchUrl);
       
       // Extract book links
       const bookLinks = extractBookLinksFromHtml(html);

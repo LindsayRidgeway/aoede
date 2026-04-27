@@ -62,6 +62,13 @@ export async function apiGetGoogleVoices() {
   });
 }
 
+export async function apiFetchRemoteText(url) {
+  return await callAoedeAPI({
+    mode: "fetchRemoteText",
+    url,
+  });
+}
+
 export async function apiTextToSpeech(text, languageCode, speakingRate = 1.0, voiceName = null) {
   return await callAoedeAPI({
     mode: "tts",
