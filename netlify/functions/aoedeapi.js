@@ -50,8 +50,7 @@ exports.handler = async (event, context) => {
           body: JSON.stringify({
             model: OPENAI_MODEL,
             messages: [{ role: 'user', content: prompt }],
-            max_tokens: 400,
-            temperature: 0.3,
+            max_completion_tokens: 400,
           }),
         });
         const data = await res.json();
@@ -98,8 +97,7 @@ exports.handler = async (event, context) => {
           body: JSON.stringify({
             model: OPENAI_MODEL,
             messages: [{ role: 'user', content: prompt }],
-            max_tokens: 400,
-            temperature: 0.3,
+            max_completion_tokens: 400,
           }),
         });
         const data = await res.json();
