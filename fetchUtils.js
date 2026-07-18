@@ -1,4 +1,5 @@
 // fetchUtils.js - Unified fetch utilities for Aoede (Web Only)
+import { apiFetchRemoteText } from './apiServices';
 
 const getCharsetFromText = (text) => {
   if (!text) return null;
@@ -41,6 +42,20 @@ const decodeResponseText = async (response) => {
 // Simple fetch with robust error handling for web
 export const fetchUrl = async (url, options = {}) => {
   try {
+    const parsedUrl = new URL(url);
+    const isSupportedRemoteFetch =
+      parsedUrl.hostname === 'www.gutenberg.org' ||
+      parsedUrl.hostname === 'gutenberg.org' ||
+      parsedUrl.hostname === 'gutenberg.net.au';
+
+    if (isSupportedRemoteFetch) {
+      const remoteText = await apiFetchRemoteText(url);
+      if (!remoteText) {
+        throw new Error('Remote fetch returned empty content');
+      }
+      return remoteText;
+    }
+
     // Set a reasonable timeout
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {

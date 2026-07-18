@@ -14,6 +14,44 @@ const ALLOWED_REMOTE_FETCH_HOSTS = new Set([
   'gutenberg.net.au'
 ]);
 
+const getCharsetFromText = (text) => {
+  if (!text) return null;
+
+  const match =
+    text.match(/<meta[^>]+charset=["']?\s*([a-zA-Z0-9._-]+)/i) ||
+    text.match(/<meta[^>]+content=["'][^"']*charset=([a-zA-Z0-9._-]+)/i);
+
+  return match ? match[1] : null;
+};
+
+const normalizeCharset = (charset) => {
+  if (!charset) return 'utf-8';
+
+  const normalized = charset.toLowerCase().trim();
+
+  if (normalized === 'iso-8859-1' || normalized === 'latin1') {
+    return 'windows-1252';
+  }
+
+  return normalized;
+};
+
+const decodeResponseText = async (response) => {
+  const buffer = await response.arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+
+  const headerCharset = response.headers.get('content-type')?.match(/charset=([^;]+)/i)?.[1] || null;
+  const previewText = new TextDecoder('ascii').decode(bytes.slice(0, 4096));
+  const metaCharset = getCharsetFromText(previewText);
+  const charset = normalizeCharset(metaCharset || headerCharset);
+
+  try {
+    return new TextDecoder(charset).decode(bytes);
+  } catch (error) {
+    return new TextDecoder('utf-8').decode(bytes);
+  }
+};
+
 const getPromptForLevel = (readingLevel) => {
   const map = {
     6: getSimplificationPrompt6,
@@ -184,7 +222,7 @@ exports.handler = async (event, context) => {
           };
         }
 
-        const remoteText = await res.text();
+        const remoteText = await decodeResponseText(res);
         return {
           statusCode: 200,
           headers: {
