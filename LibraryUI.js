@@ -568,14 +568,7 @@ export function LibraryUI({
       // Try to fetch the HTML file
       let htmlContent;
       try {
-        // Just get a small part for finding anchors
-        const options = {
-          headers: {
-            'Accept': 'text/html,application/xhtml+xml,application/xml',
-            'Accept-Language': 'en-US,en;q=0.9'
-          }
-        };
-        htmlContent = await fetchUrl(htmlUrl, options);
+        htmlContent = await fetchUrl(htmlUrl);
       } catch (htmlErr) {
         addDebugMessage(`Failed to fetch HTML file: ${htmlErr.message}`);
         return { success: false };
