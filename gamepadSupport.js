@@ -10,6 +10,8 @@ class GamepadManager {
     // Tracking for connected gamepads
     this.gamepads = {};
     this.haveEvents = false;
+    this.boundOnGamepadConnected = this.onGamepadConnected.bind(this);
+    this.boundOnGamepadDisconnected = this.onGamepadDisconnected.bind(this);
     
     // Track button states to prevent repeating actions
     this.buttonStates = {};
@@ -61,18 +63,18 @@ class GamepadManager {
     
     // Button to function mappings (customizable)
     this.buttonMappings = {
-      // Playstation controller mapping example
-      // Right shoulder button (R1) for Listen/Stop
+      // Standard controller mapping
+      // Right shoulder button (R1) for Next Sentence
       5: 'next',
       
-      // Left shoulder button (L1) for Next Sentence
+      // Left shoulder button (L1) for Listen/Stop
       4: 'listen',
       
       // Left trigger (L2) for Previous Sentence
-      6: 'listen',
+      6: 'previous',
       
       // Right trigger (R2) for Beginning of Book
-      7: 'next',
+      7: 'beginningOfBook',
       
       // Share button for End of Book
       8: 'endOfBook',
@@ -102,29 +104,25 @@ class GamepadManager {
   init() {
     if (!this.isWeb || !this.enabled) return;
     
-    // Don't initialize twice
-    if (this.haveEvents) return;
-    
     // Setup the appropriate event listeners
     if (typeof window !== 'undefined') {
       // Check if the Gamepad API is available
-      if ('GamepadEvent' in window) {
+      if (!this.haveEvents && 'GamepadEvent' in window) {
         // Modern browsers have the GamepadEvent
-        window.addEventListener('gamepadconnected', this.onGamepadConnected.bind(this));
-        window.addEventListener('gamepaddisconnected', this.onGamepadDisconnected.bind(this));
+        window.addEventListener('gamepadconnected', this.boundOnGamepadConnected);
+        window.addEventListener('gamepaddisconnected', this.boundOnGamepadDisconnected);
         this.haveEvents = true;
-      } else if ('WebKitGamepadEvent' in window) {
+      } else if (!this.haveEvents && 'WebKitGamepadEvent' in window) {
         // Webkit-specific event
-        window.addEventListener('webkitgamepadconnected', this.onGamepadConnected.bind(this));
-        window.addEventListener('webkitgamepaddisconnected', this.onGamepadDisconnected.bind(this));
+        window.addEventListener('webkitgamepadconnected', this.boundOnGamepadConnected);
+        window.addEventListener('webkitgamepaddisconnected', this.boundOnGamepadDisconnected);
         this.haveEvents = true;
-      } else {
-        // Fallback to polling for older browsers
-        this.startPolling();
       }
       
-      // Always start polling for actual button states
+      // Always poll: browser events are not reliable across initial load,
+      // reconnects, and controller wake-from-sleep.
       this.startPolling();
+      this.pollGamepads();
       
       console.log('Gamepad support initialized');
     }
@@ -155,6 +153,7 @@ class GamepadManager {
   onGamepadConnected(event) {
     console.log('Gamepad connected:', event.gamepad.id);
     this.gamepads[event.gamepad.index] = event.gamepad;
+    this.notifyConnectionChange();
     
     // If we're not already polling, start now
     if (!this.intervalId) {
@@ -166,11 +165,19 @@ class GamepadManager {
   onGamepadDisconnected(event) {
     console.log('Gamepad disconnected:', event.gamepad.id);
     delete this.gamepads[event.gamepad.index];
+    delete this.buttonStates[event.gamepad.index];
+    this.notifyConnectionChange();
+  }
+
+  notifyConnectionChange() {
+    if (!this.isWeb || typeof window === 'undefined') return;
     
-    // If no gamepads left, stop polling
-    if (Object.keys(this.gamepads).length === 0) {
-      this.stopPolling();
-    }
+    window.dispatchEvent(new CustomEvent('aoede-gamepadchange', {
+      detail: {
+        connected: Object.keys(this.gamepads).length > 0,
+        gamepads: Object.values(this.gamepads)
+      }
+    }));
   }
   
   // Start polling for gamepad input
@@ -201,19 +208,37 @@ class GamepadManager {
     
     // Get the latest gamepad states
     const gamepads = navigator.getGamepads ? navigator.getGamepads() : [];
+    const seenIndexes = new Set();
+    let connectionChanged = false;
     
     // Process each gamepad
     for (let i = 0; i < gamepads.length; i++) {
       const gamepad = gamepads[i];
       
-      // Skip disconnected gamepads
-      if (!gamepad) continue;
+      // Skip empty slots and stale disconnected gamepad objects
+      if (!gamepad || gamepad.connected === false) continue;
+      seenIndexes.add(String(gamepad.index));
       
       // Store the gamepad for future reference
+      if (!this.gamepads[gamepad.index]) {
+        connectionChanged = true;
+      }
       this.gamepads[gamepad.index] = gamepad;
       
       // Process button states
       this.processGamepadInput(gamepad);
+    }
+
+    Object.keys(this.gamepads).forEach(index => {
+      if (!seenIndexes.has(index)) {
+        delete this.gamepads[index];
+        delete this.buttonStates[index];
+        connectionChanged = true;
+      }
+    });
+
+    if (connectionChanged) {
+      this.notifyConnectionChange();
     }
   }
   
