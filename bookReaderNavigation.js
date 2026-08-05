@@ -287,7 +287,7 @@ export function bookReaderNavigation(reader) {
         throw error;
       }
     },
-    
+
     getProgress: () => {
       // Return a simple progress object
       return {

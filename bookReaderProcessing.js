@@ -206,20 +206,9 @@ export async function processCurrentSentence(reader) {
     // Make the API call for this single sentence
     const result = await processSentenceWithOpenAI(reader, sentence);
     
-    if (result) {
-      return true;
-    } else {
-      // If API fails, use the original sentence as fallback
-      reader.simplifiedSentences = [sentence];
-      return false;
-    }
+    return result;
   } catch (error) {
-    // Fallback to using the original sentence
-    if (reader.currentSentenceIndex < reader.bookSentences.length) {
-      reader.simplifiedSentences = [reader.bookSentences[reader.currentSentenceIndex]];
-    } else {
-      reader.simplifiedSentences = ["Error: Unable to process sentence"];
-    }
+    reader.simplifiedSentences = [`Error: ${error.message || "Unable to process sentence"}`];
     return false;
   }
 }
@@ -259,7 +248,7 @@ async function processSentenceWithOpenAI(reader, sentence) {
     
     return true;
   } catch (error) {
-    return false;
+    throw error;
   }
 }
 

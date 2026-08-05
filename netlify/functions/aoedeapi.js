@@ -7,12 +7,46 @@ const getSimplificationPrompt15 = require('./simplifiers/simplify15.js').default
 const getSimplificationPrompt18 = require('./simplifiers/simplify18.js').default;
 
 const fetch = require('node-fetch');
-const OPENAI_MODEL = 'gpt-4o';
+const OPENAI_MODEL = 'gpt-5.6-sol';
+const OPENAI_REASONING_EFFORT = 'medium';
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "Content-Type",
+};
 const ALLOWED_REMOTE_FETCH_HOSTS = new Set([
   'www.gutenberg.org',
   'gutenberg.org',
   'gutenberg.net.au'
 ]);
+
+const callOpenAIChat = async (openaiKey, prompt) => {
+  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${openaiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: OPENAI_MODEL,
+      messages: [{ role: 'user', content: prompt }],
+      max_completion_tokens: 800,
+      reasoning_effort: OPENAI_REASONING_EFFORT,
+    }),
+  });
+
+  const data = await res.json();
+
+  if (!res.ok || data.error) {
+    throw new Error(data.error?.message || `OpenAI request failed with status ${res.status}`);
+  }
+
+  const content = data.choices?.[0]?.message?.content?.trim();
+  if (!content) {
+    throw new Error('OpenAI returned an empty response');
+  }
+
+  return content;
+};
 
 const getCharsetFromText = (text) => {
   if (!text) return null;
@@ -72,10 +106,7 @@ exports.handler = async (event, context) => {
   if (event.httpMethod === "OPTIONS") {
     return {
       statusCode: 200,
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers": "Content-Type",
-      },
+      headers: CORS_HEADERS,
       body: "OK",
     };
   }
@@ -84,27 +115,11 @@ exports.handler = async (event, context) => {
     switch (mode) {
       case 'translateOpenAI': {
         const prompt = `Translate the input sentence from ${sourceLang} to ${targetLang}. Return only the translated sentence, with no comments or other output. Input: ${text}`;
-        const res = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${openaiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: OPENAI_MODEL,
-            messages: [{ role: 'user', content: prompt }],
-            max_tokens: 400,
-            temperature: 0.3,
-          }),
-        });
-        const data = await res.json();
+        const result = await callOpenAIChat(openaiKey, prompt);
         return {
           statusCode: 200,
-          headers: {
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Headers": "Content-Type",
-          },
-          body: JSON.stringify({ result: data.choices?.[0]?.message?.content || text }),
+          headers: CORS_HEADERS,
+          body: JSON.stringify({ result }),
         };
       }
 
@@ -132,27 +147,11 @@ exports.handler = async (event, context) => {
 		  bookLanguage: bookLang,
 		  studyLanguage: studyLang,
 		});
-        const res = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${openaiKey}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: OPENAI_MODEL,
-            messages: [{ role: 'user', content: prompt }],
-            max_tokens: 400,
-            temperature: 0.3,
-          }),
-        });
-        const data = await res.json();
+        const result = await callOpenAIChat(openaiKey, prompt);
         return {
           statusCode: 200,
-          headers: {
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Headers": "Content-Type",
-          },
-          body: JSON.stringify({ result: data.choices?.[0]?.message?.content || null }),
+          headers: CORS_HEADERS,
+          body: JSON.stringify({ result }),
         };
       }
 

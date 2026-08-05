@@ -338,6 +338,7 @@ export function MainUI(props) {
               setShowTranslation={props.setShowTranslation}
               speakSentence={props.speakSentence}
               nextSentence={props.nextSentence}
+              pendingNavigation={props.pendingNavigation}
               loadingBook={props.loadingBook}
               listeningSpeed={props.listeningSpeed}
               setListeningSpeed={props.setListeningSpeed}

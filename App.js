@@ -107,6 +107,7 @@ export default function App() {
   const [studyLanguage, setStudyLanguage] = useState("");
   const [listeningSpeed, setListeningSpeed] = useState(3);
   const [loadingBook, setLoadingBook] = useState(false);
+  const [pendingNavigation, setPendingNavigation] = useState(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [currentSentenceIndex, setCurrentSentenceIndex] = useState(0);
   const [totalSentences, setTotalSentences] = useState(0);
@@ -362,6 +363,11 @@ export default function App() {
   // Handle next sentence button click
   const handleNextSentence = async () => {
     try {
+      if (loadingBook || pendingNavigation) {
+        return false;
+      }
+
+      setPendingNavigation('next');
       await readingManager.advanceToNextSentence();
       await new Promise(resolve => setTimeout(resolve, 50));
       
@@ -384,17 +390,25 @@ export default function App() {
       }
     } catch (error) {
       setStudyLangSentence("Error: " + error.message);
+      return false;
+    } finally {
+      setPendingNavigation(null);
     }
   };
   
   // Handle previous sentence button click
   const handlePreviousSentence = async () => {
     try {
+      if (loadingBook || pendingNavigation) {
+        return false;
+      }
+
       if (isSpeaking) {
         ListeningSpeed.stopSpeaking();
         setIsSpeaking(false);
       }
       
+      setPendingNavigation('previous');
       await readingManager.goToPreviousSentence();
       await new Promise(resolve => setTimeout(resolve, 50));
       
@@ -417,6 +431,9 @@ export default function App() {
       }
     } catch (error) {
       setStudyLangSentence("Error: " + error.message);
+      return false;
+    } finally {
+      setPendingNavigation(null);
     }
   };
   
@@ -676,6 +693,7 @@ export default function App() {
       setSpeechRate={setSpeechRate}
       speakSentence={handleToggleSpeak}
       nextSentence={handleNextSentence}
+      pendingNavigation={pendingNavigation}
       isSpeaking={isSpeaking}
       loadingBook={loadingBook}
       listeningSpeed={listeningSpeed}

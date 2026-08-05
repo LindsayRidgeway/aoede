@@ -18,6 +18,7 @@ export function ReadingUI({
   setShowTranslation,
   speakSentence,
   nextSentence,
+  pendingNavigation,
   loadingBook,
   listeningSpeed,
   setListeningSpeed,
@@ -51,6 +52,9 @@ export function ReadingUI({
 }) {
   // Animation ref for Next button
   const nextButtonAnimation = useRef(new Animated.Value(1)).current;
+  const isNavigatingNext = pendingNavigation === 'next';
+  const isNavigatingPrevious = pendingNavigation === 'previous';
+  const isNavigatingSentence = Boolean(pendingNavigation);
   
   // State for tracking which element has focus (for enhanced visual indication)
   const [focusedElementId, setFocusedElementId] = useState(null);
@@ -83,7 +87,7 @@ export function ReadingUI({
     return () => {
       // No need to disable gamepad support as it may be used elsewhere
     };
-  }, [loadingBook, isAtEndOfBook, isAtStartOfBook, speakSentence]);
+  }, [loadingBook, pendingNavigation, isAtEndOfBook, isAtStartOfBook, speakSentence]);
   
   // Track focus changes
   useEffect(() => {
@@ -124,7 +128,7 @@ export function ReadingUI({
   
   // Handle next button with animation
   const handleNextButtonPress = () => {
-    if (!loadingBook && !isAtEndOfBook) {
+    if (!loadingBook && !isNavigatingSentence && !isAtEndOfBook) {
       animateNextButton();
       nextSentence();
     }
@@ -132,7 +136,7 @@ export function ReadingUI({
   
   // Handle previous sentence button press
   const handlePreviousButtonPress = () => {
-    if (previousSentence && !loadingBook && !isAtStartOfBook) {
+    if (previousSentence && !loadingBook && !isNavigatingSentence && !isAtStartOfBook) {
       previousSentence();
     }
   };
@@ -332,13 +336,17 @@ export function ReadingUI({
                 getFocusedStyle("prev-button")
               ]}
               onPress={handlePreviousButtonPress}
-              disabled={loadingBook || isAtStartOfBook}
+              disabled={loadingBook || isNavigatingSentence || isAtStartOfBook}
               accessible={true}
               accessibilityRole="button"
               accessibilityLabel="Previous sentence"
               tabIndex={2}
             >
-              <Text style={styles.mediaButtonText}>⏪</Text>
+              {isNavigatingPrevious ? (
+                <ActivityIndicator size="small" color="#ffffff" />
+              ) : (
+                <Text style={styles.mediaButtonText}>⏪</Text>
+              )}
             </TouchableOpacity>
             
             {/* Listen/Stop Button (center, larger) */}
@@ -372,17 +380,14 @@ export function ReadingUI({
                 getFocusedStyle("next-button")
               ]} 
               onPress={handleNextButtonPress} 
-              disabled={loadingBook || isAtEndOfBook}
+              disabled={loadingBook || isNavigatingSentence || isAtEndOfBook}
               accessible={true}
               accessibilityRole="button"
               accessibilityLabel="Next sentence"
               tabIndex={4}
             >
-              {loadingBook ? (
-                <View style={styles.nextButtonContent}>
-                  <ActivityIndicator size="small" color="#ffffff" style={styles.buttonSpinner} />
-                  <Text style={[styles.mediaButtonText, styles.buttonTextWithSpinner]}>⏩</Text>
-                </View>
+              {isNavigatingNext ? (
+                <ActivityIndicator size="small" color="#ffffff" />
               ) : (
                 <Animated.View style={{transform: [{scale: nextButtonAnimation}]}}>
                   <Text style={styles.mediaButtonText}>⏩</Text>

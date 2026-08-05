@@ -13,10 +13,13 @@ async function callAoedeAPI(payload) {
       body: JSON.stringify(payload),
     });
     const data = await response.json();
+    if (!response.ok || data.error) {
+      throw new Error(data.error || `API request failed with status ${response.status}`);
+    }
     return data.result;
   } catch (error) {
     console.error("API call failed:", error);
-    return null;
+    throw error;
   }
 }
 
