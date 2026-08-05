@@ -271,7 +271,9 @@ export async function updateDisplay(reader) {
       reader.simpleArray = [currentSimplified];
       
       // Get translation to user language
-      const translatedSentence = await apiTranslateSentenceCheap(currentSimplified, reader.studyLanguage, reader.userLanguage);
+      const cacheKey = `${reader.studyLanguage}:${reader.userLanguage}:${currentSimplified}`;
+      const translatedSentence = reader.translationCache[cacheKey] || await apiTranslateSentenceCheap(currentSimplified, reader.studyLanguage, reader.userLanguage);
+      reader.translationCache[cacheKey] = translatedSentence;
       
       // Make sure we only have a single-line translation (fixes duplicate sentence issue)
       const cleanedTranslation = translatedSentence.split('\n')[0].trim();

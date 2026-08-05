@@ -368,6 +368,14 @@ export default function App() {
     );
     setIsSpeaking(true);
   };
+
+  const willAdvanceToNewBookSentence = () => {
+    return BookReader.currentSimplifiedIndex >= BookReader.simplifiedSentences.length - 1;
+  };
+
+  const willReturnToPreviousBookSentence = () => {
+    return BookReader.currentSimplifiedIndex <= 0;
+  };
   
   // Clear content area
   const clearContent = () => {
@@ -392,7 +400,11 @@ export default function App() {
         setIsSpeaking(false);
       }
 
-      setPendingNavigation('next');
+      const needsNewBookSentence = willAdvanceToNewBookSentence();
+      if (needsNewBookSentence) {
+        setPendingNavigation('next');
+      }
+
       await readingManager.advanceToNextSentence();
       await new Promise(resolve => setTimeout(resolve, 50));
       
@@ -419,7 +431,11 @@ export default function App() {
         setIsSpeaking(false);
       }
       
-      setPendingNavigation('previous');
+      const needsPreviousBookSentence = willReturnToPreviousBookSentence();
+      if (needsPreviousBookSentence) {
+        setPendingNavigation('previous');
+      }
+
       await readingManager.goToPreviousSentence();
       await new Promise(resolve => setTimeout(resolve, 50));
       
