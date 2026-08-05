@@ -25,7 +25,7 @@ async function callAoedeAPI(payload) {
 
 export async function apiTranslateSentenceCheap(text, sourceLang, targetLang) {
   return await callAoedeAPI({
-    mode: "translateOpenAI",
+    mode: "translateGoogle",
     text,
     sourceLang,
     targetLang,

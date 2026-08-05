@@ -8,7 +8,6 @@ const getSimplificationPrompt18 = require('./simplifiers/simplify18.js').default
 
 const fetch = require('node-fetch');
 const OPENAI_SIMPLIFICATION_MODEL = 'gpt-5.6-sol';
-const OPENAI_TRANSLATION_MODEL = 'gpt-5.6-luna';
 const OPENAI_REASONING_EFFORT = 'medium';
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -139,16 +138,6 @@ exports.handler = async (event, context) => {
 
   try {
     switch (mode) {
-      case 'translateOpenAI': {
-        const prompt = `Translate the input sentence from ${sourceLang} to ${targetLang}. Return only the translated sentence, with no comments or other output. Input: ${text}`;
-        const result = await callOpenAIChat(openaiKey, prompt, OPENAI_TRANSLATION_MODEL);
-        return {
-          statusCode: 200,
-          headers: CORS_HEADERS,
-          body: JSON.stringify({ result }),
-        };
-      }
-
       case 'translateGoogle': {
         const res = await fetch(`https://translation.googleapis.com/language/translate/v2?key=${googleKey}`, {
           method: 'POST',
