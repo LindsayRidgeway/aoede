@@ -348,6 +348,26 @@ export default function App() {
       setIsSpeaking(true);
     }
   };
+
+  const playCurrentStudySentence = () => {
+    const currentSentence = BookReader.simpleArray && BookReader.simpleArray.length > 0 
+      ? BookReader.simpleArray[0] 
+      : studyLangSentence;
+    
+    if (!currentSentence) {
+      return;
+    }
+
+    ListeningSpeed.speakSentenceWithPauses(
+      currentSentence,
+      listeningSpeed, 
+      () => {
+        setIsSpeaking(false);
+      }, 
+      articulation
+    );
+    setIsSpeaking(true);
+  };
   
   // Clear content area
   const clearContent = () => {
@@ -367,26 +387,17 @@ export default function App() {
         return false;
       }
 
+      if (isSpeaking) {
+        ListeningSpeed.stopSpeaking();
+        setIsSpeaking(false);
+      }
+
       setPendingNavigation('next');
       await readingManager.advanceToNextSentence();
       await new Promise(resolve => setTimeout(resolve, 50));
       
-      if (autoplay && !isSpeaking) {
-        const currentSentence = BookReader.simpleArray && BookReader.simpleArray.length > 0 
-          ? BookReader.simpleArray[0] 
-          : studyLangSentence;
-        
-        if (currentSentence) {
-          ListeningSpeed.speakSentenceWithPauses(
-            currentSentence,
-            listeningSpeed, 
-            () => {
-              setIsSpeaking(false);
-            }, 
-            articulation
-          );
-          setIsSpeaking(true);
-        }
+      if (autoplay) {
+        playCurrentStudySentence();
       }
     } catch (error) {
       setStudyLangSentence("Error: " + error.message);
@@ -412,22 +423,8 @@ export default function App() {
       await readingManager.goToPreviousSentence();
       await new Promise(resolve => setTimeout(resolve, 50));
       
-      if (autoplay && !isSpeaking) {
-        const currentSentence = BookReader.simpleArray && BookReader.simpleArray.length > 0 
-          ? BookReader.simpleArray[0] 
-          : studyLangSentence;
-        
-        if (currentSentence) {
-          ListeningSpeed.speakSentenceWithPauses(
-            currentSentence,
-            listeningSpeed, 
-            () => {
-              setIsSpeaking(false);
-            }, 
-            articulation
-          );
-          setIsSpeaking(true);
-        }
+      if (autoplay) {
+        playCurrentStudySentence();
       }
     } catch (error) {
       setStudyLangSentence("Error: " + error.message);

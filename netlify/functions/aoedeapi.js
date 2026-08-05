@@ -19,33 +19,58 @@ const ALLOWED_REMOTE_FETCH_HOSTS = new Set([
   'gutenberg.net.au'
 ]);
 
+const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+const isTransientOpenAIStatus = (status) => [408, 409, 429, 500, 502, 503, 504].includes(status);
+
 const callOpenAIChat = async (openaiKey, prompt) => {
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${openaiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      model: OPENAI_MODEL,
-      messages: [{ role: 'user', content: prompt }],
-      max_completion_tokens: 800,
-      reasoning_effort: OPENAI_REASONING_EFFORT,
-    }),
-  });
+  const maxAttempts = 3;
 
-  const data = await res.json();
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    let res;
+    let data;
 
-  if (!res.ok || data.error) {
-    throw new Error(data.error?.message || `OpenAI request failed with status ${res.status}`);
+    try {
+      res = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${openaiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: OPENAI_MODEL,
+          messages: [{ role: 'user', content: prompt }],
+          max_completion_tokens: 800,
+          reasoning_effort: OPENAI_REASONING_EFFORT,
+        }),
+      });
+
+      data = await res.json();
+    } catch (error) {
+      if (attempt < maxAttempts) {
+        await sleep(300 * attempt);
+        continue;
+      }
+      throw error;
+    }
+
+    if ((!res.ok || data.error) && isTransientOpenAIStatus(res.status) && attempt < maxAttempts) {
+      await sleep(300 * attempt);
+      continue;
+    }
+
+    if (!res.ok || data.error) {
+      throw new Error(data.error?.message || `OpenAI request failed with status ${res.status}`);
+    }
+
+    const content = data.choices?.[0]?.message?.content?.trim();
+    if (!content) {
+      throw new Error('OpenAI returned an empty response');
+    }
+
+    return content;
   }
 
-  const content = data.choices?.[0]?.message?.content?.trim();
-  if (!content) {
-    throw new Error('OpenAI returned an empty response');
-  }
-
-  return content;
+  throw new Error('OpenAI request failed after retries');
 };
 
 const getCharsetFromText = (text) => {
