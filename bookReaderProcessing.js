@@ -243,9 +243,6 @@ async function processSentenceWithOpenAI(reader, sentence) {
     // Reset the simplified index to the first sentence
     reader.currentSimplifiedIndex = 0;
     
-    // Clear translation cache for this new set of sentences
-    reader.translationCache = {};
-    
     return true;
   } catch (error) {
     throw error;
@@ -271,9 +268,7 @@ export async function updateDisplay(reader) {
       reader.simpleArray = [currentSimplified];
       
       // Get translation to user language
-      const cacheKey = `${reader.studyLanguage}:${reader.userLanguage}:${currentSimplified}`;
-      const translatedSentence = reader.translationCache[cacheKey] || await apiTranslateSentenceCheap(currentSimplified, reader.studyLanguage, reader.userLanguage);
-      reader.translationCache[cacheKey] = translatedSentence;
+      const translatedSentence = await apiTranslateSentenceCheap(currentSimplified, reader.studyLanguage, reader.userLanguage);
       
       // Make sure we only have a single-line translation (fixes duplicate sentence issue)
       const cleanedTranslation = translatedSentence.split('\n')[0].trim();

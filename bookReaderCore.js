@@ -36,8 +36,6 @@ class BookReaderCore {
     this.currentSimplifiedIndex = 0; // Index within the simplified sentences
     this.sentenceOffsets = [];     // Array to store character offsets for each sentence
     
-    // Cache for translated sentences (UL translations)
-    this.translationCache = {};    // Cache for translated sentences to avoid duplicate API calls
     this.isProcessing = false;     // Flag to track if processing is in progress
   }
 
@@ -86,7 +84,6 @@ class BookReaderCore {
     this.simplifiedSentences = [];
     this.currentSimplifiedIndex = 0;
     this.sentenceOffsets = [];
-    this.translationCache = {};
     this.isProcessing = false;
   }
 

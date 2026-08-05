@@ -7,7 +7,8 @@ const getSimplificationPrompt15 = require('./simplifiers/simplify15.js').default
 const getSimplificationPrompt18 = require('./simplifiers/simplify18.js').default;
 
 const fetch = require('node-fetch');
-const OPENAI_MODEL = 'gpt-5.6-sol';
+const OPENAI_SIMPLIFICATION_MODEL = 'gpt-5.6-sol';
+const OPENAI_TRANSLATION_MODEL = 'gpt-5.6-luna';
 const OPENAI_REASONING_EFFORT = 'medium';
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -22,7 +23,7 @@ const ALLOWED_REMOTE_FETCH_HOSTS = new Set([
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 const isTransientOpenAIStatus = (status) => [408, 409, 429, 500, 502, 503, 504].includes(status);
 
-const callOpenAIChat = async (openaiKey, prompt) => {
+const callOpenAIChat = async (openaiKey, prompt, model) => {
   const maxAttempts = 3;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
@@ -37,7 +38,7 @@ const callOpenAIChat = async (openaiKey, prompt) => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          model: OPENAI_MODEL,
+          model,
           messages: [{ role: 'user', content: prompt }],
           max_completion_tokens: 800,
           reasoning_effort: OPENAI_REASONING_EFFORT,
@@ -140,7 +141,7 @@ exports.handler = async (event, context) => {
     switch (mode) {
       case 'translateOpenAI': {
         const prompt = `Translate the input sentence from ${sourceLang} to ${targetLang}. Return only the translated sentence, with no comments or other output. Input: ${text}`;
-        const result = await callOpenAIChat(openaiKey, prompt);
+        const result = await callOpenAIChat(openaiKey, prompt, OPENAI_TRANSLATION_MODEL);
         return {
           statusCode: 200,
           headers: CORS_HEADERS,
@@ -172,7 +173,7 @@ exports.handler = async (event, context) => {
 		  bookLanguage: bookLang,
 		  studyLanguage: studyLang,
 		});
-        const result = await callOpenAIChat(openaiKey, prompt);
+        const result = await callOpenAIChat(openaiKey, prompt, OPENAI_SIMPLIFICATION_MODEL);
         return {
           statusCode: 200,
           headers: CORS_HEADERS,
